@@ -1,6 +1,6 @@
 # Ziarem Intelligence
 
-API and database for Ziarem leads (PostgreSQL + Node.js).
+API and database for Ziarem leads (PostgreSQL + Node.js). **Aligned to Cole Data Dictionary (FA + CP Data Appended)** – see [COLE_CRM_ALIGNMENT.md](COLE_CRM_ALIGNMENT.md).
 
 **Connect to Lovable, GitHub, and Hostinger:** see [CONNECT.md](CONNECT.md).
 
@@ -142,6 +142,11 @@ Dev with auto-reload: `npm run dev`.
 ```
 
 - **GET /health** – Health check.
+
+**Free API integrations (lead enrichment):** See [INTEGRATIONS.md](INTEGRATIONS.md).
+
+- **GET /integrations** – List which free APIs are configured (geocode, email/phone validation, IP geo).
+- **GET /leads/:id/enrich** – Enrich one lead via Nominatim (geocode), Abstract/NumVerify (email/phone), ip-api.com (IP). Optional keys in `.env`.
 
 ## Import leads from CSV or Excel
 

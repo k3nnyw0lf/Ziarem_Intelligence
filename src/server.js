@@ -1,6 +1,8 @@
 const express = require('express');
 const leadsRouter = require('./routes/leads');
 const communicationsRouter = require('./routes/communications');
+const businessesRouter = require('./routes/businesses');
+const integrationsRouter = require('./routes/integrations');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,6 +10,8 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use('/leads', leadsRouter);
 app.use('/communications', communicationsRouter);
+app.use('/businesses', businessesRouter);
+app.use('/integrations', integrationsRouter);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

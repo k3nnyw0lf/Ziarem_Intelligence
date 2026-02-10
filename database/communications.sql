@@ -32,5 +32,5 @@ CREATE INDEX idx_communications_lead_sent ON communications (lead_id, sent_at DE
 ALTER TABLE communications ADD CONSTRAINT fk_communications_lead
   FOREIGN KEY (lead_id) REFERENCES leads(autoId_ui) ON DELETE SET NULL;
 
-COMMENT ON TABLE business_emails IS 'SMTP/IMAP credentials per business (9 businesses).';
+COMMENT ON TABLE business_emails IS 'SMTP/IMAP credentials per business. Seed: node scripts/seed_business_emails.js (see config/businesses.js).';
 COMMENT ON TABLE communications IS 'Unified inbox: all emails by lead; timeline view by lead_id + sent_at.';

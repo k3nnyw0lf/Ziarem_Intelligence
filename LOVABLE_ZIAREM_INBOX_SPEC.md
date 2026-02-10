@@ -38,3 +38,5 @@ The Ziarem API already exposes these routes (see `src/routes/communications.js`)
 - `POST /communications/send-video` – body `{ leadId, businessId, youtubeLink, message? }`
 
 Point the Ziarem Inbox frontend at your API base URL (e.g. `https://your-api.hostinger.site`).
+
+**Businesses (for badges / send-as):** `GET /businesses` returns all Ziarem businesses (name, badge, description, ziarem_tags, services, business_id). Use for [Lyco] / [Wolf] / [Dispute] badges and for the "Send as" dropdown (business_id).
