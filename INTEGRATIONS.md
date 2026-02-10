@@ -15,6 +15,9 @@ Ziarem connects to these **free** (or free-tier) APIs to enrich leads. All are o
 
 - **GET /integrations** – List which integrations are enabled (no secrets).
 - **GET /leads/:id/enrich** – Enrich one lead by `autoId_ui`; returns `{ geocode, email, phone, ip, errors? }`.
+  - **?save=1** – Persist results: update `lat`/`lon` from geocode and store `enrichment_result` JSONB (email, phone, ip, geocode display_name).
+- **POST /leads/enrich-batch** – Body: `{ leadIds: number[], save?: boolean }`. Enrich up to 10 leads; if `save` is true, persist like `?save=1`. Rate-limited (~1s per lead for geocode).
+- **POST /leads/upload?enrich=N** – After upload, optionally enrich the first N inserted leads (max 5) and save; response includes `enriched` count.
 
 Query params for `/leads/:id/enrich`: `skip_geocode=1`, `skip_email=1`, `skip_phone=1`, `skip_ip=1` to skip specific lookups.
 

@@ -53,12 +53,12 @@ Lovable is used to build the **frontend** (UI) that can call your Ziarem API.
 4. In your Lovable project: **Connect project to GitHub** and select the `Ziarem_Intelligence` repo (or the repo where your Lovable frontend lives).
 5. Lovable will sync with the **main** branch: changes in Lovable push to GitHub, and pulls from GitHub update Lovable.
 
-### Use your Hostinger API in Lovable
+### Use your Hostinger API in Lovable (real leads & emails)
 
-- In Lovable, set the **API base URL** to your Hostinger API (e.g. `https://your-domain.com` or `https://api.yourdomain.com`).
-- Use **environment variables** in Lovable for that URL so you can switch between local and production.
+- In Lovable, set the **API base URL** to your Hostinger API (e.g. `https://your-app.hostinger.site`). Use an env var such as **VITE_API_URL** or **REACT_APP_API_URL**.
+- Replace mock data with real API calls: **GET /leads**, **GET /communications**, **GET /businesses**, **POST /communications/send-video**. See **[FRONTEND_API.md](FRONTEND_API.md)** for exact endpoints, response shapes, and example `fetch` code.
 
-Your Node.js API (this repo) runs on **Hostinger**; Lovable only needs the **URL** and possibly an API key if you add auth later.
+Your Node.js API (this repo) runs on **Hostinger** and sends **CORS** headers so the browser can call it from the frontend.
 
 ---
 

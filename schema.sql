@@ -386,7 +386,8 @@ CREATE TABLE leads (
   OwnerOccupied VARCHAR(255),
   TaxAmt VARCHAR(255),
   TaxYear INTEGER,
-  ziarem_tags JSONB
+  ziarem_tags JSONB,
+  enrichment_result JSONB
 );
 
 -- Indexes for fast searching
