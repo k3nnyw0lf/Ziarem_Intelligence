@@ -1,0 +1,25 @@
+{
+  "name": "ziarem-intelligence",
+  "version": "1.0.0",
+  "description": "Ziarem API with leads and server-side pagination",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "import-leads": "node import_leads.js",
+    "seed-dictionaries": "node seed_dictionaries.js",
+    "imap-sync": "node imap_sync.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.2",
+    "express": "^4.18.2",
+    "imap-simple": "^1.8.1",
+    "mailparser": "^3.6.5",
+    "nodemailer": "^6.9.7",
+    "pg": "^8.11.3",
+    "xlsx": "^0.18.5"
+  }
+}
