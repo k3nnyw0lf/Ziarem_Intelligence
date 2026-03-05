@@ -52,6 +52,18 @@ function getRecordingUrl(body: Record<string, unknown>): string | null {
   return null;
 }
 
+const LEAD_STATUSES = ["Cold", "Qualified", "Under Contract", "Closed"] as const;
+function normalizeLeadStatus(s: string): (typeof LEAD_STATUSES)[number] {
+  const lower = s.toLowerCase().replace(/\s+/g, " ");
+  for (const status of LEAD_STATUSES) {
+    if (status.toLowerCase() === lower) return status;
+  }
+  if (lower.includes("contract")) return "Under Contract";
+  if (lower.includes("qualif") || lower.includes("interest")) return "Qualified";
+  if (lower.includes("closed") || lower.includes("won")) return "Closed";
+  return "Cold";
+}
+
 async function extractWithGemini(
   transcript: string,
   apiKey: string
@@ -60,7 +72,7 @@ async function extractWithGemini(
 From the following call transcript, extract structured data and return ONLY a single JSON object with no markdown or explanation.
 Use these exact keys where applicable: lead_intent, primary_vertical, preferred_language (EN or ES only), estimated_home_value (number), estimated_loan_amount (number), first_name, last_name, location, status, phone_number (if mentioned).
 Map primary_vertical to one of: "Re4lty Inc.", "RENO LLC", "Dos Mortgage LLC", "Laenan", "Closed By Whom?", "Wolf Insurance" based on intent.
-For status use values like: New, Interested, Under Contract, Closed, Not Interested, or similar.
+For status use exactly one of: Cold, Qualified, Under Contract, Closed.
 Default location to "Naples, Florida" if not stated.
 Transcript:\n\n${transcript}`;
 
@@ -178,7 +190,8 @@ Deno.serve(async (req: Request) => {
     extracted.estimated_loan_amount ??
     extracted.estimated_home_value ??
     null;
-  const status = extracted.status ?? "New";
+  const rawStatus = extracted.status ?? "Cold";
+  const status = normalizeLeadStatus(rawStatus);
   const location = extracted.location ?? "Naples, Florida";
 
   const supabase = createClient(supabaseUrl, supabaseServiceKey);

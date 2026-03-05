@@ -15,6 +15,9 @@ export interface Company {
   updated_at: string;
 }
 
+/** Lead lifecycle status (Ziarem directive). */
+export type LeadStatus = 'Cold' | 'Qualified' | 'Under Contract' | 'Closed';
+
 export interface Lead {
   id: string;
   phone_number: string;
@@ -23,7 +26,13 @@ export interface Lead {
   preferred_language: PreferredLanguage;
   location: string;
   estimated_value: number | null;
-  status: string;
+  status: LeadStatus;
+  /** Set for cross-sell child leads; links to Re4lty parent. */
+  parent_lead_id: string | null;
+  /** Target company/vertical for this lead (e.g. child lead for Dos Mortgage). */
+  company_id: string | null;
+  /** Whale score 1-99 from daily score-leads; Cold leads ordered by this for outbound. */
+  propensity_score: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -36,11 +45,14 @@ export interface Call {
   recording_url: string | null;
   extracted_data: ExtractedCallData;
   calculated_revenue: number | null;
+  /** e.g. Transferring_to_Ken for Whisper UI. */
+  agent_transfer_status: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export type CrossSellStatus = 'Pending' | 'Contacted' | 'Closed';
+/** Cross-sell workflow status (Ziarem directive). */
+export type CrossSellStatus = 'Pending' | 'Automated_Outreach' | 'Closed';
 
 export interface CrossSell {
   id: string;
