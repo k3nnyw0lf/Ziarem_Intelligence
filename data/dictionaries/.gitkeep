@@ -1,0 +1,2 @@
+# Put Data Dictionary CSV files here, then run: npm run seed-dictionaries
+# Expected: Occupation.csv, Occupation Code.csv, DOC_TYPE.csv, PROP_CL_IND.csv, ROOF_TYPE.csv, HEAT.csv

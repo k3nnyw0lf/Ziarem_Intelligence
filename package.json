@@ -1,25 +1,46 @@
 {
   "name": "ziarem-ai-sales-floor",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Ziarem.com AI Sales Floor & Enterprise CRM + Ziarem Intelligence API",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "api:start": "node src/server.js",
+    "api:dev": "node --watch src/server.js",
+    "import-leads": "node import_leads.js",
+    "seed-dictionaries": "node seed_dictionaries.js",
+    "imap-sync": "node imap_sync.js",
+    "export-cole": "node scripts/export_cole_dictionary_to_csv.js",
+    "omni-send": "node omni_sender.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.1.0",
-    "lucide-react": "^0.460.0",
     "@radix-ui/react-tabs": "^1.1.1",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.10",
+    "bottleneck": "^2.19.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "cors": "^2.8.5",
+    "csv-parse": "^5.5.2",
+    "express": "^4.18.2",
+    "imap-simple": "^1.8.1",
+    "lucide-react": "^0.460.0",
+    "mailparser": "^3.6.5",
+    "multer": "^1.4.5-lts.1",
     "next": "15.0.3",
+    "nodemailer": "^6.9.7",
+    "pg": "^8.11.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.5.4",
+    "xlsx": "^0.18.5",
     "zod": "^3.24.1"
   },
   "devDependencies": {

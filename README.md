@@ -2,13 +2,14 @@
 
 Multi-tenant, bilingual (EN/ES) CRM backend and real-time command center for an AI cold call center. Hosted at **ziarem.com**. Orchestrates AI voice agents (Vapi/Retell), extracts structured data via Google Gemini, and executes cross-selling workflows with n8n (Hostinger).
 
+**This repo merges the Next.js/Supabase CRM (aicallcenter) with Ziarem Intelligence** (Node.js API, Cole Data Dictionary, lead scoring, raw_leads). See [Ziarem Intelligence (API & Data)](#ziarem-intelligence-api--data) below.
+
 ## Tech Stack
 
 - **Frontend:** Next.js 15 (App Router), React 19, Tailwind CSS, Shadcn UI (Lovable-compatible)
 - **Backend / DB:** Supabase (PostgreSQL, Auth, Edge Functions, pgvector for RAG)
 - **Automation:** n8n (self-hosted on Hostinger via webhooks)
 - **AI Telephony:** Vapi / Retell AI (SIP, low-latency audio, barge-in, transcripts)
-- **Voice:** ElevenLabs (multilingual v2)
 - **LLM:** Google Gemini (extraction/JSON), Perplexity (live market context)
 
 ## Setup
@@ -77,3 +78,52 @@ npm run dev
 ## n8n
 
 Set `N8N_WEBHOOK_ONBOARDING_URL` to your n8n (Hostinger) webhook. The call-end pipeline POSTs a JSON payload (lead_id, preferred_language, vertical, cross_sell_triggered, etc.) for bilingual onboarding emails after cross-sell creation.
+
+---
+
+## Ziarem Intelligence (API & Data)
+
+API and database for Ziarem leads (PostgreSQL + Node.js). **Aligned to Cole Data Dictionary (FA + CP Data Appended)** – see [COLE_CRM_ALIGNMENT.md](COLE_CRM_ALIGNMENT.md) if present.
+
+**Connect to Lovable, GitHub, and Hostinger:** see [CONNECT.md](CONNECT.md) if present.
+
+### Database (Hostinger VPS)
+
+1. Create a database named `ziarem` in your Hostinger control panel (PostgreSQL).
+2. Run the schema on that database (see Ziarem Intelligence `database/schema/` if present):
+
+```bash
+psql -h YOUR_HOST -U YOUR_USER -d ziarem -f database/schema/001_create_leads.sql
+# ... etc.
+```
+
+### Ziarem Intelligence Engine (lead scoring)
+
+Classification runs when you need it (e.g. after inserting into `raw_leads`):
+
+- **Wolf Surety:** `Wolf_Trade`, `Distressed_Property`
+- **Dispute LLC:** `Credit_Repair_Urgent`
+- **Lyco Tax:** `Lyco_HighNetWorth`, `Lyco_Business`
+
+**Node:** `lead_scorer.js` – `scoreLead(lead, { pool })` returns an array of tags.
+
+### API (Node.js)
+
+```bash
+npm run api:start
+# or
+npm run api:dev
+```
+
+- **GET /leads** – Paginated list (server-side). Query: `limit`, `offset`, optional `total=0`.
+- **GET /health** – Health check.
+
+### Import leads from CSV or Excel
+
+```bash
+npm run import-leads -- path/to/leads.csv
+```
+
+### Environment
+
+See `.env.example`. For the Node API: `PGHOST`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`, `PGSSLMODE=require`. Optional: `TRACKING_BASE_URL`, `ABSTRACT_EMAIL_API_KEY`, `ABSTRACT_PHONE_API_KEY`, `NUMVERIFY_API_KEY`.
