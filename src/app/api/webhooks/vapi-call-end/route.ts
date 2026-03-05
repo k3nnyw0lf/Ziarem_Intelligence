@@ -55,9 +55,55 @@ function getPhone(body: unknown, extracted: { phone_number?: string }): string |
   return null;
 }
 
+/** Phase 8: Acoustic/sentiment from Vapi (user_emotion, analysis). */
+function getUserEmotion(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const o = body as Record<string, unknown>;
+  const emotion =
+    o.user_emotion ??
+    (o.analysis as Record<string, unknown>)?.user_emotion ??
+    (o.sentiment as Record<string, unknown>)?.label ??
+    (o.acoustic as Record<string, unknown>)?.emotion;
+  if (typeof emotion === "string" && emotion.trim()) return emotion.trim().toLowerCase();
+  return null;
+}
+
+function getCallId(body: unknown): string | null {
+  if (!body || typeof body !== "object") return null;
+  const o = body as Record<string, unknown>;
+  const id = o.call_id ?? o.callId ?? (o.call as Record<string, unknown>)?.id;
+  return typeof id === "string" && id.trim() ? id.trim() : null;
+}
+
+const VAPI_CONTROL_BASE = process.env.VAPI_CONTROL_BASE_URL ?? "https://api.vapi.ai";
+
+async function pushVapiToneShift(callId: string, message: string): Promise<void> {
+  const key = process.env.VAPI_PRIVATE_KEY ?? process.env.VAPI_API_KEY;
+  if (!key) return;
+  const url = `${VAPI_CONTROL_BASE}/call/${callId}/control`;
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      type: "add-message",
+      message: { role: "system", content: message },
+      triggerResponseEnabled: true,
+    }),
+  }).catch(() => {});
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const callId = getCallId(body);
+    const userEmotion = getUserEmotion(body);
+    if (userEmotion && ["hesitant", "resistant"].includes(userEmotion) && callId) {
+      await pushVapiToneShift(
+        callId,
+        "Prospect is showing hesitation or resistance. Switch to Sandler Negative Reverse: use gentle negative reverse questions, do not push. Be empathetic, give space, and acknowledge their concerns without pressure."
+      );
+    }
+
     const transcript = getTranscript(body);
     if (!transcript) {
       return NextResponse.json(
@@ -177,6 +223,10 @@ export async function POST(request: Request) {
       if (storageUrl) recordingUrl = storageUrl;
     }
 
+    const extractedWithEmotion = {
+      ...(extracted as Record<string, unknown>),
+      ...(userEmotion && { user_emotion: userEmotion }),
+    };
     const { data: callRow, error: callErr } = await supabaseAdmin
       .from("calls")
       .insert({
@@ -184,7 +234,7 @@ export async function POST(request: Request) {
         company_id: companyId,
         transcript,
         recording_url: recordingUrl,
-        extracted_data: extracted as Record<string, unknown>,
+        extracted_data: extractedWithEmotion,
         calculated_revenue: calculatedRevenue,
       })
       .select("id")

@@ -14,6 +14,8 @@ Multi-tenant, bilingual (EN/ES) CRM backend and real-time command center for an 
 
 ## Setup
 
+**Full setup (both Next.js and Node API):** see **[SETUP.md](SETUP.md)** for env vars, running one or both apps, and port usage (Next.js 3000, Node API 3001 when both run).
+
 ### 1. Supabase
 
 - Create a project at [supabase.com](https://supabase.com).

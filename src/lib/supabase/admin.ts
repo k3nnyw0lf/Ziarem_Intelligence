@@ -1,10 +1,13 @@
 /**
  * Server-only Supabase client with service role for webhooks and backend.
  * Use for API routes that must bypass RLS (e.g. call-end webhook).
+ * Lazy so build can succeed without env vars.
  */
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-function getAdminClient() {
+let _admin: SupabaseClient | null = null;
+
+function createAdminClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
@@ -15,4 +18,14 @@ function getAdminClient() {
   return createClient(url, key);
 }
 
-export const supabaseAdmin = getAdminClient();
+export function getSupabaseAdmin(): SupabaseClient {
+  if (!_admin) _admin = createAdminClient();
+  return _admin;
+}
+
+/** @deprecated Use getSupabaseAdmin() so build does not require env. Kept for compatibility; lazy. */
+export const supabaseAdmin = new Proxy({} as SupabaseClient, {
+  get(_, prop) {
+    return (getSupabaseAdmin() as unknown as Record<string, unknown>)[prop as string];
+  },
+});
