@@ -1,0 +1,19 @@
+{
+  "name": "vault-wa-bridge",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.16",
+    "express": "^4.21.2",
+    "ws": "^8.18.0",
+    "qrcode": "^1.5.4",
+    "cors": "^2.8.5",
+    "pino": "^9.6.0",
+    "dotenv": "^16.4.7",
+    "node-fetch": "^3.3.2"
+  }
+}

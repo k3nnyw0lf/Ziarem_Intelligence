@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Organization LLC — Premium Financial & Real Estate Services | Miami</title>
+<meta name="description" content="The Organization LLC provides elite financial, real estate, mortgage, insurance, credit, construction, and accounting services in Miami, FL.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#06060e;--gold:#d4af37;--gold-light:#f5d799;--gold-dark:#b8962e;
+--text:#ffffff;--text-secondary:#888888;--card-bg:rgba(255,255,255,0.03);
+--border:rgba(212,175,55,0.15);--border-hover:rgba(212,175,55,0.4);
+--gold-gradient:linear-gradient(135deg,#d4af37,#f5d799,#d4af37);
+--font-body:'Inter',sans-serif;--font-display:'Bebas Neue',sans-serif;
+}
+html{scroll-behavior:smooth;overflow-x:hidden}
+body{
+font-family:var(--font-body);background:var(--bg);color:var(--text);
+overflow-x:hidden;-webkit-font-smoothing:antialiased;
+-moz-osx-font-smoothing:grayscale;line-height:1.6;
+}
+::selection{background:var(--gold);color:var(--bg)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--gold);border-radius:3px}
+
+/* THREE.JS CANVAS */
+#scene-container{
+position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;
+pointer-events:none;
+}
+
+/* NAV */
+.nav{
+position:fixed;top:0;left:0;right:0;z-index:100;
+padding:0 clamp(1rem,4vw,3rem);height:70px;
+display:flex;align-items:center;justify-content:space-between;
+background:rgba(6,6,14,0.7);backdrop-filter:blur(20px) saturate(1.5);
+-webkit-backdrop-filter:blur(20px) saturate(1.5);
+border-bottom:1px solid rgba(212,175,55,0.08);
+transition:all 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+.nav.scrolled{background:rgba(6,6,14,0.92);border-bottom-color:var(--border)}
+.nav-left{display:flex;align-items:center;gap:12px}
+.nav-logo{height:40px;width:auto;filter:drop-shadow(0 0 8px rgba(212,175,55,0.3))}
+.nav-brand{
+font-family:var(--font-display);font-size:1.2rem;letter-spacing:3px;
+background:var(--gold-gradient);-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;background-clip:text;
+white-space:nowrap;
+}
+.nav-links{display:flex;align-items:center;gap:clamp(12px,2vw,28px)}
+.nav-links a{
+color:var(--text-secondary);text-decoration:none;font-size:0.85rem;
+font-weight:500;letter-spacing:1px;text-transform:uppercase;
+transition:color 0.3s;position:relative;
+}
+.nav-links a::after{
+content:'';position:absolute;bottom:-4px;left:0;width:0;height:1px;
+background:var(--gold);transition:width 0.3s;
+}
+.nav-links a:hover{color:var(--gold)}
+.nav-links a:hover::after{width:100%}
+.nav-right{display:flex;align-items:center;gap:12px}
+.lang-toggle{
+background:transparent;border:1px solid var(--border);color:var(--text-secondary);
+padding:6px 14px;border-radius:6px;font-size:0.8rem;cursor:pointer;
+font-family:var(--font-body);font-weight:600;letter-spacing:1px;
+transition:all 0.3s;
+}
+.lang-toggle:hover{border-color:var(--gold);color:var(--gold)}
+.vault-btn{
+background:var(--gold-gradient);color:var(--bg);
+padding:8px 22px;border-radius:8px;font-size:0.82rem;
+font-weight:700;letter-spacing:1px;text-transform:uppercase;
+text-decoration:none;transition:all 0.3s;
+box-shadow:0 2px 15px rgba(212,175,55,0.25);
+}
+.vault-btn:hover{transform:translateY(-1px);box-shadow:0 4px 25px rgba(212,175,55,0.4)}
+
+/* HAMBURGER */
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;z-index:200;background:none;border:none;padding:4px}
+.hamburger span{display:block;width:24px;height:2px;background:var(--text);transition:all 0.3s}
+.hamburger.active span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}
+.hamburger.active span:nth-child(2){opacity:0}
+.hamburger.active span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}
+
+.mobile-menu{
+display:none;position:fixed;top:70px;left:0;right:0;bottom:0;
+background:rgba(6,6,14,0.97);backdrop-filter:blur(30px);
+-webkit-backdrop-filter:blur(30px);
+z-index:90;flex-direction:column;align-items:center;justify-content:center;gap:28px;
+}
+.mobile-menu.open{display:flex}
+.mobile-menu a{
+color:var(--text);text-decoration:none;font-size:1.3rem;
+font-family:var(--font-display);letter-spacing:4px;
+transition:color 0.3s;
+}
+.mobile-menu a:hover{color:var(--gold)}
+
+/* HERO */
+.hero{
+position:relative;z-index:1;height:100vh;min-height:600px;
+display:flex;flex-direction:column;align-items:center;justify-content:center;
+text-align:center;padding:0 clamp(1rem,4vw,3rem);
+}
+.hero-content{max-width:900px}
+.hero-title{
+font-family:var(--font-display);
+font-size:clamp(4rem,10vw,8rem);
+line-height:0.95;letter-spacing:6px;
+background:var(--gold-gradient);-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;background-clip:text;
+opacity:0;transform:scale(0.8);
+margin-bottom:0;
+}
+.hero-llc{
+font-family:var(--font-display);font-size:clamp(1.5rem,3vw,2.5rem);
+letter-spacing:clamp(10px,2vw,25px);color:var(--text-secondary);
+margin-top:4px;opacity:0;
+}
+.hero-tagline{
+font-size:clamp(1rem,2vw,1.3rem);color:var(--text-secondary);
+margin-top:28px;height:36px;font-weight:300;letter-spacing:1px;
+}
+.hero-tagline .cursor{
+display:inline-block;width:2px;height:1.1em;background:var(--gold);
+vertical-align:text-bottom;animation:blink 1s infinite;margin-left:2px;
+}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+.hero-buttons{
+display:flex;gap:16px;justify-content:center;margin-top:36px;
+flex-wrap:wrap;opacity:0;transform:translateY(30px);
+}
+.btn{
+padding:14px 36px;border-radius:10px;font-size:0.9rem;
+font-weight:600;letter-spacing:2px;text-transform:uppercase;
+cursor:pointer;transition:all 0.4s cubic-bezier(0.16,1,0.3,1);
+text-decoration:none;display:inline-flex;align-items:center;gap:8px;
+font-family:var(--font-body);
+}
+.btn-primary{
+background:var(--gold-gradient);color:var(--bg);border:none;
+box-shadow:0 4px 25px rgba(212,175,55,0.3);
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 40px rgba(212,175,55,0.45)}
+.btn-secondary{
+background:transparent;color:var(--gold);
+border:1px solid var(--border);
+}
+.btn-secondary:hover{border-color:var(--gold);background:rgba(212,175,55,0.05);transform:translateY(-2px)}
+.scroll-indicator{
+position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+display:flex;flex-direction:column;align-items:center;gap:8px;
+opacity:0;
+}
+.scroll-indicator span{
+font-size:0.7rem;color:var(--text-secondary);letter-spacing:3px;
+text-transform:uppercase;
+}
+.scroll-chevron{
+width:24px;height:24px;border-right:2px solid var(--gold);
+border-bottom:2px solid var(--gold);transform:rotate(45deg);
+animation:scrollBounce 2s infinite;
+}
+@keyframes scrollBounce{
+0%,20%,50%,80%,100%{transform:rotate(45deg) translateY(0)}
+40%{transform:rotate(45deg) translateY(8px)}
+60%{transform:rotate(45deg) translateY(4px)}
+}
+
+/* SECTIONS COMMON */
+section{position:relative;z-index:1;padding:clamp(60px,10vw,120px) clamp(1rem,4vw,3rem)}
+.section-title{
+font-family:var(--font-display);font-size:clamp(2.5rem,5vw,4rem);
+letter-spacing:6px;text-align:center;margin-bottom:12px;
+}
+.section-accent{
+width:60px;height:3px;background:var(--gold-gradient);
+margin:0 auto 60px;border-radius:2px;
+}
+
+/* SERVICES */
+.services-grid{
+display:grid;grid-template-columns:repeat(3,1fr);
+gap:24px;max-width:1200px;margin:0 auto;
+}
+.service-card{
+background:var(--card-bg);border:1px solid var(--border);
+border-radius:16px;padding:36px 28px;
+backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+transition:all 0.5s cubic-bezier(0.16,1,0.3,1);
+opacity:0;transform:translateY(40px);
+position:relative;overflow:hidden;
+}
+.service-card::before{
+content:'';position:absolute;top:0;left:0;right:0;height:2px;
+background:var(--gold-gradient);opacity:0;transition:opacity 0.4s;
+}
+.service-card:hover{
+transform:translateY(-6px) scale(1.01);
+border-color:var(--border-hover);
+box-shadow:0 20px 60px rgba(0,0,0,0.4),0 0 40px rgba(212,175,55,0.06);
+}
+.service-card:hover::before{opacity:1}
+.service-icon{
+font-size:2.2rem;margin-bottom:18px;
+display:inline-block;
+filter:grayscale(0.2) brightness(1.1);
+}
+.service-card h3{
+font-size:1.15rem;font-weight:700;margin-bottom:14px;letter-spacing:1px;
+}
+.service-card ul{
+list-style:none;margin-bottom:18px;
+}
+.service-card li{
+color:var(--text-secondary);font-size:0.88rem;padding:4px 0;
+padding-left:16px;position:relative;line-height:1.5;
+}
+.service-card li::before{
+content:'';position:absolute;left:0;top:11px;
+width:5px;height:5px;border-radius:50%;
+background:var(--gold);opacity:0.5;
+}
+.service-card .learn-more{
+color:var(--gold);font-size:0.85rem;font-weight:600;
+text-decoration:none;letter-spacing:1px;text-transform:uppercase;
+display:inline-flex;align-items:center;gap:6px;
+transition:gap 0.3s;
+}
+.service-card:hover .learn-more{gap:10px}
+.service-card .learn-more::after{content:'→'}
+
+/* STATS */
+.stats-section{
+background:linear-gradient(180deg,rgba(212,175,55,0.03) 0%,transparent 100%);
+border-top:1px solid var(--border);
+}
+.stats-grid{
+display:grid;grid-template-columns:repeat(4,1fr);
+gap:30px;max-width:1000px;margin:0 auto 50px;text-align:center;
+}
+.stat-item{opacity:0;transform:translateY(20px)}
+.stat-number{
+font-family:var(--font-display);font-size:clamp(3rem,6vw,4.5rem);
+background:var(--gold-gradient);-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;background-clip:text;
+line-height:1;
+}
+.stat-label{
+font-size:0.85rem;color:var(--text-secondary);
+margin-top:8px;letter-spacing:1px;
+}
+.stats-quote{
+text-align:center;font-style:italic;font-size:clamp(1.1rem,2vw,1.5rem);
+color:var(--text-secondary);max-width:700px;margin:0 auto;
+padding-top:40px;border-top:1px solid var(--border);
+opacity:0;
+}
+.stats-quote::before{content:'"';font-size:3rem;color:var(--gold);line-height:0;vertical-align:-0.5em;margin-right:4px}
+.stats-quote::after{content:'"';font-size:3rem;color:var(--gold);line-height:0;vertical-align:-0.5em;margin-left:4px}
+
+/* CONTACT */
+.contact-grid{
+display:grid;grid-template-columns:1fr 1fr;gap:60px;
+max-width:1100px;margin:0 auto;align-items:start;
+}
+.contact-left{opacity:0;transform:translateX(-40px)}
+.contact-right{opacity:0;transform:translateX(40px)}
+.contact-heading{
+font-family:var(--font-display);font-size:clamp(3rem,6vw,5rem);
+letter-spacing:4px;line-height:1;margin-bottom:30px;
+}
+.contact-item{
+display:flex;align-items:center;gap:16px;padding:14px 0;
+border-bottom:1px solid rgba(255,255,255,0.04);
+transition:transform 0.3s;
+}
+.contact-item:hover{transform:translateX(6px)}
+.contact-item .ci-icon{
+width:42px;height:42px;border-radius:10px;
+background:rgba(212,175,55,0.08);border:1px solid var(--border);
+display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+flex-shrink:0;
+}
+.contact-item a,.contact-item span{
+color:var(--text);text-decoration:none;font-size:0.95rem;
+transition:color 0.3s;
+}
+.contact-item a:hover{color:var(--gold)}
+.contact-form{
+background:var(--card-bg);border:1px solid var(--border);
+border-radius:20px;padding:clamp(24px,4vw,40px);
+backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.form-group{margin-bottom:18px}
+.form-group label{
+display:block;font-size:0.8rem;color:var(--text-secondary);
+margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;font-weight:500;
+}
+.form-group input,.form-group select,.form-group textarea{
+width:100%;padding:12px 16px;background:rgba(255,255,255,0.04);
+border:1px solid var(--border);border-radius:10px;
+color:var(--text);font-family:var(--font-body);font-size:0.92rem;
+transition:all 0.3s;outline:none;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{
+border-color:var(--gold);box-shadow:0 0 20px rgba(212,175,55,0.1);
+}
+.form-group textarea{resize:vertical;min-height:100px}
+.form-group select{cursor:pointer;-webkit-appearance:none;appearance:none;
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+background-repeat:no-repeat;background-position:right 14px center;
+}
+.form-group select option{background:var(--bg);color:var(--text)}
+.submit-btn{
+width:100%;padding:14px;background:var(--gold-gradient);
+color:var(--bg);border:none;border-radius:10px;
+font-size:0.9rem;font-weight:700;letter-spacing:2px;
+text-transform:uppercase;cursor:pointer;font-family:var(--font-body);
+transition:all 0.4s;box-shadow:0 4px 20px rgba(212,175,55,0.25);
+}
+.submit-btn:hover{box-shadow:0 8px 40px rgba(212,175,55,0.4);transform:translateY(-1px)}
+.submit-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+.form-success{
+display:none;text-align:center;padding:30px;color:var(--gold);
+font-size:1.1rem;
+}
+
+/* FOOTER */
+.footer{
+position:relative;z-index:1;border-top:1px solid var(--border);
+padding:60px clamp(1rem,4vw,3rem) 30px;
+}
+.footer-grid{
+display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px;
+max-width:1100px;margin:0 auto 40px;
+}
+.footer-col h4{
+font-family:var(--font-display);font-size:1.3rem;letter-spacing:3px;
+margin-bottom:16px;color:var(--gold);
+}
+.footer-col p{color:var(--text-secondary);font-size:0.88rem;line-height:1.7}
+.footer-col a{
+display:block;color:var(--text-secondary);text-decoration:none;
+font-size:0.88rem;padding:4px 0;transition:color 0.3s;
+}
+.footer-col a:hover{color:var(--gold)}
+.footer-bottom{
+text-align:center;padding-top:30px;border-top:1px solid rgba(255,255,255,0.04);
+max-width:1100px;margin:0 auto;
+}
+.footer-bottom p{color:var(--text-secondary);font-size:0.8rem;letter-spacing:1px}
+.footer-socials{
+display:flex;justify-content:center;gap:16px;margin-bottom:16px;
+}
+.footer-socials a{
+width:40px;height:40px;border-radius:10px;
+border:1px solid var(--border);display:flex;align-items:center;
+justify-content:center;color:var(--text-secondary);
+text-decoration:none;font-size:1rem;transition:all 0.3s;
+}
+.footer-socials a:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-2px)}
+
+/* RESPONSIVE */
+@media(max-width:1024px){
+.services-grid{grid-template-columns:repeat(2,1fr)}
+.stats-grid{grid-template-columns:repeat(2,1fr);gap:40px}
+}
+@media(max-width:768px){
+.nav-links,.nav-brand{display:none}
+.hamburger{display:flex}
+.services-grid{grid-template-columns:1fr}
+.contact-grid{grid-template-columns:1fr}
+.footer-grid{grid-template-columns:1fr;text-align:center}
+.stats-grid{grid-template-columns:repeat(2,1fr);gap:20px}
+.hero-title{letter-spacing:3px}
+}
+@media(max-width:480px){
+.stats-grid{grid-template-columns:1fr 1fr}
+.hero-buttons{flex-direction:column;align-items:center}
+.btn{width:100%;max-width:280px;justify-content:center}
+}
+
+/* LOADING */
+.loader{
+position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;
+background:var(--bg);display:flex;align-items:center;justify-content:center;
+flex-direction:column;gap:20px;
+transition:opacity 0.6s,visibility 0.6s;
+}
+.loader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.loader-ring{
+width:50px;height:50px;border:2px solid var(--border);
+border-top-color:var(--gold);border-radius:50%;
+animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-text{
+font-family:var(--font-display);font-size:1.2rem;letter-spacing:6px;
+color:var(--gold);
+}
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div class="loader" id="loader">
+<div class="loader-ring"></div>
+<div class="loader-text">THE ORGANIZATION</div>
+</div>
+
+<!-- THREE.JS CANVAS -->
+<div id="scene-container"></div>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+<div class="nav-left">
+<img src="/logo.svg" alt="The Organization" class="nav-logo">
+<span class="nav-brand">THE ORGANIZATION</span>
+</div>
+<div class="nav-links">
+<a href="#services" data-en="Services" data-es="Servicios">Services</a>
+<a href="#about" data-en="About" data-es="Nosotros">About</a>
+<a href="#contact" data-en="Contact" data-es="Contacto">Contact</a>
+</div>
+<div class="nav-right">
+<button class="lang-toggle" id="langToggle" aria-label="Toggle language">EN / ES</button>
+<a href="/vault" class="vault-btn" data-en="VAULT Login" data-es="Entrar VAULT">VAULT Login</a>
+<button class="hamburger" id="hamburger" aria-label="Menu">
+<span></span><span></span><span></span>
+</button>
+</div>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+<a href="#services" data-en="Services" data-es="Servicios">Services</a>
+<a href="#about" data-en="About" data-es="Nosotros">About</a>
+<a href="#contact" data-en="Contact" data-es="Contacto">Contact</a>
+<a href="/vault" data-en="VAULT Login" data-es="Entrar VAULT">VAULT Login</a>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+<div class="hero-content">
+<h1 class="hero-title" id="heroTitle">THE ORGANIZATION</h1>
+<p class="hero-llc" id="heroLLC">LLC</p>
+<p class="hero-tagline" id="heroTagline"><span class="cursor"></span></p>
+<div class="hero-buttons" id="heroButtons">
+<a href="#services" class="btn btn-primary" data-en="Explore Services" data-es="Ver Servicios">Explore Services</a>
+<a href="/vault" class="btn btn-secondary" data-en="Get Started" data-es="Comenzar">Get Started</a>
+</div>
+</div>
+<div class="scroll-indicator" id="scrollIndicator">
+<span data-en="Scroll" data-es="Desliza">Scroll</span>
+<div class="scroll-chevron"></div>
+</div>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+<h2 class="section-title" data-en="WHAT WE DO" data-es="LO QUE HACEMOS">WHAT WE DO</h2>
+<div class="section-accent"></div>
+<div class="services-grid">
+
+<div class="service-card">
+<div class="service-icon">🏠</div>
+<h3 data-en="Real Estate" data-es="Bienes Raíces">Real Estate</h3>
+<ul>
+<li data-en="Residential &amp; Commercial" data-es="Residencial y Comercial">Residential &amp; Commercial</li>
+<li data-en="Investment Properties" data-es="Propiedades de Inversión">Investment Properties</li>
+<li data-en="Market Analysis &amp; CMA" data-es="Análisis de Mercado y CMA">Market Analysis &amp; CMA</li>
+<li data-en="First-Time Buyer Programs" data-es="Programas para Compradores Primerizos">First-Time Buyer Programs</li>
+<li data-en="Property Management" data-es="Gestión de Propiedades">Property Management</li>
+</ul>
+<a href="#contact" class="learn-more" data-en="Learn More" data-es="Más Info">Learn More</a>
+</div>
+
+<div class="service-card">
+<div class="service-icon">🏦</div>
+<h3 data-en="Mortgages" data-es="Hipotecas">Mortgages</h3>
+<ul>
+<li data-en="Conventional &amp; FHA/VA" data-es="Convencional y FHA/VA">Conventional &amp; FHA/VA</li>
+<li data-en="Refinancing" data-es="Refinanciamiento">Refinancing</li>
+<li data-en="DSCR &amp; Investment Loans" data-es="Préstamos DSCR e Inversión">DSCR &amp; Investment Loans</li>
+<li data-en="Pre-Approval in 24hrs" data-es="Pre-Aprobación en 24hrs">Pre-Approval in 24hrs</li>
+<li data-en="Rate Lock Guarantee" data-es="Garantía de Tasa Fija">Rate Lock Guarantee</li>
+</ul>
+<a href="#contact" class="learn-more" data-en="Learn More" data-es="Más Info">Learn More</a>
+</div>
+
+<div class="service-card">
+<div class="service-icon">🛡️</div>
+<h3 data-en="Insurance" data-es="Seguros">Insurance</h3>
+<ul>
+<li data-en="Homeowners &amp; Renters" data-es="Propietarios e Inquilinos">Homeowners &amp; Renters</li>
+<li data-en="Auto &amp; Motorcycle" data-es="Auto y Motocicleta">Auto &amp; Motorcycle</li>
+<li data-en="Life &amp; Health" data-es="Vida y Salud">Life &amp; Health</li>
+<li data-en="Commercial &amp; Liability" data-es="Comercial y Responsabilidad">Commercial &amp; Liability</li>
+<li data-en="Flood &amp; Wind" data-es="Inundación y Viento">Flood &amp; Wind</li>
+</ul>
+<a href="#contact" class="learn-more" data-en="Learn More" data-es="Más Info">Learn More</a>
+</div>
+
+<div class="service-card">
+<div class="service-icon">💳</div>
+<h3 data-en="Credit Optimization" data-es="Optimización de Crédito">Credit Optimization</h3>
+<ul>
+<li data-en="Credit Score Analysis" data-es="Análisis de Puntaje Crediticio">Credit Score Analysis</li>
+<li data-en="Dispute &amp; Repair" data-es="Disputas y Reparación">Dispute &amp; Repair</li>
+<li data-en="Rapid Rescore" data-es="Recalificación Rápida">Rapid Rescore</li>
+<li data-en="Credit Building Plan" data-es="Plan de Construcción de Crédito">Credit Building Plan</li>
+<li data-en="Ongoing Monitoring" data-es="Monitoreo Continuo">Ongoing Monitoring</li>
+</ul>
+<a href="#contact" class="learn-more" data-en="Learn More" data-es="Más Info">Learn More</a>
+</div>
+
+<div class="service-card">
+<div class="service-icon">🏗️</div>
+<h3 data-en="Construction" data-es="Construcción">Construction</h3>
+<ul>
+<li data-en="Kitchen &amp; Bath Remodels" data-es="Remodelación de Cocina y Baño">Kitchen &amp; Bath Remodels</li>
+<li data-en="Additions &amp; ADUs" data-es="Ampliaciones y ADUs">Additions &amp; ADUs</li>
+<li data-en="New Construction" data-es="Construcción Nueva">New Construction</li>
+<li data-en="Commercial Build-Out" data-es="Construcción Comercial">Commercial Build-Out</li>
+<li data-en="Permits &amp; Plans" data-es="Permisos y Planos">Permits &amp; Plans</li>
+</ul>
+<a href="#contact" class="learn-more" data-en="Learn More" data-es="Más Info">Learn More</a>
+</div>
+
+<div class="service-card">
+<div class="service-icon">🧮</div>
+<h3 data-en="Accounting &amp; Taxes" data-es="Contabilidad e Impuestos">Accounting &amp; Taxes</h3>
+<ul>
+<li data-en="Monthly Bookkeeping" data-es="Contabilidad Mensual">Monthly Bookkeeping</li>
+<li data-en="Tax Preparation &amp; Filing" data-es="Preparación y Declaración de Impuestos">Tax Preparation &amp; Filing</li>
+<li data-en="Payroll Management" data-es="Gestión de Nómina">Payroll Management</li>
+<li data-en="Business Formation (LLC/Corp)" data-es="Formación de Empresas (LLC/Corp)">Business Formation (LLC/Corp)</li>
+<li data-en="IRS Representation" data-es="Representación ante el IRS">IRS Representation</li>
+</ul>
+<a href="#contact" class="learn-more" data-en="Learn More" data-es="Más Info">Learn More</a>
+</div>
+
+</div>
+</section>
+
+<!-- STATS -->
+<section class="stats-section" id="about">
+<h2 class="section-title" data-en="WHY THE ORGANIZATION" data-es="POR QUÉ THE ORGANIZATION">WHY THE ORGANIZATION</h2>
+<div class="section-accent"></div>
+<div class="stats-grid">
+<div class="stat-item">
+<div class="stat-number" data-target="6" data-suffix="+">0</div>
+<div class="stat-label" data-en="Services Under One Roof" data-es="Servicios Bajo un Mismo Techo">Services Under One Roof</div>
+</div>
+<div class="stat-item">
+<div class="stat-number" data-target="24" data-suffix="/7" data-is-text="true">0</div>
+<div class="stat-label" data-en="Availability" data-es="Disponibilidad">Availability</div>
+</div>
+<div class="stat-item">
+<div class="stat-number" data-target="2" data-suffix="">0</div>
+<div class="stat-label" data-en="Languages (EN/ES)" data-es="Idiomas (EN/ES)">Languages (EN/ES)</div>
+</div>
+<div class="stat-item">
+<div class="stat-number" data-target="100" data-suffix="%">0</div>
+<div class="stat-label" data-en="Licensed Professionals" data-es="Profesionales Licenciados">Licensed Professionals</div>
+</div>
+</div>
+<p class="stats-quote" data-en="One team. Every service. Total confidence." data-es="Un equipo. Cada servicio. Confianza total.">One team. Every service. Total confidence.</p>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+<h2 class="section-title" data-en="GET IN TOUCH" data-es="CONTÁCTANOS">GET IN TOUCH</h2>
+<div class="section-accent"></div>
+<div class="contact-grid">
+<div class="contact-left">
+<h3 class="contact-heading" data-en="LET'S TALK" data-es="HABLEMOS">LET'S TALK</h3>
+<div class="contact-item">
+<div class="ci-icon">📞</div>
+<a href="tel:+13059889666">(305) 988-9666</a>
+</div>
+<div class="contact-item">
+<div class="ci-icon">✉️</div>
+<a href="mailto:info@ziarem.com">info@ziarem.com</a>
+</div>
+<div class="contact-item">
+<div class="ci-icon">💬</div>
+<a href="https://t.me/Ziarem_bot" target="_blank" rel="noopener">@Ziarem_bot</a>
+</div>
+<div class="contact-item">
+<div class="ci-icon">📱</div>
+<a href="https://wa.me/12394120928" target="_blank" rel="noopener">(239) 412-0928</a>
+</div>
+<div class="contact-item">
+<div class="ci-icon">📍</div>
+<span>Miami, FL</span>
+</div>
+</div>
+<div class="contact-right">
+<form class="contact-form" id="contactForm">
+<div class="form-group">
+<label data-en="Name" data-es="Nombre">Name</label>
+<input type="text" name="name" required autocomplete="name" placeholder="">
+</div>
+<div class="form-group">
+<label data-en="Email" data-es="Correo Electrónico">Email</label>
+<input type="email" name="email" required autocomplete="email">
+</div>
+<div class="form-group">
+<label data-en="Phone" data-es="Teléfono">Phone</label>
+<input type="tel" name="phone" autocomplete="tel">
+</div>
+<div class="form-group">
+<label data-en="Service" data-es="Servicio">Service</label>
+<select name="service" required>
+<option value="" data-en="Select a service..." data-es="Seleccione un servicio...">Select a service...</option>
+<option value="real-estate" data-en="Real Estate" data-es="Bienes Raíces">Real Estate</option>
+<option value="mortgages" data-en="Mortgages" data-es="Hipotecas">Mortgages</option>
+<option value="insurance" data-en="Insurance" data-es="Seguros">Insurance</option>
+<option value="credit" data-en="Credit Optimization" data-es="Optimización de Crédito">Credit Optimization</option>
+<option value="construction" data-en="Construction" data-es="Construcción">Construction</option>
+<option value="accounting" data-en="Accounting & Taxes" data-es="Contabilidad e Impuestos">Accounting & Taxes</option>
+</select>
+</div>
+<div class="form-group">
+<label data-en="Message" data-es="Mensaje">Message</label>
+<textarea name="message" rows="4" required></textarea>
+</div>
+<button type="submit" class="submit-btn" data-en="Send Message" data-es="Enviar Mensaje">Send Message</button>
+<div class="form-success" id="formSuccess" data-en="Thank you! We'll be in touch soon." data-es="¡Gracias! Nos pondremos en contacto pronto.">Thank you! We'll be in touch soon.</div>
+</form>
+</div>
+</div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+<div class="footer-grid">
+<div class="footer-col">
+<h4 data-en="THE ORGANIZATION" data-es="THE ORGANIZATION">THE ORGANIZATION</h4>
+<p data-en="A premium, full-service financial and real estate firm based in Miami. We bring together licensed professionals across six key industries to serve you with excellence, transparency, and confidence." data-es="Una firma premium de servicios financieros e inmobiliarios con sede en Miami. Reunimos profesionales licenciados en seis industrias clave para servirle con excelencia, transparencia y confianza.">A premium, full-service financial and real estate firm based in Miami. We bring together licensed professionals across six key industries to serve you with excellence, transparency, and confidence.</p>
+</div>
+<div class="footer-col">
+<h4 data-en="Quick Links" data-es="Enlaces Rápidos">Quick Links</h4>
+<a href="#services" data-en="Services" data-es="Servicios">Services</a>
+<a href="/vault" data-en="VAULT Login" data-es="Entrar VAULT">VAULT Login</a>
+<a href="#contact" data-en="Contact" data-es="Contacto">Contact</a>
+</div>
+<div class="footer-col">
+<h4 data-en="Legal" data-es="Legal">Legal</h4>
+<a href="/privacy.html" data-en="Privacy Policy" data-es="Política de Privacidad">Privacy Policy</a>
+<a href="/terms.html" data-en="Terms of Service" data-es="Términos de Servicio">Terms of Service</a>
+<a href="/data-deletion.html" data-en="Data Deletion" data-es="Eliminación de Datos">Data Deletion</a>
+<a href="/cookies.html" data-en="Cookies" data-es="Cookies">Cookies</a>
+</div>
+</div>
+<div class="footer-bottom">
+<div class="footer-socials">
+<a href="#" aria-label="Instagram">📷</a>
+<a href="#" aria-label="Facebook">👤</a>
+<a href="#" aria-label="LinkedIn">💼</a>
+<a href="https://t.me/Ziarem_bot" aria-label="Telegram">💬</a>
+</div>
+<p>&copy; 2026 The Organization LLC. <span data-en="All rights reserved." data-es="Todos los derechos reservados.">All rights reserved.</span></p>
+</div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.4/ScrollTrigger.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ── LANGUAGE TOGGLE ── */
+let currentLang = localStorage.getItem('org-lang') || 'en';
+const langBtn = document.getElementById('langToggle');
+
+function applyLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem('org-lang', lang);
+  document.querySelectorAll('[data-en]').forEach(el => {
+    const text = el.getAttribute('data-' + lang);
+    if (text) {
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.placeholder = text;
+      } else {
+        el.textContent = text;
+      }
+    }
+  });
+  document.documentElement.lang = lang;
+}
+langBtn.addEventListener('click', () => {
+  applyLanguage(currentLang === 'en' ? 'es' : 'en');
+});
+if (currentLang === 'es') applyLanguage('es');
+
+/* ── MOBILE MENU ── */
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobileMenu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('active');
+  mobileMenu.classList.toggle('open');
+});
+mobileMenu.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => {
+    hamburger.classList.remove('active');
+    mobileMenu.classList.remove('open');
+  });
+});
+
+/* ── NAV SCROLL ── */
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 50);
+}, { passive: true });
+
+/* ── THREE.JS SCENE ── */
+const container = document.getElementById('scene-container');
+const isMobile = window.innerWidth < 768;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.z = 30;
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: !isMobile,
+  alpha: true,
+  powerPreference: 'high-performance'
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
+
+// Gold material
+const goldColor = 0xd4af37;
+const goldMaterial = new THREE.MeshStandardMaterial({
+  color: goldColor,
+  emissive: goldColor,
+  emissiveIntensity: 0.15,
+  metalness: 0.9,
+  roughness: 0.25,
+  wireframe: false
+});
+const wireGoldMaterial = new THREE.MeshBasicMaterial({
+  color: goldColor,
+  wireframe: true,
+  transparent: true,
+  opacity: 0.2
+});
+
+// Lighting
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+scene.add(ambientLight);
+const pointLight1 = new THREE.PointLight(goldColor, 1.5, 100);
+pointLight1.position.set(10, 15, 20);
+scene.add(pointLight1);
+const pointLight2 = new THREE.PointLight(0x8866ff, 0.5, 80);
+pointLight2.position.set(-15, -10, 10);
+scene.add(pointLight2);
+
+// Particles
+const particleCount = isMobile ? 200 : 600;
+const particlesGeometry = new THREE.BufferGeometry();
+const positions = new Float32Array(particleCount * 3);
+const velocities = [];
+for (let i = 0; i < particleCount; i++) {
+  positions[i * 3] = (Math.random() - 0.5) * 80;
+  positions[i * 3 + 1] = (Math.random() - 0.5) * 80;
+  positions[i * 3 + 2] = (Math.random() - 0.5) * 60 - 10;
+  velocities.push({
+    x: (Math.random() - 0.5) * 0.008,
+    y: (Math.random() - 0.5) * 0.008,
+    z: (Math.random() - 0.5) * 0.005
+  });
+}
+particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+const particleMaterial = new THREE.PointsMaterial({
+  color: goldColor,
+  size: isMobile ? 0.08 : 0.06,
+  transparent: true,
+  opacity: 0.6,
+  sizeAttenuation: true
+});
+const particles = new THREE.Points(particlesGeometry, particleMaterial);
+scene.add(particles);
+
+// Wireframe shapes (desktop only)
+const wireShapes = [];
+if (!isMobile) {
+  const geometries = [
+    new THREE.DodecahedronGeometry(1.5, 0),
+    new THREE.IcosahedronGeometry(1.2, 0),
+    new THREE.OctahedronGeometry(1.3, 0),
+    new THREE.TorusGeometry(1, 0.3, 8, 16),
+    new THREE.DodecahedronGeometry(1, 0),
+    new THREE.IcosahedronGeometry(1.4, 0),
+    new THREE.OctahedronGeometry(0.9, 0),
+    new THREE.TorusGeometry(1.2, 0.25, 8, 16),
+    new THREE.DodecahedronGeometry(0.8, 0),
+    new THREE.IcosahedronGeometry(1.1, 0)
+  ];
+  for (let i = 0; i < geometries.length; i++) {
+    const mat = wireGoldMaterial.clone();
+    mat.opacity = 0.1 + Math.random() * 0.15;
+    const mesh = new THREE.Mesh(geometries[i], mat);
+    mesh.position.set(
+      (Math.random() - 0.5) * 50,
+      (Math.random() - 0.5) * 40,
+      (Math.random() - 0.5) * 20 - 10
+    );
+    mesh.userData.rotSpeed = {
+      x: (Math.random() - 0.5) * 0.005,
+      y: (Math.random() - 0.5) * 0.005,
+      z: (Math.random() - 0.5) * 0.003
+    };
+    mesh.userData.floatOffset = Math.random() * Math.PI * 2;
+    mesh.userData.floatSpeed = 0.3 + Math.random() * 0.4;
+    mesh.userData.floatAmplitude = 0.5 + Math.random() * 1;
+    scene.add(mesh);
+    wireShapes.push(mesh);
+  }
+}
+
+// Central hero object — torus knot
+const torusKnotGeo = new THREE.TorusKnotGeometry(
+  isMobile ? 3 : 4,
+  isMobile ? 0.8 : 1.1,
+  isMobile ? 80 : 128,
+  isMobile ? 12 : 24,
+  2, 3
+);
+const centralObject = new THREE.Mesh(torusKnotGeo, goldMaterial.clone());
+centralObject.material.emissiveIntensity = 0.2;
+centralObject.position.set(0, 0, -5);
+scene.add(centralObject);
+
+// Mouse parallax
+let mouseX = 0, mouseY = 0;
+let targetMouseX = 0, targetMouseY = 0;
+document.addEventListener('mousemove', e => {
+  targetMouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+  targetMouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+}, { passive: true });
+
+// Visibility check
+let heroVisible = true;
+const heroObserver = new IntersectionObserver(entries => {
+  heroVisible = entries[0].isIntersecting;
+}, { threshold: 0.05 });
+heroObserver.observe(document.getElementById('hero'));
+
+// Resize
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}, { passive: true });
+
+// Animation loop
+let clock = new THREE.Clock();
+let frameCount = 0;
+function animate() {
+  requestAnimationFrame(animate);
+  frameCount++;
+  // On mobile or when hero not visible, reduce to ~15fps
+  if (!heroVisible && frameCount % 4 !== 0) return;
+  if (isMobile && frameCount % 2 !== 0) return;
+
+  const elapsed = clock.getElapsedTime();
+
+  // Smooth mouse
+  mouseX += (targetMouseX - mouseX) * 0.03;
+  mouseY += (targetMouseY - mouseY) * 0.03;
+
+  // Camera parallax
+  camera.position.x = mouseX * 2;
+  camera.position.y = -mouseY * 1.5;
+  camera.lookAt(0, 0, -5);
+
+  // Central object
+  centralObject.rotation.x = elapsed * 0.15;
+  centralObject.rotation.y = elapsed * 0.2;
+  centralObject.rotation.z = elapsed * 0.05;
+
+  // Particles drift
+  const posArr = particlesGeometry.attributes.position.array;
+  for (let i = 0; i < particleCount; i++) {
+    posArr[i * 3] += velocities[i].x;
+    posArr[i * 3 + 1] += velocities[i].y;
+    posArr[i * 3 + 2] += velocities[i].z;
+    // Wrap
+    if (posArr[i * 3] > 40) posArr[i * 3] = -40;
+    if (posArr[i * 3] < -40) posArr[i * 3] = 40;
+    if (posArr[i * 3 + 1] > 40) posArr[i * 3 + 1] = -40;
+    if (posArr[i * 3 + 1] < -40) posArr[i * 3 + 1] = 40;
+  }
+  particlesGeometry.attributes.position.needsUpdate = true;
+
+  // Wireframe shapes float & rotate
+  wireShapes.forEach(shape => {
+    shape.rotation.x += shape.userData.rotSpeed.x;
+    shape.rotation.y += shape.userData.rotSpeed.y;
+    shape.rotation.z += shape.userData.rotSpeed.z;
+    shape.position.y += Math.sin(elapsed * shape.userData.floatSpeed + shape.userData.floatOffset) * 0.005 * shape.userData.floatAmplitude;
+  });
+
+  renderer.render(scene, camera);
+}
+animate();
+
+/* ── GSAP ANIMATIONS ── */
+gsap.registerPlugin(ScrollTrigger);
+
+// Loader
+window.addEventListener('load', () => {
+  gsap.to('#loader', { opacity: 0, duration: 0.6, delay: 0.4, onComplete: () => {
+    document.getElementById('loader').classList.add('hidden');
+  }});
+
+  // Hero animations
+  gsap.to('.hero-title', { opacity: 1, scale: 1, duration: 1.2, ease: 'expo.out', delay: 0.6 });
+  gsap.to('.hero-llc', { opacity: 1, duration: 0.8, delay: 1.0, ease: 'power2.out' });
+
+  // Typewriter
+  const taglines = [
+    { en: 'Your Financial & Real Estate Partner', es: 'Su Socio Financiero e Inmobiliario' }
+  ];
+  const taglineEl = document.getElementById('heroTagline');
+  let currentTaglineIdx = 0;
+  let langIdx = 0;
+  const langs = ['en', 'es'];
+
+  function typeText(text, callback) {
+    let i = 0;
+    taglineEl.innerHTML = '<span class="cursor"></span>';
+    function typeChar() {
+      if (i < text.length) {
+        taglineEl.innerHTML = text.substring(0, i + 1) + '<span class="cursor"></span>';
+        i++;
+        setTimeout(typeChar, 40 + Math.random() * 30);
+      } else {
+        setTimeout(() => {
+          deleteText(text, callback);
+        }, 3000);
+      }
+    }
+    typeChar();
+  }
+
+  function deleteText(text, callback) {
+    let i = text.length;
+    function delChar() {
+      if (i > 0) {
+        i--;
+        taglineEl.innerHTML = text.substring(0, i) + '<span class="cursor"></span>';
+        setTimeout(delChar, 20);
+      } else {
+        setTimeout(callback, 400);
+      }
+    }
+    delChar();
+  }
+
+  function cycleTagline() {
+    const tagline = taglines[currentTaglineIdx];
+    const text = tagline[langs[langIdx]];
+    typeText(text, () => {
+      langIdx = (langIdx + 1) % langs.length;
+      if (langIdx === 0) currentTaglineIdx = (currentTaglineIdx + 1) % taglines.length;
+      cycleTagline();
+    });
+  }
+  setTimeout(cycleTagline, 1400);
+
+  gsap.to('#heroButtons', { opacity: 1, y: 0, duration: 0.8, delay: 1.6, ease: 'power3.out' });
+  gsap.to('#scrollIndicator', { opacity: 0.6, duration: 0.8, delay: 2.2 });
+});
+
+// Service cards stagger
+gsap.utils.toArray('.service-card').forEach((card, i) => {
+  gsap.to(card, {
+    opacity: 1, y: 0, duration: 0.7,
+    ease: 'power3.out',
+    scrollTrigger: {
+      trigger: card,
+      start: 'top 88%',
+      toggleActions: 'play none none none'
+    },
+    delay: i % 3 * 0.15
+  });
+});
+
+// Stats
+gsap.utils.toArray('.stat-item').forEach((item, i) => {
+  gsap.to(item, {
+    opacity: 1, y: 0, duration: 0.6, delay: i * 0.12,
+    ease: 'power2.out',
+    scrollTrigger: {
+      trigger: '.stats-grid',
+      start: 'top 80%',
+      toggleActions: 'play none none none',
+      onEnter: () => {
+        // Count up animation
+        const numEl = item.querySelector('.stat-number');
+        const target = parseInt(numEl.dataset.target);
+        const suffix = numEl.dataset.suffix || '';
+        const isText = numEl.dataset.isText === 'true';
+        if (isText) {
+          gsap.to({ val: 0 }, {
+            val: target, duration: 1.5, delay: i * 0.12, ease: 'power2.out',
+            onUpdate: function() {
+              numEl.textContent = Math.round(this.targets()[0].val) + suffix;
+            }
+          });
+        } else {
+          gsap.to({ val: 0 }, {
+            val: target, duration: 1.5, delay: i * 0.12, ease: 'power2.out',
+            onUpdate: function() {
+              numEl.textContent = Math.round(this.targets()[0].val) + suffix;
+            }
+          });
+        }
+      }
+    }
+  });
+});
+
+// Stats quote
+gsap.to('.stats-quote', {
+  opacity: 1, duration: 1, ease: 'power2.out',
+  scrollTrigger: { trigger: '.stats-quote', start: 'top 85%' }
+});
+
+// Contact
+gsap.to('.contact-left', {
+  opacity: 1, x: 0, duration: 0.8, ease: 'power3.out',
+  scrollTrigger: { trigger: '.contact-grid', start: 'top 80%' }
+});
+gsap.to('.contact-right', {
+  opacity: 1, x: 0, duration: 0.8, ease: 'power3.out', delay: 0.2,
+  scrollTrigger: { trigger: '.contact-grid', start: 'top 80%' }
+});
+
+/* ── CONTACT FORM ── */
+const contactForm = document.getElementById('contactForm');
+contactForm.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = this.querySelector('.submit-btn');
+  btn.disabled = true;
+  btn.textContent = currentLang === 'es' ? 'Enviando...' : 'Sending...';
+
+  const formData = {
+    name: this.name.value,
+    email: this.email.value,
+    phone: this.phone.value,
+    service: this.service.value,
+    message: this.message.value,
+    source: 'homepage',
+    created_at: new Date().toISOString()
+  };
+
+  try {
+    await fetch('https://sfelhasepvaoianyuvxe.supabase.co/rest/v1/contacts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZWxoYXNlcHZhb2lhbnl1dnhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2ODY0NDcsImV4cCI6MjA4NjI2MjQ0N30.kNzRAcdXaHoo0xQnJwNXyqcFsSiUZj9PP1fwziEQkdc',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZWxoYXNlcHZhb2lhbnl1dnhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2ODY0NDcsImV4cCI6MjA4NjI2MjQ0N30.kNzRAcdXaHoo0xQnJwNXyqcFsSiUZj9PP1fwziEQkdc',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(formData)
+    });
+    this.style.display = 'none';
+    document.getElementById('formSuccess').style.display = 'block';
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = currentLang === 'es' ? 'Enviar Mensaje' : 'Send Message';
+    alert(currentLang === 'es' ? 'Error al enviar. Intente de nuevo.' : 'Error sending. Please try again.');
+  }
+});
+
+/* ── SMOOTH SCROLL FOR ANCHOR LINKS ── */
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+})();
+</script>
+</body>
+</html>

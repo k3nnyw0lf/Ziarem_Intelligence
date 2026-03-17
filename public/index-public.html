@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Organization LLC — Financial & Real Estate Services | Miami, FL</title>
+<meta name="description" content="Your one-stop financial and real estate partner in Miami. Real Estate, Mortgages, Insurance, Credit Optimization, Construction, Accounting & Taxes. Bilingual services.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ===== RESET & BASE ===== */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#06060e;--bg2:#0a0a16;--bg3:#0f0f1e;
+  --gold:#d4af37;--gold-light:#f0d060;--gold-dark:#a08520;
+  --gold-glow:rgba(212,175,55,0.3);
+  --text:#e8e8e8;--text-dim:#aaa;--text-muted:#666;
+  --glass:rgba(212,175,55,0.05);--glass-border:rgba(212,175,55,0.12);
+  --radius:18px;--radius-sm:10px;
+}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--text);
+  line-height:1.6;overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--gold);text-decoration:none;transition:color .3s}
+a:hover{color:var(--gold-light)}
+img{max-width:100%;display:block}
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar{width:8px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--gold-dark);border-radius:4px}
+/* ===== ANIMATIONS ===== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 30px rgba(212,175,55,0.1),0 0 60px rgba(212,175,55,0.05)}50%{box-shadow:0 0 50px rgba(212,175,55,0.25),0 0 100px rgba(212,175,55,0.1)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes rotate-slow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes ray-pulse{0%,100%{opacity:0.3;transform:scaleY(1)}50%{opacity:0.6;transform:scaleY(1.1)}}
+.reveal{opacity:0;transform:translateY(40px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:.1s}
+.reveal-delay-2{transition-delay:.2s}
+.reveal-delay-3{transition-delay:.3s}
+.reveal-delay-4{transition-delay:.4s}
+.reveal-delay-5{transition-delay:.5s}
+/* ===== NAVBAR ===== */
+.navbar{
+  position:fixed;top:0;left:0;width:100%;z-index:1000;
+  padding:18px 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:all .4s ease;
+  background:transparent;
+}
+.navbar.scrolled{
+  background:rgba(6,6,14,0.92);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--glass-border);
+  padding:12px 40px;
+}
+.nav-logo{display:flex;align-items:center;gap:12px}
+.nav-logo img{height:40px;width:auto}
+.nav-logo span{font-weight:800;font-size:1.1rem;letter-spacing:1px;color:var(--gold)}
+.nav-links{display:flex;align-items:center;gap:28px;list-style:none}
+.nav-links a{color:var(--text-dim);font-size:.9rem;font-weight:500;transition:color .3s;position:relative}
+.nav-links a:hover{color:var(--gold)}
+.nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:2px;background:var(--gold);transition:width .3s}
+.nav-links a:hover::after{width:100%}
+.lang-toggle{
+  background:transparent;border:1px solid var(--gold);
+  color:var(--gold);padding:6px 16px;border-radius:20px;
+  cursor:pointer;font-size:.85rem;font-weight:600;
+  font-family:inherit;transition:all .3s;
+}
+.lang-toggle:hover{background:var(--gold);color:var(--bg)}
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:4px}
+.hamburger span{display:block;width:24px;height:2px;background:var(--gold);margin:5px 0;transition:all .3s}
+.mobile-menu{
+  display:none;position:fixed;top:0;left:0;width:100%;height:100vh;
+  background:rgba(6,6,14,0.98);z-index:999;
+  flex-direction:column;align-items:center;justify-content:center;gap:30px;
+}
+.mobile-menu.active{display:flex}
+.mobile-menu a{color:var(--text);font-size:1.3rem;font-weight:600}
+.mobile-menu .close-btn{position:absolute;top:24px;right:24px;background:none;border:none;color:var(--gold);font-size:2rem;cursor:pointer}
+/* ===== HERO ===== */
+#hero{
+  position:relative;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+#three-canvas{
+  position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;
+}
+.hero-rays{
+  position:absolute;top:50%;left:50%;width:600px;height:600px;
+  transform:translate(-50%,-50%);z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(212,175,55,0.08) 0%,transparent 70%);
+  animation:pulse-glow 4s ease-in-out infinite;
+  border-radius:50%;
+}
+.hero-content{
+  position:relative;z-index:10;text-align:center;
+  padding:0 20px;margin-top:80px;
+}
+.hero-content h1{
+  font-size:clamp(2.5rem,6vw,5rem);font-weight:900;
+  letter-spacing:4px;line-height:1.1;
+  background:linear-gradient(135deg,var(--gold),var(--gold-light),var(--gold));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  margin-bottom:16px;
+  text-shadow:none;
+}
+.hero-content .tagline{
+  font-size:clamp(1rem,2.5vw,1.35rem);color:var(--text-dim);
+  font-weight:300;margin-bottom:40px;letter-spacing:1px;
+}
+.hero-buttons{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:14px 36px;border-radius:50px;font-size:1rem;font-weight:600;
+  font-family:inherit;cursor:pointer;transition:all .4s ease;
+  border:none;letter-spacing:.5px;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--gold),var(--gold-light));
+  color:#0a0a0a;
+  box-shadow:0 4px 30px rgba(212,175,55,0.3);
+}
+.btn-primary:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 40px rgba(212,175,55,0.5);
+}
+.btn-secondary{
+  background:transparent;color:var(--gold);
+  border:1.5px solid var(--gold);
+}
+.btn-secondary:hover{
+  background:rgba(212,175,55,0.1);
+  transform:translateY(-2px);
+}
+.scroll-indicator{
+  position:absolute;bottom:40px;left:50%;transform:translateX(-50%);
+  z-index:10;animation:float 2s ease-in-out infinite;
+  color:var(--gold);opacity:0.6;
+}
+.scroll-indicator svg{width:28px;height:28px}
+/* ===== SECTIONS ===== */
+section{padding:100px 20px;position:relative}
+.section-container{max-width:1200px;margin:0 auto}
+.section-title{
+  text-align:center;margin-bottom:60px;
+}
+.section-title h2{
+  font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;
+  margin-bottom:12px;
+  background:linear-gradient(135deg,#fff,var(--gold-light));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.section-title p{color:var(--text-dim);font-size:1.05rem;max-width:600px;margin:0 auto}
+.gold-line{width:60px;height:3px;background:linear-gradient(90deg,var(--gold),var(--gold-light));margin:16px auto 0;border-radius:2px}
+/* ===== SERVICES ===== */
+#services{background:var(--bg)}
+.services-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));
+  gap:24px;
+}
+.service-card{
+  background:linear-gradient(135deg,rgba(212,175,55,0.04),rgba(212,175,55,0.01));
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius);
+  padding:36px 30px;
+  transition:all .5s cubic-bezier(.16,1,.3,1);
+  position:relative;overflow:hidden;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+.service-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  opacity:0;transition:opacity .5s;
+}
+.service-card:hover{
+  transform:translateY(-8px);
+  border-color:rgba(212,175,55,0.3);
+  box-shadow:0 20px 60px rgba(212,175,55,0.1),0 0 80px rgba(212,175,55,0.05);
+}
+.service-card:hover::before{opacity:1}
+.service-icon{
+  width:56px;height:56px;border-radius:14px;
+  background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05));
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:20px;font-size:1.6rem;
+  border:1px solid rgba(212,175,55,0.15);
+}
+.service-card h3{
+  font-size:1.25rem;font-weight:700;color:#fff;margin-bottom:14px;
+}
+.service-card ul{list-style:none;padding:0}
+.service-card ul li{
+  color:var(--text-dim);font-size:.9rem;padding:4px 0;
+  padding-left:18px;position:relative;
+}
+.service-card ul li::before{
+  content:'';position:absolute;left:0;top:12px;
+  width:6px;height:6px;border-radius:50%;
+  background:var(--gold);opacity:0.6;
+}
+/* ===== WHY CHOOSE US ===== */
+#why-us{background:var(--bg2)}
+.stats-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:30px;text-align:center;
+}
+.stat-card{
+  padding:40px 24px;border-radius:var(--radius);
+  background:linear-gradient(135deg,rgba(212,175,55,0.06),rgba(212,175,55,0.02));
+  border:1px solid var(--glass-border);
+  transition:all .4s;
+}
+.stat-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 12px 40px rgba(212,175,55,0.1);
+}
+.stat-icon{font-size:2.2rem;margin-bottom:14px}
+.stat-number{
+  font-size:2.4rem;font-weight:900;
+  background:linear-gradient(135deg,var(--gold),var(--gold-light));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.stat-label{color:var(--text-dim);font-size:.95rem;margin-top:6px;font-weight:500}
+/* ===== CONTACT ===== */
+#contact{background:var(--bg)}
+.contact-wrapper{
+  display:grid;grid-template-columns:1fr 1fr;gap:50px;
+  align-items:start;
+}
+.contact-info{display:flex;flex-direction:column;gap:24px}
+.contact-item{
+  display:flex;align-items:center;gap:16px;
+  padding:18px 24px;border-radius:var(--radius-sm);
+  background:rgba(212,175,55,0.04);
+  border:1px solid var(--glass-border);
+  transition:all .3s;
+}
+.contact-item:hover{border-color:rgba(212,175,55,0.3);transform:translateX(4px)}
+.contact-item-icon{
+  width:44px;height:44px;border-radius:12px;
+  background:linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05));
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;
+  flex-shrink:0;
+}
+.contact-item-text{display:flex;flex-direction:column}
+.contact-item-text small{color:var(--text-muted);font-size:.8rem;text-transform:uppercase;letter-spacing:1px}
+.contact-item-text span,.contact-item-text a{font-weight:500;font-size:.95rem}
+.contact-form{
+  background:linear-gradient(135deg,rgba(212,175,55,0.04),rgba(212,175,55,0.01));
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius);padding:36px;
+  backdrop-filter:blur(10px);
+}
+.contact-form h3{font-size:1.3rem;font-weight:700;margin-bottom:24px;color:#fff}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:.85rem;color:var(--text-dim);margin-bottom:6px;font-weight:500}
+.form-group input,.form-group select,.form-group textarea{
+  width:100%;padding:12px 16px;border-radius:var(--radius-sm);
+  border:1px solid var(--glass-border);
+  background:rgba(255,255,255,0.03);color:var(--text);
+  font-family:inherit;font-size:.95rem;transition:border-color .3s;
+  outline:none;
+}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--gold)}
+.form-group textarea{resize:vertical;min-height:100px}
+.form-group select option{background:var(--bg);color:var(--text)}
+.form-status{margin-top:10px;font-size:.9rem;text-align:center}
+.form-status.success{color:#4caf50}
+.form-status.error{color:#f44336}
+/* ===== FOOTER ===== */
+footer{
+  background:var(--bg2);border-top:1px solid var(--glass-border);
+  padding:40px 20px;text-align:center;
+}
+.footer-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.footer-links a{color:var(--text-muted);font-size:.85rem;transition:color .3s}
+.footer-links a:hover{color:var(--gold)}
+.footer-copy{color:var(--text-muted);font-size:.85rem}
+/* ===== RESPONSIVE ===== */
+@media(max-width:900px){
+  .services-grid{grid-template-columns:1fr}
+  .contact-wrapper{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:768px){
+  .nav-links{display:none}
+  .hamburger{display:block}
+  .navbar{padding:14px 20px}
+  .hero-content h1{letter-spacing:2px}
+  section{padding:70px 16px}
+  .hero-content{margin-top:60px}
+}
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr}
+  .hero-buttons{flex-direction:column;align-items:center}
+  .btn{width:100%;max-width:280px;justify-content:center}
+}
+/* ===== PARTICLE CANVAS ===== */
+#particle-canvas{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  z-index:0;pointer-events:none;
+}
+section,footer,.navbar{position:relative;z-index:2}
+#hero{z-index:1}
+</style>
+</head>
+<body>
+<!-- PARTICLE BACKGROUND -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- NAVBAR -->
+<nav class="navbar" id="navbar">
+  <div class="nav-logo">
+    <img src="/logo.svg" alt="The Organization LLC" onerror="this.style.display='none'">
+    <span>THE ORGANIZATION</span>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#services" data-en="Services" data-es="Servicios">Services</a></li>
+    <li><a href="#why-us" data-en="Why Us" data-es="Por Qu&eacute; Nosotros">Why Us</a></li>
+    <li><a href="#contact" data-en="Contact" data-es="Contacto">Contact</a></li>
+    <li><button class="lang-toggle" id="langToggle" onclick="toggleLang()">ES</button></li>
+  </ul>
+  <button class="hamburger" id="hamburgerBtn" onclick="openMobileMenu()">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <button class="close-btn" onclick="closeMobileMenu()">&times;</button>
+  <a href="#services" onclick="closeMobileMenu()" data-en="Services" data-es="Servicios">Services</a>
+  <a href="#why-us" onclick="closeMobileMenu()" data-en="Why Us" data-es="Por Qu&eacute; Nosotros">Why Us</a>
+  <a href="#contact" onclick="closeMobileMenu()" data-en="Contact" data-es="Contacto">Contact</a>
+  <button class="lang-toggle" onclick="toggleLang();closeMobileMenu()" data-en="Espa&ntilde;ol" data-es="English">Espa&ntilde;ol</button>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-rays"></div>
+  <canvas id="three-canvas"></canvas>
+  <div class="hero-content">
+    <h1 class="reveal">THE ORGANIZATION LLC</h1>
+    <p class="tagline reveal reveal-delay-1" data-en="Your Financial &amp; Real Estate Partner&nbsp;&nbsp;|&nbsp;&nbsp;Tu Socio Financiero e Inmobiliario" data-es="Tu Socio Financiero e Inmobiliario&nbsp;&nbsp;|&nbsp;&nbsp;Your Financial &amp; Real Estate Partner">Your Financial &amp; Real Estate Partner&nbsp;&nbsp;|&nbsp;&nbsp;Tu Socio Financiero e Inmobiliario</p>
+    <div class="hero-buttons reveal reveal-delay-2">
+      <a href="#services" class="btn btn-primary" data-en="Explore Services" data-es="Explorar Servicios">Explore Services</a>
+      <a href="#contact" class="btn btn-secondary" data-en="Contact Us" data-es="Cont&aacute;ctenos">Contact Us</a>
+    </div>
+  </div>
+  <div class="scroll-indicator">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="section-container">
+    <div class="section-title reveal">
+      <h2 data-en="Our Services" data-es="Nuestros Servicios">Our Services</h2>
+      <p data-en="Comprehensive financial and real estate solutions under one roof" data-es="Soluciones financieras e inmobiliarias integrales bajo un mismo techo">Comprehensive financial and real estate solutions under one roof</p>
+      <div class="gold-line"></div>
+    </div>
+    <div class="services-grid">
+      <!-- Real Estate -->
+      <div class="service-card reveal reveal-delay-1">
+        <div class="service-icon">&#127969;</div>
+        <h3 data-en="Real Estate" data-es="Bienes Ra&iacute;ces">Real Estate</h3>
+        <ul>
+          <li data-en="Buy / Sell / Rent" data-es="Compra / Venta / Alquiler">Buy / Sell / Rent</li>
+          <li data-en="Investment Properties" data-es="Propiedades de Inversi&oacute;n">Investment Properties</li>
+          <li data-en="Market Analysis" data-es="An&aacute;lisis de Mercado">Market Analysis</li>
+          <li data-en="First-Time Buyer Programs" data-es="Programas para Compradores Primerizos">First-Time Buyer Programs</li>
+        </ul>
+      </div>
+      <!-- Mortgages -->
+      <div class="service-card reveal reveal-delay-2">
+        <div class="service-icon">&#127974;</div>
+        <h3 data-en="Mortgages" data-es="Hipotecas">Mortgages</h3>
+        <ul>
+          <li data-en="Conventional, FHA & VA" data-es="Convencional, FHA y VA">Conventional, FHA &amp; VA</li>
+          <li data-en="DSCR & Investment Loans" data-es="DSCR y Pr&eacute;stamos de Inversi&oacute;n">DSCR &amp; Investment Loans</li>
+          <li data-en="Pre-Approval in 24hrs" data-es="Pre-Aprobaci&oacute;n en 24hrs">Pre-Approval in 24hrs</li>
+          <li data-en="Rate Lock Guarantee" data-es="Garant&iacute;a de Tasa Fija">Rate Lock Guarantee</li>
+        </ul>
+      </div>
+      <!-- Insurance -->
+      <div class="service-card reveal reveal-delay-3">
+        <div class="service-icon">&#128737;&#65039;</div>
+        <h3 data-en="Insurance" data-es="Seguros">Insurance</h3>
+        <ul>
+          <li data-en="Home, Auto & Life" data-es="Hogar, Auto y Vida">Home, Auto &amp; Life</li>
+          <li data-en="Health Insurance" data-es="Seguro de Salud">Health Insurance</li>
+          <li data-en="Commercial Coverage" data-es="Cobertura Comercial">Commercial Coverage</li>
+          <li data-en="Flood & Wind Protection" data-es="Protecci&oacute;n contra Inundaciones y Vientos">Flood &amp; Wind Protection</li>
+        </ul>
+      </div>
+      <!-- Credit -->
+      <div class="service-card reveal reveal-delay-1">
+        <div class="service-icon">&#128200;</div>
+        <h3 data-en="Credit Optimization" data-es="Optimizaci&oacute;n de Cr&eacute;dito">Credit Optimization</h3>
+        <ul>
+          <li data-en="Score Analysis" data-es="An&aacute;lisis de Puntaje">Score Analysis</li>
+          <li data-en="Dispute & Repair" data-es="Disputa y Reparaci&oacute;n">Dispute &amp; Repair</li>
+          <li data-en="Rapid Rescore" data-es="Recalificaci&oacute;n R&aacute;pida">Rapid Rescore</li>
+          <li data-en="Credit Building Plans" data-es="Planes de Construcci&oacute;n de Cr&eacute;dito">Credit Building Plans</li>
+        </ul>
+      </div>
+      <!-- Construction -->
+      <div class="service-card reveal reveal-delay-2">
+        <div class="service-icon">&#128296;</div>
+        <h3 data-en="Construction" data-es="Construcci&oacute;n">Construction</h3>
+        <ul>
+          <li data-en="Kitchen & Bath Remodels" data-es="Remodelaci&oacute;n de Cocina y Ba&ntilde;o">Kitchen &amp; Bath Remodels</li>
+          <li data-en="Additions & New Build" data-es="Ampliaciones y Obra Nueva">Additions &amp; New Build</li>
+          <li data-en="Commercial Build-Out" data-es="Acondicionamiento Comercial">Commercial Build-Out</li>
+          <li data-en="Permits & Planning" data-es="Permisos y Planificaci&oacute;n">Permits &amp; Planning</li>
+        </ul>
+      </div>
+      <!-- Accounting -->
+      <div class="service-card reveal reveal-delay-3">
+        <div class="service-icon">&#128202;</div>
+        <h3 data-en="Accounting & Taxes" data-es="Contabilidad e Impuestos">Accounting &amp; Taxes</h3>
+        <ul>
+          <li data-en="Monthly Bookkeeping" data-es="Contabilidad Mensual">Monthly Bookkeeping</li>
+          <li data-en="Tax Prep & Filing" data-es="Preparaci&oacute;n y Declaraci&oacute;n de Impuestos">Tax Prep &amp; Filing</li>
+          <li data-en="Payroll & LLC Formation" data-es="N&oacute;mina y Formaci&oacute;n de LLC">Payroll &amp; LLC Formation</li>
+          <li data-en="IRS Representation" data-es="Representaci&oacute;n ante el IRS">IRS Representation</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY CHOOSE US -->
+<section id="why-us">
+  <div class="section-container">
+    <div class="section-title reveal">
+      <h2 data-en="Why Choose Us" data-es="&iquest;Por Qu&eacute; Elegirnos?">Why Choose Us</h2>
+      <p data-en="Trusted by families and businesses across South Florida" data-es="De confianza para familias y empresas en el sur de la Florida">Trusted by families and businesses across South Florida</p>
+      <div class="gold-line"></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card reveal reveal-delay-1">
+        <div class="stat-icon">&#128188;</div>
+        <div class="stat-number" data-count="6">0</div>
+        <div class="stat-label" data-en="Services Under One Roof" data-es="Servicios Bajo Un Solo Techo">Services Under One Roof</div>
+      </div>
+      <div class="stat-card reveal reveal-delay-2">
+        <div class="stat-icon">&#9201;&#65039;</div>
+        <div class="stat-number" data-suffix="/7" data-count="24">0</div>
+        <div class="stat-label" data-en="Availability" data-es="Disponibilidad">Availability</div>
+      </div>
+      <div class="stat-card reveal reveal-delay-3">
+        <div class="stat-icon">&#127463;&#127462;</div>
+        <div class="stat-number" data-prefix="" data-count="2" data-suffix=" Lang">0</div>
+        <div class="stat-label" data-en="Bilingual EN / ES" data-es="Biling&uuml;e EN / ES">Bilingual EN / ES</div>
+      </div>
+      <div class="stat-card reveal reveal-delay-4">
+        <div class="stat-icon">&#128274;</div>
+        <div class="stat-number" data-count="100" data-suffix="%">0</div>
+        <div class="stat-label" data-en="Licensed & Trusted Professionals" data-es="Profesionales Licenciados y de Confianza">Licensed &amp; Trusted Professionals</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-container">
+    <div class="section-title reveal">
+      <h2 data-en="Get In Touch" data-es="Cont&aacute;ctanos">Get In Touch</h2>
+      <p data-en="Ready to start? Reach out today for a free consultation." data-es="&iquest;Listo para empezar? Cont&aacute;ctenos hoy para una consulta gratuita.">Ready to start? Reach out today for a free consultation.</p>
+      <div class="gold-line"></div>
+    </div>
+    <div class="contact-wrapper">
+      <div class="contact-info reveal">
+        <a href="tel:+13059889666" class="contact-item">
+          <div class="contact-item-icon">&#128222;</div>
+          <div class="contact-item-text">
+            <small data-en="Phone" data-es="Tel&eacute;fono">Phone</small>
+            <span>(305) 988-9666</span>
+          </div>
+        </a>
+        <a href="mailto:info@ziarem.com" class="contact-item">
+          <div class="contact-item-icon">&#9993;&#65039;</div>
+          <div class="contact-item-text">
+            <small>Email</small>
+            <span>info@ziarem.com</span>
+          </div>
+        </a>
+        <a href="https://t.me/Ziarem_bot" target="_blank" rel="noopener" class="contact-item">
+          <div class="contact-item-icon">&#9992;&#65039;</div>
+          <div class="contact-item-text">
+            <small>Telegram</small>
+            <span>@Ziarem_bot</span>
+          </div>
+        </a>
+        <a href="https://wa.me/13059889666" target="_blank" rel="noopener" class="contact-item">
+          <div class="contact-item-icon">&#128172;</div>
+          <div class="contact-item-text">
+            <small>WhatsApp</small>
+            <span>(305) 988-9666</span>
+          </div>
+        </a>
+        <div class="contact-item">
+          <div class="contact-item-icon">&#128205;</div>
+          <div class="contact-item-text">
+            <small data-en="Location" data-es="Ubicaci&oacute;n">Location</small>
+            <span>Miami, FL</span>
+          </div>
+        </div>
+      </div>
+      <form class="contact-form reveal reveal-delay-2" id="contactForm" onsubmit="submitForm(event)">
+        <h3 data-en="Send Us a Message" data-es="Env&iacute;enos un Mensaje">Send Us a Message</h3>
+        <div class="form-group">
+          <label for="cf-name" data-en="Full Name" data-es="Nombre Completo">Full Name</label>
+          <input type="text" id="cf-name" name="name" required>
+        </div>
+        <div class="form-group">
+          <label for="cf-email" data-en="Email" data-es="Correo Electr&oacute;nico">Email</label>
+          <input type="email" id="cf-email" name="email" required>
+        </div>
+        <div class="form-group">
+          <label for="cf-phone" data-en="Phone" data-es="Tel&eacute;fono">Phone</label>
+          <input type="tel" id="cf-phone" name="phone">
+        </div>
+        <div class="form-group">
+          <label for="cf-service" data-en="Service Needed" data-es="Servicio Necesario">Service Needed</label>
+          <select id="cf-service" name="service" required>
+            <option value="" data-en="Select a service..." data-es="Seleccionar servicio...">Select a service...</option>
+            <option value="real-estate" data-en="Real Estate" data-es="Bienes Ra&iacute;ces">Real Estate</option>
+            <option value="mortgages" data-en="Mortgages" data-es="Hipotecas">Mortgages</option>
+            <option value="insurance" data-en="Insurance" data-es="Seguros">Insurance</option>
+            <option value="credit" data-en="Credit Optimization" data-es="Optimizaci&oacute;n de Cr&eacute;dito">Credit Optimization</option>
+            <option value="construction" data-en="Construction" data-es="Construcci&oacute;n">Construction</option>
+            <option value="accounting" data-en="Accounting & Taxes" data-es="Contabilidad e Impuestos">Accounting &amp; Taxes</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="cf-message" data-en="Message" data-es="Mensaje">Message</label>
+          <textarea id="cf-message" name="message" rows="4"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center" data-en="Send Message" data-es="Enviar Mensaje">Send Message</button>
+        <div class="form-status" id="formStatus"></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="/privacy.html" data-en="Privacy Policy" data-es="Pol&iacute;tica de Privacidad">Privacy Policy</a>
+    <a href="/terms.html" data-en="Terms of Service" data-es="T&eacute;rminos de Servicio">Terms of Service</a>
+    <a href="/data-deletion.html" data-en="Data Deletion" data-es="Eliminaci&oacute;n de Datos">Data Deletion</a>
+    <a href="/cookies.html" data-en="Cookie Policy" data-es="Pol&iacute;tica de Cookies">Cookie Policy</a>
+  </div>
+  <p class="footer-copy">&copy; 2026 The Organization LLC. All rights reserved.</p>
+</footer>
+
+<!-- ============================== SCRIPTS ============================== -->
+<script>
+/* ===== LANGUAGE TOGGLE ===== */
+let currentLang = 'en';
+function toggleLang(){
+  currentLang = currentLang === 'en' ? 'es' : 'en';
+  document.querySelectorAll('[data-en]').forEach(el => {
+    const text = el.getAttribute('data-' + currentLang);
+    if(text){
+      if(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA'){
+        el.placeholder = text;
+      } else {
+        el.innerHTML = text;
+      }
+    }
+  });
+  document.getElementById('langToggle').textContent = currentLang === 'en' ? 'ES' : 'EN';
+  document.documentElement.lang = currentLang;
+}
+
+/* ===== NAVBAR SCROLL ===== */
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+  navbar.classList.toggle('scrolled', window.scrollY > 60);
+}, {passive:true});
+
+/* ===== MOBILE MENU ===== */
+function openMobileMenu(){document.getElementById('mobileMenu').classList.add('active')}
+function closeMobileMenu(){document.getElementById('mobileMenu').classList.remove('active')}
+
+/* ===== INTERSECTION OBSERVER (REVEAL ON SCROLL) ===== */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, {threshold:0.12, rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+/* ===== ANIMATED COUNTERS ===== */
+let countersDone = false;
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if(e.isIntersecting && !countersDone){
+      countersDone = true;
+      document.querySelectorAll('.stat-number[data-count]').forEach(el => {
+        const target = parseInt(el.dataset.count);
+        const suffix = el.dataset.suffix || '';
+        const prefix = el.dataset.prefix || '';
+        let current = 0;
+        const step = Math.max(1, Math.floor(target / 60));
+        const timer = setInterval(() => {
+          current += step;
+          if(current >= target){current = target;clearInterval(timer)}
+          el.textContent = prefix + current + suffix;
+        }, 25);
+      });
+    }
+  });
+}, {threshold:0.3});
+document.querySelectorAll('.stat-number[data-count]').forEach(el => counterObserver.observe(el));
+
+/* ===== CONTACT FORM (SUPABASE) ===== */
+async function submitForm(e){
+  e.preventDefault();
+  const status = document.getElementById('formStatus');
+  const form = e.target;
+  const data = Object.fromEntries(new FormData(form));
+  status.textContent = currentLang === 'en' ? 'Sending...' : 'Enviando...';
+  status.className = 'form-status';
+  try{
+    const SUPABASE_URL = 'https://eovyjotinbornwpmsjaq.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvdnlqb3RpbmJvcm53cG1zamFxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MTg5NzgsImV4cCI6MjA2NTA5NDk3OH0.oYMnwsJOJgMnJVnYBKJdwAX7TFEHCula_fVAjJfQZWg';
+    const res = await fetch(SUPABASE_URL + '/rest/v1/contact_submissions', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':SUPABASE_ANON,
+        'Authorization':'Bearer ' + SUPABASE_ANON,
+        'Prefer':'return=minimal'
+      },
+      body:JSON.stringify({
+        full_name:data.name,
+        email:data.email,
+        phone:data.phone||null,
+        service:data.service,
+        message:data.message||null,
+        source:'website'
+      })
+    });
+    if(res.ok){
+      status.textContent = currentLang === 'en' ? 'Message sent! We\'ll be in touch.' : 'Mensaje enviado. Nos pondremos en contacto.';
+      status.className = 'form-status success';
+      form.reset();
+    } else { throw new Error('Failed'); }
+  } catch(err){
+    status.textContent = currentLang === 'en' ? 'Error sending. Please call us directly.' : 'Error al enviar. Ll\u00e1menos directamente.';
+    status.className = 'form-status error';
+  }
+}
+
+/* ===== GOLD PARTICLE BACKGROUND ===== */
+(function(){
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let w, h, particles = [];
+  const isMobile = window.innerWidth < 768;
+  const PARTICLE_COUNT = isMobile ? 30 : 70;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight * 3;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  class Particle {
+    constructor(){this.reset()}
+    reset(){
+      this.x = Math.random() * w;
+      this.y = Math.random() * h;
+      this.size = Math.random() * 2.5 + 0.5;
+      this.speedX = (Math.random() - 0.5) * 0.3;
+      this.speedY = (Math.random() - 0.5) * 0.2 - 0.1;
+      this.opacity = Math.random() * 0.4 + 0.1;
+      this.pulse = Math.random() * Math.PI * 2;
+    }
+    update(){
+      this.x += this.speedX;
+      this.y += this.speedY;
+      this.pulse += 0.02;
+      if(this.x < 0 || this.x > w || this.y < 0 || this.y > h) this.reset();
+    }
+    draw(){
+      const o = this.opacity * (0.6 + 0.4 * Math.sin(this.pulse));
+      ctx.beginPath();
+      ctx.arc(this.x, this.y - window.scrollY * 0.3, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(212,175,55,${o})`;
+      ctx.fill();
+    }
+  }
+  for(let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
+
+  function animate(){
+    ctx.clearRect(0, 0, w, h);
+    particles.forEach(p => {p.update();p.draw()});
+    requestAnimationFrame(animate);
+  }
+  animate();
+})();
+
+/* ===== THREE.JS 3D VAULT DOOR ===== */
+(function(){
+  const isMobile = window.innerWidth < 768;
+  const canvas = document.getElementById('three-canvas');
+  const hero = document.getElementById('hero');
+
+  // Dynamically load Three.js
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
+  script.onload = initThree;
+  document.head.appendChild(script);
+
+  function initThree(){
+    const THREE = window.THREE;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, hero.clientWidth / hero.clientHeight, 0.1, 100);
+    camera.position.set(0, 0, isMobile ? 6 : 4.5);
+
+    const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:!isMobile});
+    renderer.setSize(hero.clientWidth, hero.clientHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+
+    // Lights
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+    scene.add(ambientLight);
+
+    const goldLight = new THREE.PointLight(0xd4af37, 2.5, 20);
+    goldLight.position.set(0, 0, 3);
+    scene.add(goldLight);
+
+    const backLight = new THREE.PointLight(0xd4af37, 1.5, 15);
+    backLight.position.set(0, 0, -2);
+    scene.add(backLight);
+
+    const rimLight1 = new THREE.DirectionalLight(0xf0d060, 0.8);
+    rimLight1.position.set(3, 2, 2);
+    scene.add(rimLight1);
+
+    const rimLight2 = new THREE.DirectionalLight(0xa08520, 0.5);
+    rimLight2.position.set(-3, -1, 1);
+    scene.add(rimLight2);
+
+    // Gold material
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37,
+      metalness: 0.9,
+      roughness: 0.2,
+      emissive: 0x3a2a00,
+      emissiveIntensity: 0.15
+    });
+    const darkGoldMat = new THREE.MeshStandardMaterial({
+      color: 0xa08520,
+      metalness: 0.95,
+      roughness: 0.3,
+      emissive: 0x2a1a00,
+      emissiveIntensity: 0.1
+    });
+
+    // Vault door group
+    const vaultGroup = new THREE.Group();
+
+    // Main circular door
+    const doorGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.15, 64);
+    const door = new THREE.Mesh(doorGeo, goldMat);
+    door.rotation.x = Math.PI / 2;
+    vaultGroup.add(door);
+
+    // Door beveled rim
+    const rimGeo = new THREE.TorusGeometry(1.5, 0.08, 16, 64);
+    const rim = new THREE.Mesh(rimGeo, darkGoldMat);
+    vaultGroup.add(rim);
+
+    // Inner ring
+    const innerRimGeo = new THREE.TorusGeometry(1.1, 0.05, 12, 64);
+    const innerRim = new THREE.Mesh(innerRimGeo, darkGoldMat);
+    innerRim.position.z = 0.08;
+    vaultGroup.add(innerRim);
+
+    // Center hub
+    const hubGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.2, 32);
+    const hub = new THREE.Mesh(hubGeo, darkGoldMat);
+    hub.rotation.x = Math.PI / 2;
+    hub.position.z = 0.1;
+    vaultGroup.add(hub);
+
+    // Handle/spokes (5 spokes like a ship wheel)
+    const spokeGroup = new THREE.Group();
+    for(let i = 0; i < 5; i++){
+      const angle = (i / 5) * Math.PI * 2;
+      // Spoke bar
+      const spokeGeo = new THREE.CylinderGeometry(0.035, 0.035, 0.8, 8);
+      const spoke = new THREE.Mesh(spokeGeo, darkGoldMat);
+      spoke.position.set(Math.cos(angle) * 0.4, Math.sin(angle) * 0.4, 0.12);
+      spoke.rotation.z = angle + Math.PI / 2;
+      spokeGroup.add(spoke);
+
+      // Spoke end knob
+      const knobGeo = new THREE.SphereGeometry(0.06, 12, 12);
+      const knob = new THREE.Mesh(knobGeo, goldMat);
+      knob.position.set(Math.cos(angle) * 0.8, Math.sin(angle) * 0.8, 0.12);
+      spokeGroup.add(knob);
+    }
+    vaultGroup.add(spokeGroup);
+
+    // Bolt circles around the rim (12 bolts)
+    for(let i = 0; i < 12; i++){
+      const angle = (i / 12) * Math.PI * 2;
+      const boltGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.06, 8);
+      const bolt = new THREE.Mesh(boltGeo, darkGoldMat);
+      bolt.rotation.x = Math.PI / 2;
+      bolt.position.set(Math.cos(angle) * 1.3, Math.sin(angle) * 1.3, 0.1);
+      vaultGroup.add(bolt);
+    }
+
+    // Locking bolts (4 retractable bolts on edges)
+    const lockBolts = [];
+    for(let i = 0; i < 4; i++){
+      const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const boltGeo = new THREE.BoxGeometry(0.08, 0.25, 0.08);
+      const bolt = new THREE.Mesh(boltGeo, goldMat);
+      bolt.position.set(Math.cos(angle) * 1.6, Math.sin(angle) * 1.6, 0.04);
+      bolt.rotation.z = angle;
+      lockBolts.push(bolt);
+      vaultGroup.add(bolt);
+    }
+
+    // Engraved lines (decorative concentric)
+    for(let r = 0.5; r < 1.4; r += 0.3){
+      const lineGeo = new THREE.TorusGeometry(r, 0.008, 4, 64);
+      const lineMat = new THREE.MeshStandardMaterial({color:0xf0d060, metalness:1, roughness:0.1, emissive:0xd4af37, emissiveIntensity:0.2});
+      const line = new THREE.Mesh(lineGeo, lineMat);
+      line.position.z = 0.08;
+      vaultGroup.add(line);
+    }
+
+    scene.add(vaultGroup);
+
+    // Floating geometric shapes (background)
+    const floaters = [];
+    if(!isMobile){
+      const shapes = [
+        new THREE.OctahedronGeometry(0.15),
+        new THREE.IcosahedronGeometry(0.12),
+        new THREE.OctahedronGeometry(0.1),
+        new THREE.IcosahedronGeometry(0.18),
+        new THREE.TetrahedronGeometry(0.13),
+        new THREE.OctahedronGeometry(0.08),
+        new THREE.IcosahedronGeometry(0.1),
+        new THREE.OctahedronGeometry(0.14),
+      ];
+      const floatMat = new THREE.MeshStandardMaterial({
+        color:0xd4af37, metalness:0.8, roughness:0.3,
+        transparent:true, opacity:0.35, wireframe:true
+      });
+      shapes.forEach((geo, i) => {
+        const mesh = new THREE.Mesh(geo, floatMat);
+        const a = (i / shapes.length) * Math.PI * 2;
+        const dist = 2.5 + Math.random() * 1.5;
+        mesh.position.set(
+          Math.cos(a) * dist,
+          Math.sin(a) * dist * 0.6,
+          -1 - Math.random() * 2
+        );
+        mesh.userData = {
+          baseY: mesh.position.y,
+          speed: 0.3 + Math.random() * 0.5,
+          rotSpeed: 0.005 + Math.random() * 0.01,
+          floatAmp: 0.2 + Math.random() * 0.3,
+          phase: Math.random() * Math.PI * 2
+        };
+        floaters.push(mesh);
+        scene.add(mesh);
+      });
+    }
+
+    // Light rays (volumetric feel behind vault)
+    const rayGroup = new THREE.Group();
+    const rayMat = new THREE.MeshBasicMaterial({color:0xd4af37, transparent:true, opacity:0.03, side:THREE.DoubleSide});
+    for(let i = 0; i < 12; i++){
+      const angle = (i / 12) * Math.PI * 2;
+      const rayGeo = new THREE.PlaneGeometry(0.15, 4);
+      const ray = new THREE.Mesh(rayGeo, rayMat);
+      ray.position.z = -0.5;
+      ray.rotation.z = angle;
+      ray.position.x = Math.cos(angle) * 0.1;
+      ray.position.y = Math.sin(angle) * 0.1;
+      rayGroup.add(ray);
+    }
+    scene.add(rayGroup);
+
+    // Vault door sparks (small particle points)
+    const sparkCount = isMobile ? 40 : 120;
+    const sparkPositions = new Float32Array(sparkCount * 3);
+    const sparkSizes = new Float32Array(sparkCount);
+    for(let i = 0; i < sparkCount; i++){
+      const a = Math.random() * Math.PI * 2;
+      const r = 1.5 + Math.random() * 2;
+      sparkPositions[i*3] = Math.cos(a) * r;
+      sparkPositions[i*3+1] = Math.sin(a) * r * 0.7;
+      sparkPositions[i*3+2] = (Math.random() - 0.5) * 2;
+      sparkSizes[i] = Math.random() * 3 + 1;
+    }
+    const sparkGeo = new THREE.BufferGeometry();
+    sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPositions, 3));
+    sparkGeo.setAttribute('size', new THREE.BufferAttribute(sparkSizes, 1));
+    const sparkMat = new THREE.PointsMaterial({
+      color:0xd4af37, size:0.04, transparent:true, opacity:0.5,
+      blending:THREE.AdditiveBlending, sizeAttenuation:true
+    });
+    const sparks = new THREE.Points(sparkGeo, sparkMat);
+    scene.add(sparks);
+
+    // Scroll-based vault opening
+    let scrollProgress = 0;
+
+    window.addEventListener('scroll', () => {
+      const heroH = hero.clientHeight;
+      scrollProgress = Math.min(1, Math.max(0, window.scrollY / (heroH * 0.8)));
+    }, {passive:true});
+
+    // Resize handler
+    window.addEventListener('resize', () => {
+      const w = hero.clientWidth;
+      const h = hero.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    });
+
+    // Animation loop
+    let time = 0;
+    function animate(){
+      requestAnimationFrame(animate);
+      time += 0.008;
+
+      // Slow rotation of spokes
+      spokeGroup.rotation.z += 0.003;
+
+      // Vault door scroll interaction: rotate open + move back
+      const openAngle = scrollProgress * Math.PI * 0.5;
+      vaultGroup.rotation.y = openAngle;
+      vaultGroup.position.z = -scrollProgress * 2;
+      vaultGroup.position.x = -scrollProgress * 1.5;
+
+      // Pulsing glow behind
+      goldLight.intensity = 2.5 + Math.sin(time * 2) * 0.5;
+      backLight.intensity = 1.5 + Math.sin(time * 1.5 + 1) * 0.5;
+
+      // Ray rotation
+      rayGroup.rotation.z = time * 0.1;
+
+      // Floating shapes
+      floaters.forEach(f => {
+        f.rotation.x += f.userData.rotSpeed;
+        f.rotation.y += f.userData.rotSpeed * 0.7;
+        f.position.y = f.userData.baseY + Math.sin(time * f.userData.speed + f.userData.phase) * f.userData.floatAmp;
+      });
+
+      // Sparks gentle movement
+      const pos = sparks.geometry.attributes.position.array;
+      for(let i = 0; i < sparkCount; i++){
+        pos[i*3] += Math.sin(time + i) * 0.001;
+        pos[i*3+1] += Math.cos(time + i * 0.5) * 0.001;
+      }
+      sparks.geometry.attributes.position.needsUpdate = true;
+      sparks.rotation.z = time * 0.02;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  }
+})();
+</script>
+</body>
+</html>

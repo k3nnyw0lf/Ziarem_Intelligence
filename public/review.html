@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leave a Review — The Organization LLC</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#06060e;--surface:#0d0d18;--surface2:#14142a;--gold:#d4af37;--gold-dim:#a8892c;--gold-glow:rgba(212,175,55,0.3);--text:#e8e8e8;--text-dim:#888;--radius:12px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center}
+.container{max-width:640px;width:100%;padding:24px 20px 60px}
+.lang-toggle{position:absolute;top:20px;right:20px;background:var(--surface2);border:1px solid rgba(212,175,55,0.2);color:var(--text);padding:8px 16px;border-radius:20px;cursor:pointer;font-size:13px;font-family:'Inter',sans-serif;transition:all .3s}
+.lang-toggle:hover{border-color:var(--gold);color:var(--gold)}
+.header{text-align:center;padding:40px 0 32px}
+.header img{width:80px;height:80px;margin-bottom:16px}
+.header h1{font-size:20px;font-weight:700;letter-spacing:3px;color:var(--gold);margin-bottom:4px}
+.header p{color:var(--text-dim);font-size:14px}
+.card{background:var(--surface);border:1px solid rgba(255,255,255,0.06);border-radius:var(--radius);padding:28px 24px;margin-bottom:20px}
+.card-title{font-size:14px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px}
+.stars{display:flex;gap:8px;justify-content:center;padding:12px 0}
+.star{font-size:48px;cursor:pointer;color:#333;transition:all .2s;user-select:none;-webkit-user-select:none}
+.star:hover,.star.hovered{color:var(--gold);transform:scale(1.15)}
+.star.selected{color:var(--gold);text-shadow:0 0 20px var(--gold-glow)}
+.star.selected.pop{animation:starPop .4s ease}
+@keyframes starPop{0%{transform:scale(1)}50%{transform:scale(1.35)}100%{transform:scale(1)}}
+.rating-label{text-align:center;font-size:14px;color:var(--text-dim);margin-top:8px;min-height:20px}
+.keywords{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.keyword{padding:8px 16px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:var(--surface2);color:var(--text-dim);font-size:13px;cursor:pointer;transition:all .3s;font-family:'Inter',sans-serif}
+.keyword:hover{border-color:var(--gold-dim);color:var(--text)}
+.keyword.active{border-color:var(--gold);color:var(--gold);background:rgba(212,175,55,0.08);box-shadow:0 0 12px rgba(212,175,55,0.15)}
+textarea{width:100%;min-height:120px;background:var(--surface2);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius);padding:16px;color:var(--text);font-size:15px;font-family:'Inter',sans-serif;resize:vertical;transition:border-color .3s}
+textarea:focus{outline:none;border-color:var(--gold)}
+textarea::placeholder{color:#555}
+.photo-zone{border:2px dashed rgba(255,255,255,0.1);border-radius:var(--radius);padding:32px 16px;text-align:center;cursor:pointer;transition:all .3s;position:relative}
+.photo-zone:hover,.photo-zone.dragover{border-color:var(--gold);background:rgba(212,175,55,0.03)}
+.photo-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.photo-icon{font-size:32px;margin-bottom:8px}
+.photo-label{color:var(--text-dim);font-size:13px}
+.photo-previews{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+.photo-thumb{width:72px;height:72px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,0.1)}
+.photo-thumb-wrap{position:relative;display:inline-block}
+.photo-remove{position:absolute;top:-6px;right:-6px;width:20px;height:20px;background:#e53e3e;color:#fff;border:none;border-radius:50%;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+select,input[type="text"],input[type="email"]{width:100%;padding:14px 16px;background:var(--surface2);border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius);color:var(--text);font-size:15px;font-family:'Inter',sans-serif;transition:border-color .3s;-webkit-appearance:none;appearance:none}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center}
+select:focus,input:focus{outline:none;border-color:var(--gold)}
+.row{display:flex;gap:12px}
+.row>*{flex:1}
+.submit-btn{width:100%;padding:16px;border:none;border-radius:var(--radius);background:linear-gradient(135deg,var(--gold),#c9a22e);color:#06060e;font-size:16px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;transition:all .3s;letter-spacing:0.5px;margin-top:8px}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(212,175,55,0.3)}
+.submit-btn:active{transform:translateY(0)}
+.submit-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none}
+.thank-you{display:none;text-align:center;padding:60px 20px}
+.thank-you h2{font-size:32px;color:var(--gold);margin-bottom:12px}
+.thank-you p{color:var(--text-dim);font-size:16px;line-height:1.6}
+.check-circle{width:80px;height:80px;border-radius:50%;background:rgba(212,175,55,0.1);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-size:40px;animation:scaleIn .5s ease}
+@keyframes scaleIn{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+canvas#confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999}
+@media(max-width:480px){
+  .container{padding:16px 14px 40px}
+  .card{padding:20px 16px}
+  .star{font-size:40px}
+  .row{flex-direction:column;gap:12px}
+  .lang-toggle{top:12px;right:12px;padding:6px 12px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<button class="lang-toggle" onclick="toggleLang()" id="langBtn">ES</button>
+<canvas id="confetti"></canvas>
+<div class="container">
+  <div class="header">
+    <img src="/logo.svg" alt="The Organization LLC">
+    <h1>THE ORGANIZATION LLC</h1>
+    <p id="subtitle">We'd love your feedback</p>
+  </div>
+
+  <form id="reviewForm" onsubmit="submitReview(event)">
+    <!-- Stars -->
+    <div class="card">
+      <div class="card-title" data-i18n="rating">Your Rating</div>
+      <div class="stars" id="stars"></div>
+      <div class="rating-label" id="ratingLabel"></div>
+    </div>
+
+    <!-- Keywords -->
+    <div class="card">
+      <div class="card-title" data-i18n="describe">What describes your experience?</div>
+      <div class="keywords" id="keywords"></div>
+    </div>
+
+    <!-- Review Text -->
+    <div class="card">
+      <div class="card-title" data-i18n="review">Your Review</div>
+      <textarea id="reviewText" placeholder="Tell us about your experience..." rows="4"></textarea>
+    </div>
+
+    <!-- Photos -->
+    <div class="card">
+      <div class="card-title" data-i18n="photos">Add Photos (optional)</div>
+      <div class="photo-zone" id="photoZone">
+        <input type="file" id="photoInput" accept="image/*" multiple>
+        <div class="photo-icon">📷</div>
+        <div class="photo-label" data-i18n="photolabel">Tap or drag photos here (max 5)</div>
+      </div>
+      <div class="photo-previews" id="photoPreviews"></div>
+    </div>
+
+    <!-- Service -->
+    <div class="card">
+      <div class="card-title" data-i18n="service">Service Received</div>
+      <select id="serviceSelect">
+        <option value="" data-i18n="selectservice">Select a service...</option>
+        <option value="Real Estate">Real Estate</option>
+        <option value="Mortgages">Mortgages</option>
+        <option value="Insurance">Insurance</option>
+        <option value="Credit Optimization">Credit Optimization</option>
+        <option value="Construction">Construction</option>
+        <option value="Accounting & Taxes">Accounting & Taxes</option>
+      </select>
+    </div>
+
+    <!-- Name & Email -->
+    <div class="card">
+      <div class="card-title" data-i18n="yourinfo">Your Info (optional)</div>
+      <div class="row">
+        <input type="text" id="reviewerName" placeholder="Name" data-i18n-ph="name">
+        <input type="email" id="reviewerEmail" placeholder="Email" data-i18n-ph="email">
+      </div>
+    </div>
+
+    <button type="submit" class="submit-btn" id="submitBtn" data-i18n="submit">Submit Review</button>
+  </form>
+
+  <div class="thank-you" id="thankYou">
+    <div class="check-circle">✓</div>
+    <h2 data-i18n="thanks">Thank You!</h2>
+    <p data-i18n="thankstext">Your review has been submitted successfully. We truly appreciate your feedback and your trust in The Organization LLC.</p>
+  </div>
+</div>
+
+<script>
+// ── i18n ──
+const i18n = {
+  en: {
+    subtitle: "We'd love your feedback",
+    rating: "Your Rating",
+    describe: "What describes your experience?",
+    review: "Your Review",
+    photos: "Add Photos (optional)",
+    photolabel: "Tap or drag photos here (max 5)",
+    service: "Service Received",
+    selectservice: "Select a service...",
+    yourinfo: "Your Info (optional)",
+    submit: "Submit Review",
+    thanks: "Thank You!",
+    thankstext: "Your review has been submitted successfully. We truly appreciate your feedback and your trust in The Organization LLC.",
+    placeholder: "Tell us about your experience...",
+    name: "Name",
+    email: "Email",
+    ratingLabels: ["", "Poor", "Fair", "Good", "Great", "Excellent"],
+    keywords: ["Professional","Responsive","Knowledgeable","Trustworthy","Helpful","Patient","Fast","Great Value","Expert","Friendly"]
+  },
+  es: {
+    subtitle: "Nos encantaría saber tu opinión",
+    rating: "Tu Calificación",
+    describe: "¿Qué describe tu experiencia?",
+    review: "Tu Reseña",
+    photos: "Agregar Fotos (opcional)",
+    photolabel: "Toca o arrastra fotos aquí (máx 5)",
+    service: "Servicio Recibido",
+    selectservice: "Selecciona un servicio...",
+    yourinfo: "Tu Información (opcional)",
+    submit: "Enviar Reseña",
+    thanks: "¡Gracias!",
+    thankstext: "Tu reseña ha sido enviada exitosamente. Apreciamos sinceramente tus comentarios y tu confianza en The Organization LLC.",
+    placeholder: "Cuéntanos sobre tu experiencia...",
+    name: "Nombre",
+    email: "Correo electrónico",
+    ratingLabels: ["", "Malo", "Regular", "Bueno", "Muy Bueno", "Excelente"],
+    keywords: ["Profesional","Receptivo","Conocedor","Confiable","Servicial","Paciente","Rápido","Gran Valor","Experto","Amigable"]
+  }
+};
+
+let lang = "en";
+let selectedRating = 0;
+let selectedKeywords = new Set();
+let photoFiles = [];
+let photoBase64 = [];
+
+function toggleLang() {
+  lang = lang === "en" ? "es" : "en";
+  document.getElementById("langBtn").textContent = lang === "en" ? "ES" : "EN";
+  document.documentElement.lang = lang;
+  applyLang();
+}
+
+function applyLang() {
+  const t = i18n[lang];
+  document.getElementById("subtitle").textContent = t.subtitle;
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (t[key]) el.textContent = t[key];
+  });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => {
+    const key = el.getAttribute("data-i18n-ph");
+    if (t[key]) el.placeholder = t[key];
+  });
+  document.getElementById("reviewText").placeholder = t.placeholder;
+  updateRatingLabel();
+  renderKeywords();
+}
+
+// ── Stars ──
+function initStars() {
+  const container = document.getElementById("stars");
+  container.innerHTML = "";
+  for (let i = 1; i <= 5; i++) {
+    const star = document.createElement("span");
+    star.className = "star";
+    star.textContent = "★";
+    star.dataset.value = i;
+    star.addEventListener("click", () => selectRating(i));
+    star.addEventListener("mouseenter", () => hoverStars(i));
+    star.addEventListener("mouseleave", () => hoverStars(0));
+    container.appendChild(star);
+  }
+}
+
+function hoverStars(n) {
+  document.querySelectorAll(".star").forEach((s, idx) => {
+    s.classList.toggle("hovered", idx < n && n !== selectedRating);
+  });
+}
+
+function selectRating(n) {
+  selectedRating = n;
+  document.querySelectorAll(".star").forEach((s, idx) => {
+    const isSelected = idx < n;
+    s.classList.toggle("selected", isSelected);
+    if (isSelected) {
+      s.classList.remove("pop");
+      void s.offsetWidth;
+      s.classList.add("pop");
+    }
+  });
+  updateRatingLabel();
+}
+
+function updateRatingLabel() {
+  const labels = i18n[lang].ratingLabels;
+  document.getElementById("ratingLabel").textContent = labels[selectedRating] || "";
+}
+
+// ── Keywords ──
+function renderKeywords() {
+  const container = document.getElementById("keywords");
+  const words = i18n[lang].keywords;
+  const enWords = i18n.en.keywords;
+  container.innerHTML = "";
+  words.forEach((word, idx) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "keyword" + (selectedKeywords.has(enWords[idx]) ? " active" : "");
+    btn.textContent = word;
+    btn.addEventListener("click", () => {
+      const enWord = enWords[idx];
+      if (selectedKeywords.has(enWord)) {
+        selectedKeywords.delete(enWord);
+        btn.classList.remove("active");
+      } else {
+        selectedKeywords.add(enWord);
+        btn.classList.add("active");
+      }
+    });
+    container.appendChild(btn);
+  });
+}
+
+// ── Photos ──
+function initPhotos() {
+  const zone = document.getElementById("photoZone");
+  const input = document.getElementById("photoInput");
+
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("dragover"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+  zone.addEventListener("drop", e => {
+    e.preventDefault();
+    zone.classList.remove("dragover");
+    handleFiles(e.dataTransfer.files);
+  });
+  input.addEventListener("change", e => handleFiles(e.target.files));
+}
+
+function handleFiles(files) {
+  const remaining = 5 - photoFiles.length;
+  const toAdd = Array.from(files).slice(0, remaining);
+  toAdd.forEach(file => {
+    if (!file.type.startsWith("image/")) return;
+    photoFiles.push(file);
+    const reader = new FileReader();
+    reader.onload = e => {
+      photoBase64.push(e.target.result);
+      renderPreviews();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderPreviews() {
+  const container = document.getElementById("photoPreviews");
+  container.innerHTML = "";
+  photoBase64.forEach((src, idx) => {
+    const wrap = document.createElement("div");
+    wrap.className = "photo-thumb-wrap";
+    const img = document.createElement("img");
+    img.className = "photo-thumb";
+    img.src = src;
+    const rm = document.createElement("button");
+    rm.className = "photo-remove";
+    rm.type = "button";
+    rm.textContent = "×";
+    rm.onclick = () => {
+      photoFiles.splice(idx, 1);
+      photoBase64.splice(idx, 1);
+      renderPreviews();
+    };
+    wrap.appendChild(img);
+    wrap.appendChild(rm);
+    container.appendChild(wrap);
+  });
+}
+
+// ── Submit ──
+async function submitReview(e) {
+  e.preventDefault();
+  if (!selectedRating) {
+    selectRating(0);
+    document.getElementById("ratingLabel").textContent = lang === "en" ? "Please select a rating" : "Por favor selecciona una calificación";
+    return;
+  }
+
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = lang === "en" ? "Submitting..." : "Enviando...";
+
+  const payload = {
+    rating: selectedRating,
+    keywords: Array.from(selectedKeywords),
+    review_text: document.getElementById("reviewText").value,
+    photos: photoBase64,
+    service: document.getElementById("serviceSelect").value || null,
+    reviewer_name: document.getElementById("reviewerName").value || null,
+    reviewer_email: document.getElementById("reviewerEmail").value || null,
+    status: "completed",
+    platform: "website"
+  };
+
+  try {
+    const res = await fetch("https://sfelhasepvaoianyuvxe.supabase.co/rest/v1/vault_reviews", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZWxoYXNlcHZhb2lhbnl1dnhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2ODY0NDcsImV4cCI6MjA4NjI2MjQ0N30.kNzRAcdXaHoo0xQnJwNXyqcFsSiUZj9PP1fwziEQkdc",
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error("Submit failed");
+
+    document.getElementById("reviewForm").style.display = "none";
+    document.getElementById("thankYou").style.display = "block";
+    fireConfetti();
+  } catch (err) {
+    console.error(err);
+    btn.disabled = false;
+    btn.textContent = lang === "en" ? "Submit Review" : "Enviar Reseña";
+    alert(lang === "en" ? "Something went wrong. Please try again." : "Algo salió mal. Por favor intenta de nuevo.");
+  }
+}
+
+// ── Confetti ──
+function fireConfetti() {
+  const canvas = document.getElementById("confetti");
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const particles = [];
+  const colors = ["#d4af37","#f0d060","#c9a22e","#e8c840","#fff","#ffcc00"];
+
+  for (let i = 0; i < 150; i++) {
+    particles.push({
+      x: canvas.width / 2 + (Math.random() - 0.5) * 200,
+      y: canvas.height / 2,
+      vx: (Math.random() - 0.5) * 16,
+      vy: Math.random() * -18 - 4,
+      w: Math.random() * 10 + 4,
+      h: Math.random() * 6 + 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rot: Math.random() * Math.PI * 2,
+      rotV: (Math.random() - 0.5) * 0.3,
+      gravity: 0.3 + Math.random() * 0.2,
+      life: 1
+    });
+  }
+
+  let frame = 0;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    particles.forEach(p => {
+      if (p.life <= 0) return;
+      alive = true;
+      p.x += p.vx;
+      p.vy += p.gravity;
+      p.y += p.vy;
+      p.rot += p.rotV;
+      p.life -= 0.008;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    });
+    frame++;
+    if (alive && frame < 200) requestAnimationFrame(animate);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  animate();
+}
+
+// ── Init ──
+initStars();
+renderKeywords();
+initPhotos();
+</script>
+</body>
+</html>

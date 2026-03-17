@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firma Digital — Ziarem</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a12;
+      color: #e0dcd0;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    a { color: #d4af37; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Header */
+    .header {
+      background: #0d0d18;
+      border-bottom: 1px solid #1e1e28;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .header-logo { height: 32px; }
+    .header-title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: #d4af37;
+      text-transform: uppercase;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .secure-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #4ade80;
+      background: rgba(74,222,128,0.08);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(74,222,128,0.2);
+    }
+    .lang-toggle {
+      background: #1e1e28;
+      border: 1px solid #2a2a38;
+      color: #e0dcd0;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .lang-toggle:hover { border-color: #d4af37; }
+
+    /* Main container */
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 24px 16px 60px;
+    }
+
+    /* Cards */
+    .card {
+      background: #0d0d18;
+      border: 1px solid #1e1e28;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #d4af37;
+      margin-bottom: 16px;
+    }
+
+    /* Info rows */
+    .info-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .info-label {
+      color: #888;
+      min-width: 60px;
+      flex-shrink: 0;
+    }
+    .info-value { color: #e0dcd0; }
+    .status-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-pending { background: rgba(212,175,55,0.15); color: #d4af37; border: 1px solid rgba(212,175,55,0.3); }
+    .status-signed { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.25); }
+    .status-expired { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
+
+    /* Document viewer */
+    .doc-viewer {
+      background: #111;
+      border-radius: 8px;
+      overflow: hidden;
+      min-height: 300px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .doc-viewer iframe {
+      width: 100%;
+      height: 500px;
+      border: none;
+    }
+    .doc-placeholder {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
+    }
+    .doc-placeholder svg { margin-bottom: 12px; }
+
+    /* Signature pad */
+    .sig-canvas-wrap {
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      touch-action: none;
+    }
+    .sig-canvas {
+      display: block;
+      width: 100%;
+      cursor: crosshair;
+    }
+    .sig-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ccc;
+      font-size: 14px;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .sig-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .pen-colors {
+      display: flex;
+      gap: 6px;
+    }
+    .pen-color-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #333;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .pen-color-btn.active { border-color: #d4af37; box-shadow: 0 0 0 2px rgba(212,175,55,0.3); }
+    .pen-sizes {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .pen-size-btn {
+      background: #1e1e28;
+      border: 1px solid #2a2a38;
+      color: #e0dcd0;
+      padding: 3px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+    }
+    .pen-size-btn.active { border-color: #d4af37; color: #d4af37; }
+    .btn-clear {
+      background: transparent;
+      border: 1px solid #444;
+      color: #e0dcd0;
+      padding: 5px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+    }
+    .btn-clear:hover { border-color: #ef4444; color: #ef4444; }
+
+    /* Form fields */
+    .field-group { margin-bottom: 18px; }
+    .field-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: #bbb;
+    }
+    .field-required { color: #d4af37; }
+    .field-input {
+      width: 100%;
+      padding: 10px 14px;
+      background: #12121e;
+      border: 1px solid #2a2a38;
+      border-radius: 8px;
+      color: #e0dcd0;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field-input:focus { border-color: #d4af37; }
+    .checkbox-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .checkbox-wrap input[type="checkbox"] {
+      accent-color: #d4af37;
+      width: 18px;
+      height: 18px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+    .checkbox-text { font-size: 13px; color: #bbb; }
+
+    /* Legal */
+    .legal-box {
+      background: rgba(212,175,55,0.05);
+      border: 1px solid rgba(212,175,55,0.15);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    /* Buttons */
+    .btn-sign {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #d4af37, #b8972e);
+      color: #0a0a12;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-sign:hover { opacity: 0.9; }
+    .btn-sign:active { transform: scale(0.98); }
+    .btn-sign:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-sign .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(10,10,18,0.3);
+      border-top-color: #0a0a12;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .decline-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+    }
+    .decline-link:hover { color: #ef4444; }
+    .decline-box {
+      display: none;
+      margin-top: 14px;
+    }
+    .decline-box.visible { display: block; }
+    .decline-box textarea {
+      width: 100%;
+      padding: 10px;
+      background: #12121e;
+      border: 1px solid #2a2a38;
+      border-radius: 8px;
+      color: #e0dcd0;
+      font-family: inherit;
+      font-size: 13px;
+      resize: vertical;
+      min-height: 60px;
+      outline: none;
+      margin-bottom: 10px;
+    }
+    .btn-decline {
+      background: transparent;
+      border: 1px solid #ef4444;
+      color: #ef4444;
+      padding: 8px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .btn-decline:hover { background: rgba(239,68,68,0.1); }
+
+    /* Success state */
+    .success-view {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(74,222,128,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .success-view h2 {
+      color: #4ade80;
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+    .success-view p { color: #888; font-size: 14px; margin-bottom: 6px; }
+    .success-ref {
+      background: #12121e;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #888;
+    }
+
+    /* Error state */
+    .error-view {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .error-view h2 { color: #ef4444; font-size: 20px; margin-bottom: 10px; }
+    .error-view p { color: #888; font-size: 14px; }
+
+    /* Loading */
+    .loading-view {
+      text-align: center;
+      padding: 80px 20px;
+    }
+    .loading-view .spinner-lg {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #1e1e28;
+      border-top-color: #d4af37;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    /* Confetti */
+    .confetti-piece {
+      position: fixed;
+      width: 8px;
+      height: 14px;
+      top: -20px;
+      z-index: 9999;
+      animation: confettiFall linear forwards;
+      pointer-events: none;
+    }
+    @keyframes confettiFall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .header { padding: 12px 14px; }
+      .header-title { font-size: 11px; letter-spacing: 1px; }
+      .secure-badge { display: none; }
+      .container { padding: 14px 10px 40px; }
+      .card { padding: 18px 14px; }
+      .doc-viewer iframe { height: 350px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <img src="/logo.svg" alt="Ziarem" class="header-logo" onerror="this.style.display='none'">
+      <span class="header-title" data-i18n="headerTitle">FIRMA DIGITAL</span>
+    </div>
+    <div class="header-right">
+      <div class="secure-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        <span data-i18n="secure">Conexion segura</span>
+      </div>
+      <button class="lang-toggle" onclick="toggleLang()" id="langBtn">EN</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="container">
+
+    <!-- Loading -->
+    <div id="loadingView" class="loading-view">
+      <div class="spinner-lg"></div>
+      <p data-i18n="loading">Cargando documento...</p>
+    </div>
+
+    <!-- Error -->
+    <div id="errorView" class="error-view" style="display:none;"></div>
+
+    <!-- Signing form -->
+    <div id="signView" style="display:none;">
+
+      <!-- Document Info -->
+      <div class="card">
+        <div class="card-title" data-i18n="docInfo">Informacion del Documento</div>
+        <div class="info-row">
+          <span class="info-label" data-i18n="labelDoc">Documento:</span>
+          <span class="info-value" id="docTitle">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label" data-i18n="labelFrom">De:</span>
+          <span class="info-value" id="docFrom">—</span>
+        </div>
+        <div class="info-row" id="msgRow" style="display:none;">
+          <span class="info-label" data-i18n="labelMsg">Mensaje:</span>
+          <span class="info-value" id="docMsg">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label" data-i18n="labelStatus">Estado:</span>
+          <span class="info-value"><span class="status-badge status-pending" id="statusBadge" data-i18n="statusPending">Pendiente</span></span>
+        </div>
+      </div>
+
+      <!-- Document Viewer -->
+      <div class="card">
+        <div class="card-title" data-i18n="docViewer">Documento</div>
+        <div class="doc-viewer" id="docViewer">
+          <div class="doc-placeholder" id="docPlaceholder">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#444" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+            <p data-i18n="noDoc">El documento se compartira por separado</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fields -->
+      <div class="card" id="fieldsCard">
+        <div class="card-title" data-i18n="fieldsTitle">Campos Requeridos</div>
+        <div id="fieldsContainer"></div>
+      </div>
+
+      <!-- Signature Pad -->
+      <div class="card" id="signatureCard">
+        <div class="card-title" data-i18n="sigTitle">Su Firma</div>
+        <div class="field-group">
+          <div class="sig-canvas-wrap">
+            <canvas id="sigPad" class="sig-canvas" width="660" height="200"></canvas>
+            <span class="sig-hint" id="sigHint" data-i18n="sigHint">Dibuje su firma aqui</span>
+          </div>
+          <div class="sig-tools">
+            <div class="pen-colors">
+              <div class="pen-color-btn active" style="background:#000" onclick="setPenColor('#000',this)"></div>
+              <div class="pen-color-btn" style="background:#1a3a8a" onclick="setPenColor('#1a3a8a',this)"></div>
+              <div class="pen-color-btn" style="background:#2563eb" onclick="setPenColor('#2563eb',this)"></div>
+            </div>
+            <div class="pen-sizes">
+              <button class="pen-size-btn" onclick="setPenSize(2,this)">Fino</button>
+              <button class="pen-size-btn active" onclick="setPenSize(3,this)">Normal</button>
+              <button class="pen-size-btn" onclick="setPenSize(5,this)">Grueso</button>
+            </div>
+            <button class="btn-clear" onclick="clearPad()" data-i18n="clearSig">Limpiar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legal -->
+      <div class="card">
+        <div class="legal-box">
+          <label class="checkbox-wrap">
+            <input type="checkbox" id="agreeCheck">
+            <span class="checkbox-text" data-i18n="legalAgree">Acepto que mi firma electronica es legalmente vinculante y tiene la misma validez que una firma manuscrita.</span>
+          </label>
+        </div>
+        <div style="font-size:12px;color:#666;margin-top:8px;">
+          <span data-i18n="labelSigner">Firmante:</span> <span id="signerNameDisplay">—</span><br>
+          <span data-i18n="labelDate">Fecha:</span> <span id="todayDisplay"></span>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <button class="btn-sign" id="btnSign" onclick="submitSignature()" disabled>
+        <span id="btnSignText" data-i18n="btnSign">FIRMAR DOCUMENTO</span>
+      </button>
+
+      <!-- Decline -->
+      <a class="decline-link" onclick="toggleDecline()" data-i18n="declineLink">Rechazar firma</a>
+      <div class="decline-box" id="declineBox">
+        <textarea id="declineReason" placeholder="Razon del rechazo..." data-i18n-placeholder="declinePlaceholder"></textarea>
+        <button class="btn-decline" onclick="declineEnvelope()" data-i18n="btnDecline">Confirmar Rechazo</button>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div id="successView" style="display:none;"></div>
+
+  </div>
+
+<script>
+// ——— Config ———
+const SB_URL = "https://sfelhasepvaoianyuvxe.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZWxoYXNlcHZhb2lhbnl1dnhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2ODY0NDcsImV4cCI6MjA4NjI2MjQ0N30.HL23KOnoV3Aw1i1yzXjMnYBjbEOFcxLA8W4MiRnjpIs";
+
+// ——— i18n ———
+let lang = 'es';
+const T = {
+  es: {
+    headerTitle: 'FIRMA DIGITAL',
+    secure: 'Conexion segura',
+    loading: 'Cargando documento...',
+    docInfo: 'Informacion del Documento',
+    labelDoc: 'Documento:',
+    labelFrom: 'De:',
+    labelMsg: 'Mensaje:',
+    labelStatus: 'Estado:',
+    statusPending: 'Pendiente',
+    docViewer: 'Documento',
+    noDoc: 'El documento se compartira por separado',
+    fieldsTitle: 'Campos Requeridos',
+    sigTitle: 'Su Firma',
+    sigHint: 'Dibuje su firma aqui',
+    clearSig: 'Limpiar',
+    legalAgree: 'Acepto que mi firma electronica es legalmente vinculante y tiene la misma validez que una firma manuscrita.',
+    labelSigner: 'Firmante:',
+    labelDate: 'Fecha:',
+    btnSign: 'FIRMAR DOCUMENTO',
+    declineLink: 'Rechazar firma',
+    declinePlaceholder: 'Razon del rechazo...',
+    btnDecline: 'Confirmar Rechazo',
+    errInvalid: 'Enlace Invalido',
+    errInvalidDesc: 'Este enlace de firma no es valido o ha expirado. Contacte al remitente para solicitar un nuevo enlace.',
+    errExpired: 'Documento Expirado',
+    errExpiredDesc: 'Este documento ha expirado y ya no puede ser firmado.',
+    errDeclined: 'Documento Rechazado',
+    errDeclinedDesc: 'Este documento fue rechazado por el firmante.',
+    alreadySigned: 'Documento Firmado',
+    alreadySignedDesc: 'Este documento ya fue firmado el',
+    successTitle: 'Documento firmado exitosamente',
+    successDesc: 'Su firma ha sido registrada de manera segura.',
+    successRef: 'Referencia:',
+    successTime: 'Firmado el:',
+    fieldDate: 'Fecha',
+    fieldInitials: 'Iniciales',
+    fieldSignature: 'Firma',
+    errNoSig: 'Por favor dibuje su firma.',
+    errNoAgree: 'Debe aceptar el acuerdo legal.',
+    errFillFields: 'Complete todos los campos requeridos.',
+  },
+  en: {
+    headerTitle: 'DIGITAL SIGNATURE',
+    secure: 'Secure connection',
+    loading: 'Loading document...',
+    docInfo: 'Document Information',
+    labelDoc: 'Document:',
+    labelFrom: 'From:',
+    labelMsg: 'Message:',
+    labelStatus: 'Status:',
+    statusPending: 'Pending',
+    docViewer: 'Document',
+    noDoc: 'Document will be shared separately',
+    fieldsTitle: 'Required Fields',
+    sigTitle: 'Your Signature',
+    sigHint: 'Draw your signature here',
+    clearSig: 'Clear',
+    legalAgree: 'I agree that my electronic signature is legally binding and has the same validity as a handwritten signature.',
+    labelSigner: 'Signer:',
+    labelDate: 'Date:',
+    btnSign: 'SIGN DOCUMENT',
+    declineLink: 'Decline to sign',
+    declinePlaceholder: 'Reason for declining...',
+    btnDecline: 'Confirm Decline',
+    errInvalid: 'Invalid Link',
+    errInvalidDesc: 'This signing link is invalid or has expired. Contact the sender to request a new link.',
+    errExpired: 'Document Expired',
+    errExpiredDesc: 'This document has expired and can no longer be signed.',
+    errDeclined: 'Document Declined',
+    errDeclinedDesc: 'This document was declined by the signer.',
+    alreadySigned: 'Document Signed',
+    alreadySignedDesc: 'This document was already signed on',
+    successTitle: 'Document signed successfully',
+    successDesc: 'Your signature has been securely recorded.',
+    successRef: 'Reference:',
+    successTime: 'Signed on:',
+    fieldDate: 'Date',
+    fieldInitials: 'Initials',
+    fieldSignature: 'Signature',
+    errNoSig: 'Please draw your signature.',
+    errNoAgree: 'You must accept the legal agreement.',
+    errFillFields: 'Please complete all required fields.',
+  }
+};
+
+function t(key) { return T[lang][key] || key; }
+
+function toggleLang() {
+  lang = lang === 'es' ? 'en' : 'es';
+  document.getElementById('langBtn').textContent = lang === 'es' ? 'EN' : 'ES';
+  document.documentElement.lang = lang;
+  document.title = lang === 'es' ? 'Firma Digital — Ziarem' : 'Digital Signature — Ziarem';
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (T[lang][key]) el.textContent = T[lang][key];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (T[lang][key]) el.placeholder = T[lang][key];
+  });
+}
+
+// ——— State ———
+let envelope = null;
+let fields = [];
+let penColor = '#000';
+let penWidth = 3;
+let drawing = false;
+let lastX, lastY;
+let hasDrawn = false;
+let signerIP = '';
+
+// ——— Init ———
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  document.getElementById('todayDisplay').textContent = new Date().toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' });
+
+  // Get IP
+  try {
+    const ipRes = await fetch('https://api.ipify.org?format=json');
+    const ipData = await ipRes.json();
+    signerIP = ipData.ip;
+  } catch(e) { signerIP = 'unknown'; }
+
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('token');
+
+  if (!token) {
+    showError(t('errInvalid'), t('errInvalidDesc'));
+    return;
+  }
+
+  try {
+    // Fetch envelope
+    const res = await fetch(`${SB_URL}/rest/v1/vault_envelopes?sign_token=eq.${token}&select=*`, {
+      headers: { apikey: SB_KEY }
+    });
+    const data = await res.json();
+
+    if (!data || data.length === 0) {
+      showError(t('errInvalid'), t('errInvalidDesc'));
+      return;
+    }
+
+    envelope = data[0];
+
+    // Check status
+    if (envelope.status === 'signed') {
+      showAlreadySigned();
+      return;
+    }
+    if (envelope.status === 'expired') {
+      showError(t('errExpired'), t('errExpiredDesc'));
+      return;
+    }
+    if (envelope.status === 'declined') {
+      showError(t('errDeclined'), t('errDeclinedDesc'));
+      return;
+    }
+
+    // Check expiry
+    if (envelope.expires_at && new Date(envelope.expires_at) < new Date()) {
+      await fetch(`${SB_URL}/rest/v1/vault_envelopes?id=eq.${envelope.id}`, {
+        method: 'PATCH',
+        headers: { apikey: SB_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'expired', updated_at: new Date().toISOString() })
+      });
+      showError(t('errExpired'), t('errExpiredDesc'));
+      return;
+    }
+
+    // Fetch fields
+    const fRes = await fetch(`${SB_URL}/rest/v1/vault_envelope_fields?envelope_id=eq.${envelope.id}&order=sort_order`, {
+      headers: { apikey: SB_KEY }
+    });
+    fields = await fRes.json();
+
+    // Record viewed audit
+    await fetch(`${SB_URL}/rest/v1/vault_envelope_audit`, {
+      method: 'POST',
+      headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        envelope_id: envelope.id,
+        action: 'viewed',
+        actor: envelope.signer_name || 'Signer',
+        ip_address: signerIP,
+        user_agent: navigator.userAgent,
+        details: `Document viewed by ${envelope.signer_name || 'signer'}`
+      })
+    });
+
+    renderSigningPage();
+  } catch (err) {
+    console.error(err);
+    showError(t('errInvalid'), t('errInvalidDesc'));
+  }
+}
+
+function showError(title, desc) {
+  document.getElementById('loadingView').style.display = 'none';
+  const el = document.getElementById('errorView');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="1.5" style="margin-bottom:16px;">
+      <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+    </svg>
+    <h2>${title}</h2>
+    <p>${desc}</p>`;
+}
+
+function showAlreadySigned() {
+  document.getElementById('loadingView').style.display = 'none';
+  const el = document.getElementById('errorView');
+  el.style.display = 'block';
+  const d = envelope.signed_at ? new Date(envelope.signed_at).toLocaleString() : '';
+  el.innerHTML = `
+    <div class="success-icon">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <h2 style="color:#4ade80;">${t('alreadySigned')}</h2>
+    <p>${t('alreadySignedDesc')} ${d}</p>`;
+}
+
+function renderSigningPage() {
+  document.getElementById('loadingView').style.display = 'none';
+  document.getElementById('signView').style.display = 'block';
+
+  // Populate info
+  document.getElementById('docTitle').textContent = envelope.title || envelope.document_title || '—';
+  document.getElementById('docFrom').textContent = envelope.sender_name || '—';
+  document.getElementById('signerNameDisplay').textContent = envelope.signer_name || '—';
+
+  if (envelope.message) {
+    document.getElementById('msgRow').style.display = 'flex';
+    document.getElementById('docMsg').textContent = envelope.message;
+  }
+
+  // Document viewer
+  const viewerEl = document.getElementById('docViewer');
+  if (envelope.document_url) {
+    document.getElementById('docPlaceholder').style.display = 'none';
+    const iframe = document.createElement('iframe');
+    iframe.src = envelope.document_url;
+    iframe.title = 'Document';
+    viewerEl.appendChild(iframe);
+  }
+
+  // If form_data has HTML, render it
+  if (envelope.form_data && envelope.form_data.html) {
+    const formDiv = document.createElement('div');
+    formDiv.className = 'card';
+    formDiv.innerHTML = `
+      <div style="font-size:11px;color:#d4af37;letter-spacing:1px;margin-bottom:12px">${lang==='es'?'DOCUMENTO':'DOCUMENT'}</div>
+      <div style="background:#fff;color:#000;padding:24px 28px;border-radius:6px;font-size:13px;line-height:1.8;max-height:600px;overflow-y:auto">${envelope.form_data.html}</div>
+    `;
+    const sigSection = document.getElementById('signatureCard');
+    if (sigSection) sigSection.parentElement.insertBefore(formDiv, document.getElementById('fieldsCard'));
+  }
+
+  // Render fields
+  renderFields();
+
+  // Init signature pad
+  initSigPad();
+
+  // Enable/disable sign button
+  document.getElementById('agreeCheck').addEventListener('change', updateSignBtn);
+}
+
+function renderFields() {
+  const container = document.getElementById('fieldsContainer');
+  if (!fields || fields.length === 0) {
+    document.getElementById('fieldsCard').style.display = 'none';
+    return;
+  }
+
+  fields.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'field-group';
+    const req = f.required ? `<span class="field-required">*</span>` : '';
+    const label = f.label || f.field_name || f.type;
+
+    if (f.type === 'signature') {
+      // Handled by main signature pad
+      return;
+    } else if (f.type === 'initials') {
+      div.innerHTML = `
+        <label class="field-label">${label} ${req}</label>
+        <div class="sig-canvas-wrap">
+          <canvas id="initPad-${i}" class="sig-canvas" width="300" height="100" style="height:100px;"></canvas>
+        </div>
+        <button class="btn-clear" style="margin-top:6px;" onclick="clearInitials(${i})">${t('clearSig')}</button>`;
+      container.appendChild(div);
+      setTimeout(() => initInitialsPad(i), 50);
+    } else if (f.type === 'date') {
+      const today = new Date().toISOString().split('T')[0];
+      div.innerHTML = `
+        <label class="field-label">${label} ${req}</label>
+        <input type="date" class="field-input" data-field-id="${f.id}" data-field-idx="${i}" value="${today}">`;
+      container.appendChild(div);
+    } else if (f.type === 'checkbox') {
+      div.innerHTML = `
+        <label class="checkbox-wrap">
+          <input type="checkbox" data-field-id="${f.id}" data-field-idx="${i}">
+          <span class="checkbox-text">${label}</span>
+        </label>`;
+      container.appendChild(div);
+    } else {
+      div.innerHTML = `
+        <label class="field-label">${label} ${req}</label>
+        <input type="text" class="field-input" data-field-id="${f.id}" data-field-idx="${i}" placeholder="${label}">`;
+      container.appendChild(div);
+    }
+  });
+}
+
+// ——— Signature Pad ———
+function initSigPad() {
+  const canvas = document.getElementById('sigPad');
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = 200 * dpr;
+    canvas.style.height = '200px';
+    ctx.scale(dpr, dpr);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  function getPos(e) {
+    const r = canvas.getBoundingClientRect();
+    if (e.touches) {
+      return [e.touches[0].clientX - r.left, e.touches[0].clientY - r.top];
+    }
+    return [e.clientX - r.left, e.clientY - r.top];
+  }
+
+  canvas.addEventListener('mousedown', e => {
+    drawing = true;
+    [lastX, lastY] = getPos(e);
+    document.getElementById('sigHint').style.opacity = '0';
+    hasDrawn = true;
+    updateSignBtn();
+  });
+  canvas.addEventListener('mousemove', e => {
+    if (!drawing) return;
+    const [x, y] = getPos(e);
+    ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y);
+    ctx.strokeStyle = penColor; ctx.lineWidth = penWidth; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+    [lastX, lastY] = [x, y];
+  });
+  canvas.addEventListener('mouseup', () => drawing = false);
+  canvas.addEventListener('mouseleave', () => drawing = false);
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    drawing = true;
+    [lastX, lastY] = getPos(e);
+    document.getElementById('sigHint').style.opacity = '0';
+    hasDrawn = true;
+    updateSignBtn();
+  }, { passive: false });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!drawing) return;
+    const [x, y] = getPos(e);
+    ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y);
+    ctx.strokeStyle = penColor; ctx.lineWidth = penWidth; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
+    [lastX, lastY] = [x, y];
+  }, { passive: false });
+  canvas.addEventListener('touchend', () => drawing = false);
+}
+
+function initInitialsPad(idx) {
+  const canvas = document.getElementById(`initPad-${idx}`);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let d = false, lx, ly;
+
+  const getPos = e => {
+    const r = canvas.getBoundingClientRect();
+    if (e.touches) return [e.touches[0].clientX - r.left, e.touches[0].clientY - r.top];
+    return [e.clientX - r.left, e.clientY - r.top];
+  };
+
+  canvas.addEventListener('mousedown', e => { d = true; [lx, ly] = getPos(e); });
+  canvas.addEventListener('mousemove', e => {
+    if (!d) return;
+    const [x, y] = getPos(e);
+    ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(x, y);
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke();
+    [lx, ly] = [x, y];
+  });
+  canvas.addEventListener('mouseup', () => d = false);
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); d = true; [lx, ly] = getPos(e); }, { passive:false });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault(); if (!d) return;
+    const [x, y] = getPos(e);
+    ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(x, y);
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke();
+    [lx, ly] = [x, y];
+  }, { passive:false });
+  canvas.addEventListener('touchend', () => d = false);
+}
+
+function clearInitials(idx) {
+  const canvas = document.getElementById(`initPad-${idx}`);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function setPenColor(c, el) {
+  penColor = c;
+  document.querySelectorAll('.pen-color-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function setPenSize(s, el) {
+  penWidth = s;
+  document.querySelectorAll('.pen-size-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function clearPad() {
+  const canvas = document.getElementById('sigPad');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('sigHint').style.opacity = '1';
+  hasDrawn = false;
+  updateSignBtn();
+}
+
+function updateSignBtn() {
+  const agreed = document.getElementById('agreeCheck').checked;
+  document.getElementById('btnSign').disabled = !(agreed && hasDrawn);
+}
+
+// ——— Submit ———
+async function submitSignature() {
+  const btn = document.getElementById('btnSign');
+  const btnText = document.getElementById('btnSignText');
+
+  if (!hasDrawn) { alert(t('errNoSig')); return; }
+  if (!document.getElementById('agreeCheck').checked) { alert(t('errNoAgree')); return; }
+
+  // Validate required fields
+  for (const f of fields) {
+    if (!f.required) continue;
+    if (f.type === 'signature') continue; // handled by main pad
+    const input = document.querySelector(`[data-field-id="${f.id}"]`);
+    if (input && f.type !== 'checkbox' && !input.value.trim()) {
+      alert(t('errFillFields'));
+      input.focus();
+      return;
+    }
+  }
+
+  btn.disabled = true;
+  btnText.innerHTML = `<span class="spinner"></span>${lang === 'es' ? 'Firmando...' : 'Signing...'}`;
+
+  try {
+    const canvas = document.getElementById('sigPad');
+    const sigData = canvas.toDataURL('image/png');
+
+    // Update envelope
+    await fetch(`${SB_URL}/rest/v1/vault_envelopes?id=eq.${envelope.id}`, {
+      method: 'PATCH',
+      headers: { apikey: SB_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        status: 'signed',
+        signed_at: new Date().toISOString(),
+        signature_data: sigData,
+        signer_ip: signerIP,
+        signer_user_agent: navigator.userAgent,
+        updated_at: new Date().toISOString()
+      })
+    });
+
+    // Update fields
+    for (const f of fields) {
+      let value = null;
+      if (f.type === 'signature') {
+        value = sigData;
+      } else if (f.type === 'initials') {
+        const idx = fields.indexOf(f);
+        const ic = document.getElementById(`initPad-${idx}`);
+        value = ic ? ic.toDataURL('image/png') : null;
+      } else {
+        const input = document.querySelector(`[data-field-id="${f.id}"]`);
+        if (input) {
+          value = f.type === 'checkbox' ? String(input.checked) : input.value;
+        }
+      }
+      if (value !== null) {
+        await fetch(`${SB_URL}/rest/v1/vault_envelope_fields?id=eq.${f.id}`, {
+          method: 'PATCH',
+          headers: { apikey: SB_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify({ value, updated_at: new Date().toISOString() })
+        });
+      }
+    }
+
+    // Insert audit
+    await fetch(`${SB_URL}/rest/v1/vault_envelope_audit`, {
+      method: 'POST',
+      headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        envelope_id: envelope.id,
+        action: 'signed',
+        actor: envelope.signer_name || 'Signer',
+        ip_address: signerIP,
+        user_agent: navigator.userAgent,
+        details: `Signed by ${envelope.signer_name || 'signer'}`
+      })
+    });
+
+    showSuccess();
+  } catch (err) {
+    console.error(err);
+    btn.disabled = false;
+    btnText.textContent = t('btnSign');
+    alert(lang === 'es' ? 'Error al firmar. Intente de nuevo.' : 'Error signing. Please try again.');
+  }
+}
+
+function showSuccess() {
+  document.getElementById('signView').style.display = 'none';
+  const el = document.getElementById('successView');
+  el.style.display = 'block';
+  const now = new Date().toLocaleString();
+  const ref = envelope.id ? envelope.id.substring(0, 8).toUpperCase() : '—';
+
+  el.innerHTML = `
+    <div class="card success-view">
+      <div class="success-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <h2>${t('successTitle')}</h2>
+      <p>${t('successDesc')}</p>
+      <div class="success-ref">
+        <p>${t('successRef')} <strong>${ref}</strong></p>
+        <p>${t('successTime')} <strong>${now}</strong></p>
+      </div>
+    </div>`;
+
+  launchConfetti();
+}
+
+// ——— Decline ———
+function toggleDecline() {
+  document.getElementById('declineBox').classList.toggle('visible');
+}
+
+async function declineEnvelope() {
+  const reason = document.getElementById('declineReason').value.trim();
+  try {
+    await fetch(`${SB_URL}/rest/v1/vault_envelopes?id=eq.${envelope.id}`, {
+      method: 'PATCH',
+      headers: { apikey: SB_KEY, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        status: 'declined',
+        decline_reason: reason,
+        updated_at: new Date().toISOString()
+      })
+    });
+
+    await fetch(`${SB_URL}/rest/v1/vault_envelope_audit`, {
+      method: 'POST',
+      headers: { apikey: SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        envelope_id: envelope.id,
+        action: 'declined',
+        actor: envelope.signer_name || 'Signer',
+        ip_address: signerIP,
+        user_agent: navigator.userAgent,
+        details: reason ? `Declined: ${reason}` : 'Declined without reason'
+      })
+    });
+
+    document.getElementById('signView').style.display = 'none';
+    showError(
+      lang === 'es' ? 'Firma Rechazada' : 'Signature Declined',
+      lang === 'es' ? 'Ha rechazado firmar este documento. El remitente sera notificado.' : 'You have declined to sign this document. The sender will be notified.'
+    );
+    document.getElementById('errorView').style.display = 'block';
+  } catch (err) {
+    console.error(err);
+    alert(lang === 'es' ? 'Error al rechazar.' : 'Error declining.');
+  }
+}
+
+// ——— Confetti ———
+function launchConfetti() {
+  const colors = ['#d4af37', '#4ade80', '#60a5fa', '#f472b6', '#fbbf24', '#a78bfa'];
+  for (let i = 0; i < 80; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDuration = (2 + Math.random() * 2) + 's';
+    piece.style.animationDelay = Math.random() * 0.5 + 's';
+    piece.style.width = (5 + Math.random() * 8) + 'px';
+    piece.style.height = (8 + Math.random() * 10) + 'px';
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 4500);
+  }
+}
+</script>
+</body>
+</html>
