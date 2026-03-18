@@ -9151,29 +9151,48 @@ function EmailVault({ user, teamProfile, onSignOut }) {
   const todayAppts = appointments.filter(a=>a.status==="scheduled"&&(a.start_at||"").slice(0,10)===todayStr).length;
   const overdueInvs = invoices.filter(i=>i.status==="sent"&&i.due_at&&new Date(i.due_at)<new Date()).length;
   const expiringItems = complianceItems.filter(c=>{if(c.status!=="active"||!c.expiry_date)return false;const d=(new Date(c.expiry_date)-new Date())/(86400000);return d<=30;}).length;
-  const navAll = [
-    {id:"dashboard", label:"⬡ DASH",    badge:0,           admin:true},
-    {id:"inbox",     label:"✉ INBOX",   badge:emails.filter(e=>!e.is_read).length, admin:true},
-    {id:"callcenter",label:"☎ CALLS",   badge:unreadNotifs, admin:false},
-    {id:"messages",  label:"💬 MSG",    badge:unreadMsgs,   admin:false},
-    {id:"crm",       label:"💼 CRM",    badge:overdueTasks.length, admin:true},
-    {id:"marketing", label:"📣 MKTG",   badge:0,           admin:true},
-    {id:"leads",     label:"🎯 LEADS",  badge:0,           admin:true},
-    {id:"appointments",label:"📅 BOOK", badge:todayAppts,   admin:true},
-    {id:"invoices",  label:"💰 INVOICE",badge:overdueInvs,  admin:true},
-    {id:"automations",label:"⚡ AUTO",  badge:0,            admin:true},
-    {id:"compliance",label:"📋 COMPLY", badge:expiringItems, admin:true},
-    {id:"vendors",   label:"🔨 VENDOR", badge:0,            admin:true},
-    {id:"market",    label:"📡 MARKET", badge:0,           admin:true},
-    {id:"analytics", label:"📊 DATA",   badge:0,           admin:true},
-    {id:"docs",      label:"📁 DOCS",   badge:0,           admin:true},
-    {id:"intel",     label:"🧠 INTEL",  badge:0,           admin:true},
-    {id:"social",    label:"📱 SOCIAL", badge:0,           admin:true},
-    {id:"biz",       label:"🏢 BIZ",    badge:0,           admin:true},
-    {id:"esign",     label:"✍ SIGN",    badge:0,           admin:true},
-    {id:"toolbox",   label:"🧰 TOOLS",  badge:0,           admin:true},
-    {id:"settings",  label:"⚙ CONFIG",  badge:0,           admin:true},
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarSection, setSidebarSection] = useState(null);
+  const navGroups = [
+    { id:"core", label:"CORE", items:[
+      {id:"dashboard", icon:"⬡", label:"Dashboard", badge:0, admin:true},
+      {id:"inbox",     icon:"✉", label:"Inbox",     badge:emails.filter(e=>!e.is_read).length, admin:true},
+      {id:"callcenter",icon:"☎", label:"Calls",     badge:unreadNotifs, admin:false},
+      {id:"messages",  icon:"💬", label:"Messages",  badge:unreadMsgs, admin:false},
+    ]},
+    { id:"sales", label:"SALES & CRM", items:[
+      {id:"crm",       icon:"💼", label:"CRM",       badge:overdueTasks.length, admin:true},
+      {id:"leads",     icon:"🎯", label:"Leads",     badge:0, admin:true},
+      {id:"appointments",icon:"📅", label:"Booking",  badge:todayAppts, admin:true},
+      {id:"invoices",  icon:"💰", label:"Invoicing",  badge:overdueInvs, admin:true},
+    ]},
+    { id:"marketing", label:"MARKETING", items:[
+      {id:"marketing", icon:"📣", label:"Campaigns",  badge:0, admin:true},
+      {id:"social",    icon:"📱", label:"Social",     badge:0, admin:true},
+      {id:"market",    icon:"📡", label:"Market Intel",badge:0, admin:true},
+    ]},
+    { id:"ops", label:"OPERATIONS", items:[
+      {id:"docs",      icon:"📁", label:"Documents",  badge:0, admin:true},
+      {id:"esign",     icon:"✍", label:"E-Sign",      badge:0, admin:true},
+      {id:"compliance",icon:"📋", label:"Compliance",  badge:expiringItems, admin:true},
+      {id:"vendors",   icon:"🔨", label:"Vendors",     badge:0, admin:true},
+      {id:"automations",icon:"⚡", label:"Automations", badge:0, admin:true},
+    ]},
+    { id:"analytics", label:"ANALYTICS & AI", items:[
+      {id:"analytics", icon:"📊", label:"Analytics",   badge:0, admin:true},
+      {id:"intel",     icon:"🧠", label:"Intelligence",badge:0, admin:true},
+    ]},
+    { id:"admin", label:"ADMIN", items:[
+      {id:"biz",       icon:"🏢", label:"Business",    badge:0, admin:true},
+      {id:"toolbox",   icon:"🧰", label:"Tools",       badge:0, admin:true},
+      {id:"settings",  icon:"⚙", label:"Settings",     badge:0, admin:true},
+    ]},
+    { id:"apps", label:"APPS", items:[
+      {id:"_wolfsurety", icon:"🐺", label:"Wolf Surety", badge:0, admin:true, external:"https://app.wolfsurety.com"},
+    ]},
   ];
+  const navAll = navGroups.flatMap(g=>g.items);
+  const filteredGroups = isAdmin ? navGroups : navGroups.map(g=>({...g,items:g.items.filter(n=>!n.admin)})).filter(g=>g.items.length>0);
   const navMain = isAdmin ? navAll : navAll.filter(n=>!n.admin);
 
   const CRM_SUBS = [{id:"pipeline",l:"Kanban"},{id:"contacts",l:"Contacts"},{id:"deals",l:"Deals"},{id:"tasks",l:"Tasks"},{id:"timeline",l:"Timeline"},{id:"referrals",l:"Referrals"},{id:"reviews",l:"Reviews"}];
@@ -9216,26 +9235,25 @@ function EmailVault({ user, teamProfile, onSignOut }) {
       {showAI&&<AIAssistant contacts={contacts} deals={deals} tasks={tasks} activities={activities} businesses={businesses} intelligence={intelligence} campaigns={campaigns} onClose={()=>setShowAI(false)} />}
       <button onClick={()=>setShowAI(p=>!p)} style={{ position:"fixed",bottom:20,right:20,width:46,height:46,borderRadius:"50%",background:"rgba(139,92,246,.15)",border:"1px solid rgba(139,92,246,.5)",color:"#a78bfa",cursor:"pointer",fontSize:20,zIndex:200,boxShadow:"0 0 30px rgba(139,92,246,.3)" }} title="Vault AI Advisor">⬡</button>
 
-      {/* TOP BAR */}
-      <div style={{ display:"flex",alignItems:"center",padding:"0 16px",height:44,borderBottom:"1px solid #111120",background:"#07070e",flexShrink:0,gap:6 }}>
-        <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}><img src="/favicon.svg" alt="" style={{width:22,height:22}} /><span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:".25em",color:"#d4af37"}}>VAULT</span></div>
+      {/* TOP BAR — slim */}
+      <div style={{ display:"flex",alignItems:"center",padding:"0 12px",height:40,borderBottom:"1px solid #111120",background:"#07070e",flexShrink:0,gap:8 }}>
+        <button onClick={()=>setSidebarOpen(p=>!p)} style={{background:"none",border:"none",color:"#555",cursor:"pointer",fontSize:16,padding:"2px 4px",fontFamily:"inherit"}} title="Toggle sidebar">{sidebarOpen?"◁":"▷"}</button>
+        <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}><img src="/favicon.svg" alt="" style={{width:20,height:20}} /><span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".25em",color:"#d4af37"}}>VAULT</span></div>
         <RateTicker />
-        {/* Nav */}
-        <div style={{ display:"flex",gap:2,flex:1,overflowX:"auto" }}>
-          {navMain.map(n=>(
-            <button key={n.id} onClick={()=>handleNav(n.id)} style={{ background:view===n.id?"rgba(212,175,55,.1)":"none",border:`1px solid ${view===n.id?"rgba(212,175,55,.35)":"transparent"}`,color:view===n.id?"#d4af37":"#555",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 10px",borderRadius:3,letterSpacing:".06em",whiteSpace:"nowrap",position:"relative" }}>
-              {n.label}
-              {n.badge>0&&<span style={{ position:"absolute",top:-4,right:-4,width:14,height:14,background:"#ef4444",borderRadius:"50%",fontSize:7,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff" }}>{n.badge}</span>}
-            </button>
-          ))}
-        </div>
-        {/* Search button */}
+        <div style={{flex:1}} />
+        {/* CRM sub-nav inline */}
+        {view==="crm"&&CRM_SUBS.map(s=>(
+          <button key={s.id} onClick={()=>setSub(s.id)} style={{background:sub===s.id?"rgba(212,175,55,.08)":"none",border:`1px solid ${sub===s.id?"rgba(212,175,55,.25)":"transparent"}`,color:sub===s.id?"#d4af37":"#444",fontFamily:"inherit",fontSize:9,padding:"3px 10px",borderRadius:2,cursor:"pointer",letterSpacing:".06em"}}>{s.l}</button>
+        ))}
+        {/* Messages sub-nav inline */}
+        {view==="messages"&&MSG_SUBS.map(s=>(
+          <button key={s.id} onClick={()=>setSub(s.id)} style={{background:sub===s.id?"rgba(212,175,55,.08)":"none",border:`1px solid ${sub===s.id?"rgba(212,175,55,.25)":"transparent"}`,color:sub===s.id?"#d4af37":"#444",fontFamily:"inherit",fontSize:9,padding:"3px 10px",borderRadius:2,cursor:"pointer",letterSpacing:".06em"}}>{s.l}</button>
+        ))}
+        <div style={{flex:1}} />
         <button onClick={()=>setShowSearch(true)} style={{ background:"rgba(255,255,255,.03)",border:"1px solid #1a1a28",color:"#444",cursor:"pointer",borderRadius:4,padding:"4px 12px",fontSize:9,fontFamily:"inherit",display:"flex",alignItems:"center",gap:6 }}>⌕ SEARCH <span style={{color:"#2a2a3a",fontSize:8}}>⌘K</span></button>
-        {/* Spend + Toast */}
         {toast&&<div className="fi" style={{color:"#10b981",fontSize:9,background:"rgba(16,185,129,.08)",padding:"3px 10px",borderRadius:3,border:"1px solid rgba(16,185,129,.2)",whiteSpace:"nowrap"}}>{toast}</div>}
-        {spend.calls>0&&<div title={`${spend.calls} AI calls · ${spend.inputTokens.toLocaleString()} in / ${spend.outputTokens.toLocaleString()} out tokens`} style={{fontSize:8,color:Number(spend.estUSD)>.10?"#f59e0b":"#333",background:"rgba(0,0,0,.4)",padding:"3px 8px",borderRadius:3,border:"1px solid #1a1a28",cursor:"default",letterSpacing:".04em",whiteSpace:"nowrap"}}>~${spend.estUSD} · {spend.calls} calls</div>}
+        {spend.calls>0&&<div title={`${spend.calls} AI calls`} style={{fontSize:8,color:Number(spend.estUSD)>.10?"#f59e0b":"#333",background:"rgba(0,0,0,.4)",padding:"3px 8px",borderRadius:3,border:"1px solid #1a1a28",cursor:"default",letterSpacing:".04em",whiteSpace:"nowrap"}}>~${spend.estUSD}</div>}
         {overdueTasks.length>0&&<div style={{color:"#ef4444",fontSize:9,background:"rgba(239,68,68,.08)",padding:"3px 8px",borderRadius:3,border:"1px solid rgba(239,68,68,.2)",whiteSpace:"nowrap"}}>⚠ {overdueTasks.length}</div>}
-        {/* Notification bell */}
         <div style={{position:"relative"}}>
           <button onClick={()=>setShowNotifPanel(p=>!p)} style={{background:unreadNotifs?"rgba(239,68,68,.1)":"rgba(255,255,255,.03)",border:`1px solid ${unreadNotifs?"rgba(239,68,68,.3)":"#1a1a28"}`,color:unreadNotifs?"#ef4444":"#555",cursor:"pointer",borderRadius:3,padding:"4px 8px",fontSize:12,fontFamily:"inherit",position:"relative"}}>
             🔔{unreadNotifs>0&&<span style={{position:"absolute",top:-4,right:-4,width:14,height:14,background:"#ef4444",borderRadius:"50%",fontSize:7,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff"}}>{unreadNotifs}</span>}
@@ -9272,30 +9290,45 @@ function EmailVault({ user, teamProfile, onSignOut }) {
         <button onClick={onSignOut} style={{background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",color:"#ef4444",cursor:"pointer",borderRadius:3,padding:"4px 8px",fontSize:8,fontFamily:"inherit",letterSpacing:".06em",whiteSpace:"nowrap"}}>LOGOUT</button>
       </div>
 
-      {/* CRM sub-nav */}
-      {view==="crm"&&(
-        <div style={{display:"flex",gap:4,padding:"0 14px",height:32,borderBottom:"1px solid #0e0e18",background:"#08080e",alignItems:"center",flexShrink:0}}>
-          {CRM_SUBS.map(s=>(
-            <button key={s.id} onClick={()=>setSub(s.id)} style={{background:sub===s.id?"rgba(212,175,55,.08)":"none",border:`1px solid ${sub===s.id?"rgba(212,175,55,.25)":"transparent"}`,color:sub===s.id?"#d4af37":"#444",fontFamily:"inherit",fontSize:9,padding:"3px 10px",borderRadius:2,cursor:"pointer",letterSpacing:".06em"}}>{s.l}</button>
-          ))}
-        </div>
-      )}
-
-      {/* Messages sub-nav */}
-      {view==="messages"&&(
-        <div style={{display:"flex",gap:4,padding:"0 14px",height:32,borderBottom:"1px solid #0e0e18",background:"#08080e",alignItems:"center",flexShrink:0}}>
-          {MSG_SUBS.map(s=>(
-            <button key={s.id} onClick={()=>setSub(s.id)} style={{background:sub===s.id?"rgba(212,175,55,.08)":"none",border:`1px solid ${sub===s.id?"rgba(212,175,55,.25)":"transparent"}`,color:sub===s.id?"#d4af37":"#444",fontFamily:"inherit",fontSize:9,padding:"3px 10px",borderRadius:2,cursor:"pointer",letterSpacing:".06em"}}>{s.l}</button>
-          ))}
-        </div>
-      )}
-
       {loading&&(
-        <div style={{position:"absolute",top:44,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#d4af37,transparent)",animation:"sh 1.4s infinite",backgroundSize:"200% 100%",zIndex:100}} />
+        <div style={{position:"absolute",top:40,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#d4af37,transparent)",animation:"sh 1.4s infinite",backgroundSize:"200% 100%",zIndex:100}} />
       )}
 
-      {/* MAIN CONTENT */}
+      {/* SIDEBAR + MAIN CONTENT */}
       <div style={{flex:1,overflow:"hidden",display:"flex"}}>
+
+        {/* SIDEBAR */}
+        <div style={{width:sidebarOpen?200:0,minWidth:sidebarOpen?200:0,background:"#07070e",borderRight:sidebarOpen?"1px solid #111120":"none",overflow:"hidden",transition:"width .2s ease, min-width .2s ease",display:"flex",flexDirection:"column",flexShrink:0}}>
+          <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:sidebarOpen?"8px 0":"0"}}>
+            {filteredGroups.map(g=>(
+              <div key={g.id} style={{marginBottom:4}}>
+                <button onClick={()=>setSidebarSection(p=>p===g.id?null:g.id)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",padding:"6px 14px",background:"none",border:"none",color:"#3a3a4a",cursor:"pointer",fontFamily:"inherit",fontSize:8,letterSpacing:".12em",textAlign:"left"}}>
+                  <span>{g.label}</span>
+                  <span style={{fontSize:8,transform:sidebarSection===g.id||g.items.some(i=>i.id===view)?"rotate(90deg)":"none",transition:"transform .15s"}}>▸</span>
+                </button>
+                {(sidebarSection===g.id||g.items.some(i=>i.id===view))&&g.items.map(n=>(
+                  <button key={n.id} onClick={()=>{if(n.external){window.open(n.external,"_blank");}else{handleNav(n.id);}}} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"7px 14px 7px 20px",background:view===n.id?"rgba(212,175,55,.08)":"none",borderLeft:view===n.id?"2px solid #d4af37":"2px solid transparent",borderTop:"none",borderRight:"none",borderBottom:"none",color:view===n.id?"#d4af37":"#666",cursor:"pointer",fontFamily:"inherit",fontSize:10,textAlign:"left",position:"relative",transition:"all .1s"}}>
+                    <span style={{fontSize:13,width:18,textAlign:"center",flexShrink:0}}>{n.icon}</span>
+                    <span style={{flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{n.label}</span>
+                    {n.badge>0&&<span style={{minWidth:16,height:16,background:"#ef4444",borderRadius:8,fontSize:8,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",padding:"0 4px",flexShrink:0}}>{n.badge}</span>}
+                    {n.external&&<span style={{fontSize:8,color:"#333"}}>↗</span>}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+          {/* Sidebar footer */}
+          {sidebarOpen&&<div style={{borderTop:"1px solid #111120",padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:24,height:24,borderRadius:"50%",background:"rgba(212,175,55,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#d4af37",flexShrink:0}}>K</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:9,color:"#888",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{teamProfile?.display_name||"Admin"}</div>
+              <div style={{fontSize:7,color:"#333"}}>ADMIN</div>
+            </div>
+          </div>}
+        </div>
+
+        {/* MAIN CONTENT */}
+        <div style={{flex:1,overflow:"hidden",display:"flex"}}>
 
         {/* ── DASHBOARD ── */}
         {view==="dashboard"&&<Dashboard contacts={contacts} deals={deals} tasks={tasks} activities={activities} businesses={businesses} intelligence={intelligence} documents={documents} campaigns={campaigns} onNav={handleNav} onNewDeal={()=>{setEditDeal(null);setShowDeal(true);}} onNewTask={()=>{setEditTask(null);setShowTask(true);}} />}
@@ -9859,7 +9892,8 @@ function EmailVault({ user, teamProfile, onSignOut }) {
         {view==="toolbox"&&<ToolboxView showToast={showToast} contacts={contacts} />}
 
         {view==="settings"&&<SettingsView user={user} teamProfile={teamProfile} isAdmin={isAdmin} spend={spend} showToast={showToast} />}
-      </div>
+        </div>{/* end main content */}
+      </div>{/* end sidebar + main */}
     </div>
   );
 }

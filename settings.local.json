@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" -X GET \"https://n8n.srv1257040.hstgr.cloud/api/v1/workflows\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0OWNkMjY4NC1lOGZjLTQxYmYtODRjNy0wZjRiMDNkYWRhYzciLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzczNDE2NDQ0fQ.L8nRFh1ORlSw_FBPnrpyCZYL-VbwxUJlLzv0qhbP1YI\")",
+      "Bash(curl -s -X POST \"https://n8n.srv1257040.hstgr.cloud/webhook/claude\" -H \"Content-Type: application/json\" -d '{\"\"\"\"system\"\"\"\":\"\"\"\"You are a helpful assistant.\"\"\"\",\"\"\"\"user\"\"\"\":\"\"\"\"Say hello in exactly 5 words.\"\"\"\",\"\"\"\"max_tokens\"\"\"\":50}')"
+    ]
+  }
+}
