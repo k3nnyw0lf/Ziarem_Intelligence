@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Component } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area } from "recharts";
 import SocialAgentsView from "./SocialAgents.jsx";
+import MortgagePOSView from "./components/MortgagePOS.jsx";
 
 // ─── SUPABASE ─────────────────────────────────────────────────────────────────
 const SB_URL = "https://sfelhasepvaoianyuvxe.supabase.co";
@@ -9154,41 +9155,41 @@ function EmailVault({ user, teamProfile, onSignOut }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarSection, setSidebarSection] = useState(null);
   const navGroups = [
-    { id:"core", label:"CORE", items:[
+    { id:"mortgage", label:"MORTGAGE", items:[
       {id:"dashboard", icon:"⬡", label:"Dashboard", badge:0, admin:true},
-      {id:"inbox",     icon:"✉", label:"Inbox",     badge:emails.filter(e=>!e.is_read).length, admin:true},
-      {id:"callcenter",icon:"☎", label:"Calls",     badge:unreadNotifs, admin:false},
-      {id:"messages",  icon:"💬", label:"Messages",  badge:unreadMsgs, admin:false},
+      {id:"pricing",   icon:"🏦", label:"Pricing Engine", badge:0, admin:true},
+      {id:"leads",     icon:"🎯", label:"Pipeline",     badge:0, admin:true},
+      {id:"crm",       icon:"👥", label:"Borrowers",    badge:overdueTasks.length, admin:true},
+      {id:"docs",      icon:"📁", label:"Documents",    badge:0, admin:true},
+      {id:"esign",     icon:"✍", label:"E-Sign",        badge:0, admin:true},
+      {id:"compliance",icon:"📋", label:"Compliance",   badge:expiringItems, admin:true},
     ]},
-    { id:"sales", label:"SALES & CRM", items:[
-      {id:"crm",       icon:"💼", label:"CRM",       badge:overdueTasks.length, admin:true},
-      {id:"leads",     icon:"🎯", label:"Leads",     badge:0, admin:true},
-      {id:"appointments",icon:"📅", label:"Booking",  badge:todayAppts, admin:true},
-      {id:"invoices",  icon:"💰", label:"Invoicing",  badge:overdueInvs, admin:true},
+    { id:"comms", label:"COMMUNICATIONS", items:[
+      {id:"inbox",     icon:"✉", label:"Inbox",       badge:emails.filter(e=>!e.is_read).length, admin:true},
+      {id:"callcenter",icon:"☎", label:"Calls",       badge:unreadNotifs, admin:false},
+      {id:"messages",  icon:"💬", label:"Messages",    badge:unreadMsgs, admin:false},
     ]},
-    { id:"marketing", label:"MARKETING", items:[
-      {id:"marketing", icon:"📣", label:"Campaigns",  badge:0, admin:true},
-      {id:"social",    icon:"📱", label:"Social",     badge:0, admin:true},
-      {id:"market",    icon:"📡", label:"Market Intel",badge:0, admin:true},
+    { id:"business", label:"BUSINESS", items:[
+      {id:"appointments",icon:"📅", label:"Booking",    badge:todayAppts, admin:true},
+      {id:"invoices",  icon:"💰", label:"Invoicing",    badge:overdueInvs, admin:true},
+      {id:"vendors",   icon:"🔨", label:"Vendors",      badge:0, admin:true},
     ]},
-    { id:"ops", label:"OPERATIONS", items:[
-      {id:"docs",      icon:"📁", label:"Documents",  badge:0, admin:true},
-      {id:"esign",     icon:"✍", label:"E-Sign",      badge:0, admin:true},
-      {id:"compliance",icon:"📋", label:"Compliance",  badge:expiringItems, admin:true},
-      {id:"vendors",   icon:"🔨", label:"Vendors",     badge:0, admin:true},
-      {id:"automations",icon:"⚡", label:"Automations", badge:0, admin:true},
-    ]},
-    { id:"analytics", label:"ANALYTICS & AI", items:[
-      {id:"analytics", icon:"📊", label:"Analytics",   badge:0, admin:true},
-      {id:"intel",     icon:"🧠", label:"Intelligence",badge:0, admin:true},
+    { id:"marketing", label:"MARKETING & AI", items:[
+      {id:"marketing", icon:"📣", label:"Campaigns",    badge:0, admin:true},
+      {id:"social",    icon:"📱", label:"Social",       badge:0, admin:true},
+      {id:"market",    icon:"📡", label:"Market Intel",  badge:0, admin:true},
+      {id:"intel",     icon:"🧠", label:"Intelligence",  badge:0, admin:true},
+      {id:"analytics", icon:"📊", label:"Analytics",     badge:0, admin:true},
     ]},
     { id:"admin", label:"ADMIN", items:[
-      {id:"biz",       icon:"🏢", label:"Business",    badge:0, admin:true},
-      {id:"toolbox",   icon:"🧰", label:"Tools",       badge:0, admin:true},
-      {id:"settings",  icon:"⚙", label:"Settings",     badge:0, admin:true},
+      {id:"automations",icon:"⚡", label:"Automations",  badge:0, admin:true},
+      {id:"biz",       icon:"🏢", label:"Business",      badge:0, admin:true},
+      {id:"toolbox",   icon:"🧰", label:"Tools",         badge:0, admin:true},
+      {id:"settings",  icon:"⚙", label:"Settings",       badge:0, admin:true},
     ]},
     { id:"apps", label:"APPS", items:[
       {id:"_wolfsurety", icon:"🐺", label:"Wolf Surety", badge:0, admin:true, external:"https://app.wolfsurety.com"},
+      {id:"_dosmortgage", icon:"🏠", label:"DOS Mortgage", badge:0, admin:true, external:"https://dosmortgage.pages.dev"},
     ]},
   ];
   const navAll = navGroups.flatMap(g=>g.items);
@@ -9886,6 +9887,8 @@ function EmailVault({ user, teamProfile, onSignOut }) {
         {view==="vendors"&&<VendorsView user={user} businesses={businesses} showToast={showToast} />}
 
         {view==="esign"&&<ESignatureView user={user} contacts={contacts} businesses={businesses} showToast={showToast} />}
+
+        {view==="pricing"&&<MortgagePOSView user={user} contacts={contacts} showToast={showToast} />}
 
         {view==="social"&&<SocialAgentsView sb={sb} n8nPost={n8nPost} user={user} KEN_ID="b7a67688-73f1-4f4b-9745-f357e81affa3" />}
 
