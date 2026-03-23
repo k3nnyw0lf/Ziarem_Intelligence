@@ -2032,12 +2032,84 @@ function RealtyTab({ loans, contacts, showToast }) {
 
   // ─── SUB TABS ───────────────────────────────────────────────────────────────
   const SUB_TABS = [
-    { icon:"\uD83D\uDD0D", label:"Property Search" },
-    { icon:"\uD83D\uDCBE", label:"Saved Searches" },
-    { icon:"\u2B50", label:"Favorites" },
-    { icon:"\uD83D\uDCCA", label:"Comp Analysis" },
-    { icon:"\uD83D\uDD17", label:"MLS Connections" },
+    { icon:"\uD83D\uDD0D", label:"Properties" },
+    { icon:"\uD83D\uDCC4", label:"Transactions" },
+    { icon:"\uD83D\uDCDD", label:"Contracts" },
+    { icon:"\u2705", label:"Compliance" },
+    { icon:"\uD83D\uDCCA", label:"Comps" },
+    { icon:"\uD83D\uDD17", label:"MLS" },
   ];
+
+  // ─── TRANSACTION STATE ──────────────────────────────────────────────────────
+  const [transactions, setTransactions] = useState([]);
+  const [selectedTx, setSelectedTx] = useState(null);
+  const [showNewTx, setShowNewTx] = useState(false);
+  const [txForm, setTxForm] = useState({property_address:"",property_city:"",property_state:"FL",property_zip:"",buyer_name:"",seller_name:"",list_price:"",contract_price:"",contract_date:"",closing_date:"",stage:"Pre-Listing",transaction_type:"purchase"});
+  const [complianceItems, setComplianceItems] = useState([]);
+
+  useEffect(() => {
+    sbFetch("vault_re_transactions","?order=created_at.desc&limit=100").then(d=>setTransactions(d||[]));
+  }, []);
+
+  const loadCompliance = async (txId) => {
+    const items = await sbFetch("vault_re_compliance",`?transaction_id=eq.${txId}&order=category.asc,item_name.asc`);
+    setComplianceItems(items||[]);
+  };
+
+  const createTransaction = async () => {
+    if(!txForm.property_address) return;
+    const r = await sbInsert("vault_re_transactions", txForm);
+    if(r) {
+      setTransactions([r,...transactions]);
+      setShowNewTx(false);
+      setTxForm({property_address:"",property_city:"",property_state:"FL",property_zip:"",buyer_name:"",seller_name:"",list_price:"",contract_price:"",contract_date:"",closing_date:"",stage:"Pre-Listing",transaction_type:"purchase"});
+      // Auto-create compliance checklist
+      const defaultItems = [
+        {item_name:"Listing Agreement Signed",category:"Listing"},
+        {item_name:"Buyer Broker Agreement Signed",category:"Buyer"},
+        {item_name:"Property Disclosure Received",category:"Disclosure"},
+        {item_name:"Lead Paint Disclosure",category:"Disclosure"},
+        {item_name:"HOA Documents Received",category:"HOA"},
+        {item_name:"Contract Fully Executed",category:"Contract"},
+        {item_name:"Earnest Money Deposited",category:"Contract"},
+        {item_name:"Inspection Completed",category:"Inspection",deadline:txForm.contract_date?new Date(new Date(txForm.contract_date).getTime()+15*86400000).toISOString().split("T")[0]:null},
+        {item_name:"Appraisal Ordered",category:"Appraisal"},
+        {item_name:"Appraisal Received",category:"Appraisal"},
+        {item_name:"Title Search Completed",category:"Title"},
+        {item_name:"Survey Ordered",category:"Title"},
+        {item_name:"Loan Commitment Received",category:"Financing",deadline:txForm.contract_date?new Date(new Date(txForm.contract_date).getTime()+30*86400000).toISOString().split("T")[0]:null},
+        {item_name:"Insurance Binder Received",category:"Insurance"},
+        {item_name:"Walk-Through Completed",category:"Closing"},
+        {item_name:"Closing Disclosure Signed",category:"Closing"},
+        {item_name:"Final Settlement Statement",category:"Closing"},
+      ];
+      for(const item of defaultItems) await sbInsert("vault_re_compliance",{...item,transaction_id:r.id});
+      if(showToast) showToast("Transaction created with compliance checklist");
+    }
+  };
+
+  const FL_CONTRACTS = [
+    {name:"FAR/BAR Residential Contract (Standard)",form:"FR/BAR-6",category:"Purchase",updated:"Jan 2026"},
+    {name:"FAR/BAR AS IS Contract",form:"FR/BAR AS IS-6",category:"Purchase",updated:"Jan 2026"},
+    {name:"Exclusive Right of Sale Listing Agreement",form:"ERS-18",category:"Listing",updated:"Jan 2026"},
+    {name:"Buyer Broker Agreement",form:"BBA-3",category:"Buyer",updated:"Jan 2026"},
+    {name:"Addendum: Financing Contingency",form:"FC-5",category:"Addendum",updated:"Jan 2026"},
+    {name:"Addendum: Inspection",form:"INS-4",category:"Addendum",updated:"Jan 2026"},
+    {name:"Addendum: HOA/Condo",form:"HOA-3",category:"Addendum",updated:"Jan 2026"},
+    {name:"Seller Property Disclosure",form:"SPDS-6",category:"Disclosure",updated:"Jan 2026"},
+    {name:"Lead-Based Paint Disclosure",form:"LBP-2",category:"Disclosure",updated:"2024"},
+    {name:"FIRPTA Affidavit",form:"FIRPTA-1",category:"Disclosure",updated:"2024"},
+    {name:"Compensation Agreement (MCSB-1)",form:"MCSB-1",category:"Compensation",updated:"Jan 2026"},
+    {name:"Assignment of Contract",form:"AOC-2",category:"Contract",updated:"2024"},
+    {name:"Extension of Time",form:"EOT-3",category:"Contract",updated:"Jan 2026"},
+    {name:"Cancellation of Contract",form:"CAN-2",category:"Contract",updated:"2024"},
+  ];
+
+  const TX_STAGES = ["Pre-Listing","Listed","Under Contract","Inspection","Appraisal","Title/Survey","Clear to Close","Closing","Closed"];
+  const stageColor = s => ({
+    "Pre-Listing":DIM,"Listed":BLUE,"Under Contract":YELLOW,"Inspection":"#f97316",
+    "Appraisal":"#a78bfa","Title/Survey":"#06b6d4","Clear to Close":GREEN,"Closing":GOLD,"Closed":GREEN
+  }[s]||DIM);
 
   return (
     <div>
@@ -2151,60 +2223,95 @@ function RealtyTab({ loans, contacts, showToast }) {
         </div>
       )}
 
-      {/* ═══ SUB-TAB 1: Saved Searches ═══ */}
-      {subTab===1 && (
-        <div>
-          <div style={{ fontSize:10, fontWeight:700, color:PURPLE, marginBottom:12, textTransform:"uppercase", letterSpacing:".06em" }}>{"\uD83D\uDCBE"} Saved Searches ({savedSearches.length})</div>
-          {savedSearches.length===0 && <div style={{ ...rCardS, textAlign:"center", color:DIM, fontSize:10, padding:30 }}>No saved searches yet. Use the Property Search tab to search and save criteria.</div>}
-          <div style={{ display:"grid", gap:10 }}>
-            {savedSearches.map(s=>(
-              <div key={s.id} style={{ ...rCardS, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <div>
-                  <div style={{ fontSize:10, fontWeight:600, color:BRIGHT }}>{s.name}</div>
-                  <div style={{ fontSize:8, color:DIM, marginTop:2 }}>
-                    {[s.filters.city, s.filters.state, s.filters.zip, s.filters.minPrice?`$${Number(s.filters.minPrice).toLocaleString()}+`:"", s.filters.maxPrice?`Up to $${Number(s.filters.maxPrice).toLocaleString()}`:"", s.filters.beds?`${s.filters.beds}+ beds`:"", s.filters.type, s.filters.status].filter(Boolean).join(" · ") || "All properties"}
-                  </div>
-                  <div style={{ fontSize:7, color:DIM, marginTop:2 }}>Saved: {new Date(s.savedAt).toLocaleDateString()}</div>
-                </div>
-                <div style={{ display:"flex", gap:6 }}>
-                  <button onClick={()=>loadSavedSearch(s)} style={{ ...rBtnS, padding:"4px 10px", fontSize:9 }}>{"\u25B6"} Run</button>
-                  <button onClick={()=>{persistSavedSearches(savedSearches.filter(x=>x.id!==s.id)); if(showToast) showToast("Search deleted");}} style={{ ...rBtnOutS, padding:"4px 10px", fontSize:9, borderColor:RED, color:RED }}>{"\u2715"}</button>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* ═══ SUB-TAB 1: Transactions ═══ */}
+      {subTab===1 && (<div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{fontSize:10,fontWeight:700,color:PURPLE,textTransform:"uppercase",letterSpacing:".06em"}}>Transactions ({transactions.length})</div>
+          <button onClick={()=>setShowNewTx(!showNewTx)} style={rBtnS}>+ New Transaction</button>
         </div>
-      )}
-
-      {/* ═══ SUB-TAB 2: Favorites / Watchlist ═══ */}
-      {subTab===2 && (
-        <div>
-          <div style={{ fontSize:10, fontWeight:700, color:PURPLE, marginBottom:12, textTransform:"uppercase", letterSpacing:".06em" }}>{"\u2B50"} Favorites / Watchlist ({favorites.length})</div>
-          {favorites.length===0 && <div style={{ ...rCardS, textAlign:"center", color:DIM, fontSize:10, padding:30 }}>No favorites yet. Star properties from the search results to track them here.</div>}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(260px, 1fr))", gap:12 }}>
-            {favorites.map(p=>(
-              <div key={p.id} style={{ ...rCardS, position:"relative" }}>
-                <div style={{ background:BORDER, height:90, borderRadius:4, marginBottom:8, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <span style={{ fontSize:28, opacity:.3 }}>{"\uD83C\uDFE0"}</span>
-                </div>
-                <div onClick={()=>toggleFavorite(p)} style={{ position:"absolute", top:16, right:18, cursor:"pointer", fontSize:16, filter:"drop-shadow(0 0 4px #d4af37)" }}>{"\u2B50"}</div>
-                <span style={{ position:"absolute", top:16, left:18, fontSize:7, padding:"2px 7px", borderRadius:3, background:`${statusColors[p.status]||DIM}22`, color:statusColors[p.status]||DIM, fontWeight:700, letterSpacing:".04em", textTransform:"uppercase" }}>{p.status}</span>
-                <div style={{ fontSize:13, fontWeight:700, color:GOLD, marginBottom:2 }}>{fmtMoney(p.price)}</div>
-                <div style={{ fontSize:10, color:BRIGHT, fontWeight:600 }}>{p.address}</div>
-                <div style={{ fontSize:9, color:DIM, marginBottom:4 }}>{p.city}, {p.state} {p.zip}</div>
-                <div style={{ display:"flex", gap:10, fontSize:9, color:TXT }}>
-                  <span>{p.beds} bd</span><span style={{ color:BORDER }}>|</span>
-                  <span>{p.baths} ba</span><span style={{ color:BORDER }}>|</span>
-                  <span>{Number(p.sqft).toLocaleString()} sqft</span>
-                </div>
-              </div>
-            ))}
+        {showNewTx&&(<div style={{...rCardS,marginBottom:12,borderColor:GOLD+"33"}}>
+          <div style={{fontSize:10,fontWeight:700,color:GOLD,marginBottom:8}}>New Transaction</div>
+          <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 0.5fr 0.5fr",gap:6,marginBottom:6}}>
+            {[["Property Address","property_address"],["City","property_city"],["State","property_state"],["ZIP","property_zip"]].map(([l,k])=>(<div key={k}><div style={{fontSize:7,color:DIM}}>{l}</div><input style={rInputS} value={txForm[k]} onChange={e=>setTxForm({...txForm,[k]:e.target.value})} /></div>))}
           </div>
-        </div>
-      )}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:6}}>
+            {[["Buyer","buyer_name"],["Seller","seller_name"],["List Price","list_price"],["Contract Price","contract_price"]].map(([l,k])=>(<div key={k}><div style={{fontSize:7,color:DIM}}>{l}</div><input style={rInputS} value={txForm[k]} onChange={e=>setTxForm({...txForm,[k]:e.target.value})} /></div>))}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:8}}>
+            <div><div style={{fontSize:7,color:DIM}}>Contract Date</div><input type="date" style={rInputS} value={txForm.contract_date} onChange={e=>setTxForm({...txForm,contract_date:e.target.value})} /></div>
+            <div><div style={{fontSize:7,color:DIM}}>Closing Date</div><input type="date" style={rInputS} value={txForm.closing_date} onChange={e=>setTxForm({...txForm,closing_date:e.target.value})} /></div>
+            <div><div style={{fontSize:7,color:DIM}}>Type</div><select style={rInputS} value={txForm.transaction_type} onChange={e=>setTxForm({...txForm,transaction_type:e.target.value})}><option value="purchase">Purchase</option><option value="listing">Listing</option><option value="lease">Lease</option></select></div>
+          </div>
+          <div style={{display:"flex",gap:6}}><button onClick={createTransaction} style={rBtnS}>Create</button><button onClick={()=>setShowNewTx(false)} style={{...rBtnOutS,borderColor:DIM,color:DIM}}>Cancel</button></div>
+        </div>)}
+        {transactions.length===0&&<div style={{...rCardS,textAlign:"center",color:DIM,fontSize:9,padding:30}}>No transactions yet. Click "+ New Transaction" to start.</div>}
+        {transactions.map(tx=>(<div key={tx.id} onClick={()=>{setSelectedTx(tx);loadCompliance(tx.id);setSubTab(3);}} style={{...rCardS,marginBottom:8,cursor:"pointer",borderLeft:`3px solid ${stageColor(tx.stage)}`,transition:"all .2s"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div><div style={{fontSize:10,color:BRIGHT,fontWeight:700}}>{tx.property_address}</div><div style={{fontSize:8,color:DIM}}>{tx.property_city}, {tx.property_state} {tx.property_zip}</div></div>
+            <span style={{fontSize:7,padding:"2px 8px",borderRadius:3,background:stageColor(tx.stage)+"22",color:stageColor(tx.stage),fontWeight:700}}>{tx.stage}</span>
+          </div>
+          <div style={{display:"flex",gap:16,marginTop:6,fontSize:8,color:DIM}}>
+            {tx.buyer_name&&<span>Buyer: <span style={{color:TXT}}>{tx.buyer_name}</span></span>}
+            {tx.seller_name&&<span>Seller: <span style={{color:TXT}}>{tx.seller_name}</span></span>}
+            {tx.contract_price&&<span>Price: <span style={{color:GOLD,fontWeight:700}}>${Number(tx.contract_price).toLocaleString()}</span></span>}
+            {tx.closing_date&&<span>Closing: <span style={{color:TXT}}>{tx.closing_date}</span></span>}
+          </div>
+        </div>))}
+      </div>)}
 
-      {/* ═══ SUB-TAB 3: Comp Analysis ═══ */}
-      {subTab===3 && (
+      {/* ═══ SUB-TAB 2: Contracts Library ═══ */}
+      {subTab===2 && (<div>
+        <div style={{fontSize:10,fontWeight:700,color:PURPLE,marginBottom:12,textTransform:"uppercase",letterSpacing:".06em"}}>Florida Real Estate Contract Library</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {FL_CONTRACTS.map((c,i)=>{
+            const catColor = {Purchase:BLUE,Listing:PURPLE,Buyer:"#06b6d4",Addendum:YELLOW,Disclosure:"#f97316",Compensation:GOLD,Contract:GREEN}[c.category]||DIM;
+            return (<div key={i} style={{...rCardS,borderLeft:`3px solid ${catColor}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <div><div style={{fontSize:10,color:BRIGHT,fontWeight:600}}>{c.name}</div><div style={{fontSize:8,color:DIM,marginTop:2}}>Form: {c.form} | Updated: {c.updated}</div></div>
+                <span style={{fontSize:7,padding:"2px 6px",borderRadius:3,background:catColor+"22",color:catColor,fontWeight:600,whiteSpace:"nowrap"}}>{c.category}</span>
+              </div>
+              <div style={{display:"flex",gap:6,marginTop:8}}>
+                <button style={{...rBtnOutS,fontSize:8,padding:"3px 10px"}}>Prepare</button>
+                <button style={{...rBtnOutS,fontSize:8,padding:"3px 10px",borderColor:GOLD+"44",color:GOLD}}>DocuSign</button>
+              </div>
+            </div>);
+          })}
+        </div>
+      </div>)}
+
+      {/* ═══ SUB-TAB 3: Compliance ═══ */}
+      {subTab===3 && (<div>
+        <div style={{fontSize:10,fontWeight:700,color:PURPLE,marginBottom:4,textTransform:"uppercase",letterSpacing:".06em"}}>Transaction Compliance</div>
+        {!selectedTx ? <div style={{...rCardS,textAlign:"center",color:DIM,fontSize:9,padding:30}}>Select a transaction from the Transactions tab to view compliance.</div> : (<>
+          <div style={{fontSize:9,color:BRIGHT,marginBottom:12}}>Property: <strong>{selectedTx.property_address}</strong> | Stage: <span style={{color:stageColor(selectedTx.stage),fontWeight:700}}>{selectedTx.stage}</span></div>
+          {(()=>{const done=complianceItems.filter(c=>c.is_completed).length;const total=complianceItems.length;const pct=total?Math.round(done/total*100):0;return(
+            <div style={{...rCardS,marginBottom:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:9,marginBottom:4}}><span style={{color:TXT}}>Compliance Progress</span><span style={{color:pct>=80?GREEN:pct>=50?YELLOW:RED,fontWeight:700}}>{pct}% ({done}/{total})</span></div>
+              <div style={{height:6,background:BORDER,borderRadius:3,overflow:"hidden"}}><div style={{width:`${pct}%`,height:"100%",background:pct>=80?GREEN:pct>=50?YELLOW:RED,borderRadius:3,transition:"width .5s"}} /></div>
+            </div>
+          );})()}
+          {[...new Set(complianceItems.map(c=>c.category))].map(cat=>(<div key={cat} style={{marginBottom:12}}>
+            <div style={{fontSize:9,fontWeight:700,color:PURPLE,marginBottom:6,textTransform:"uppercase"}}>{cat}</div>
+            {complianceItems.filter(c=>c.category===cat).map(item=>{
+              const overdue = item.deadline && !item.is_completed && new Date(item.deadline) < new Date();
+              const daysLeft = item.deadline && !item.is_completed ? Math.ceil((new Date(item.deadline)-new Date())/86400000) : null;
+              return (<div key={item.id} style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",borderBottom:`1px solid ${BORDER}`}}>
+                <input type="checkbox" checked={item.is_completed||false} onChange={async()=>{
+                  const updated = !item.is_completed;
+                  await sbUpdate("vault_re_compliance",item.id,{is_completed:updated,completed_at:updated?new Date().toISOString():null});
+                  setComplianceItems(complianceItems.map(c=>c.id===item.id?{...c,is_completed:updated,completed_at:updated?new Date().toISOString():null}:c));
+                }} style={{accentColor:GOLD}} />
+                <div style={{flex:1}}><span style={{fontSize:9,color:item.is_completed?GREEN:overdue?RED:TXT,textDecoration:item.is_completed?"line-through":"none"}}>{item.item_name}</span></div>
+                {item.deadline&&<span style={{fontSize:7,color:overdue?RED:daysLeft<=7?YELLOW:DIM}}>{overdue?"OVERDUE":daysLeft+"d left"}</span>}
+                {item.is_completed&&item.completed_at&&<span style={{fontSize:7,color:GREEN}}>{new Date(item.completed_at).toLocaleDateString()}</span>}
+              </div>);
+            })}
+          </div>))}
+        </>)}
+      </div>)}
+
+      {/* ═══ SUB-TAB 4: Comp Analysis ═══ */}
+      {subTab===4 && (
         <div>
           <div style={{ ...rCardS, marginBottom:16, borderColor:PURPLE+"33" }}>
             <div style={{ fontSize:10, fontWeight:700, color:PURPLE, marginBottom:10, textTransform:"uppercase", letterSpacing:".06em" }}>{"\uD83D\uDCCA"} Comparable Sales Analysis</div>
@@ -2270,8 +2377,8 @@ function RealtyTab({ loans, contacts, showToast }) {
         </div>
       )}
 
-      {/* ═══ SUB-TAB 4: MLS Connections ═══ */}
-      {subTab===4 && (
+      {/* ═══ SUB-TAB 5: MLS Connections ═══ */}
+      {subTab===5 && (
         <div>
           <div style={{ fontSize:10, fontWeight:700, color:PURPLE, marginBottom:4, textTransform:"uppercase", letterSpacing:".06em" }}>{"\uD83D\uDD17"} MLS Connection Status</div>
           <div style={{ fontSize:8, color:DIM, marginBottom:16 }}>Connect to MLS feeds via Bridge API. When connected, property search will pull live data.</div>

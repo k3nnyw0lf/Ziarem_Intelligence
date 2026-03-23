@@ -78,55 +78,69 @@ function parseMyScoreIQHTML(html) {
   // Extract account types
   const typeVals = [...allText.matchAll(/class="[^"]*ng-binding[^"]*"[^>]*>\s*(Revolving|Installment|Mortgage|Open|Collection|REVOLVING|INSTALLMENT)\s*</gi)].map(m => m[1]);
 
-  // The detail tradeline section has structured data per account
-  // Each tradeline shows: Monthly Payment(x3), Date Opened, Balance(x3), High Credit(x3), Credit Limit(x3)
-  // That's 4 triplets = 12 dollar values per tradeline
-  // But some fields may be missing. Use the creditor names as anchors.
+  // ── ANCHOR-BASED TRADELINE PARSING ──
+  // MyScoreIQ HTML has each tradeline as a block with the creditor name followed by
+  // labeled fields (Account #, Account Type, Monthly Payment, Balance, etc.)
+  // Each field has 3 values (TU, EXP, EQF) rendered in ng-binding spans
 
-  // Deduplicate creditors (same account appears in summary + detail)
+  // Strategy: Find each creditor name position, then search forward for labeled
+  // dollar amounts within that tradeline's HTML block
+
+  // Deduplicate creditors - first occurrence only
   const seen = new Set();
-  const uniqueCreditors = creditorNames.filter(c => { if (seen.has(c)) return false; seen.add(c); return true; });
-
-  // Build tradelines from the structured data
-  // The dollar values come in groups per tradeline
-  // Each tradeline contributes: monthly_payment(3) + balance(3) + high_credit(3) + credit_limit(3) = 12 vals
-  // But some have fewer. Let's use a simpler approach: assign dollar triplets to tradelines sequentially
-
-  const triplets = [];
-  for (let i = 0; i < dollarVals.length - 2; i += 3) {
-    triplets.push({ tu: dollarVals[i], exp: dollarVals[i+1], eqf: dollarVals[i+2] });
+  const creditorPositions = [];
+  for (const m of allText.matchAll(/class="info[^"]*"[^>]*>\s*([A-Z][A-Z0-9 /&'.\-]{3,})\s*</g)) {
+    const name = m[1].trim();
+    if (!/^PO BOX|DISPUTE|CREDIT BUREAU/.test(name) && name.length > 3 && !seen.has(name)) {
+      seen.add(name);
+      creditorPositions.push({ name, pos: m.index });
+    }
   }
 
-  // The first tradeline's data starts at triplet 0
-  // Each tradeline has ~4 triplets: balance, high_credit, credit_limit, monthly_payment (order may vary)
-  // Let's use 4 triplets per tradeline
-  const FIELDS_PER_TRADELINE = 4;
-  const numTradelines = Math.min(uniqueCreditors.length, Math.floor(triplets.length / FIELDS_PER_TRADELINE));
+  // For each creditor, extract the block until the next creditor or end
+  for (let t = 0; t < creditorPositions.length; t++) {
+    const startPos = creditorPositions[t].pos;
+    const endPos = t + 1 < creditorPositions.length ? creditorPositions[t + 1].pos : startPos + 8000;
+    const block = allText.substring(startPos, Math.min(endPos, startPos + 8000));
+    const creditor = creditorPositions[t].name;
 
-  for (let t = 0; t < numTradelines; t++) {
-    const base = t * FIELDS_PER_TRADELINE;
-    const creditor = uniqueCreditors[t] || `Account ${t+1}`;
-    // Take the max of the 3 bureaus for each field (most accurate/recent)
-    const maxOf = tri => Math.max(tri.tu || 0, tri.exp || 0, tri.eqf || 0);
-    const balance = maxOf(triplets[base] || {});
-    const highCredit = maxOf(triplets[base+1] || {});
-    const creditLimit = maxOf(triplets[base+2] || {});
-    const payment = maxOf(triplets[base+3] || {});
-    // Get status and type from sequential lists (3 per tradeline for 3 bureaus)
-    const statusIdx = t * 3;
-    const typeIdx = t * 3;
-    const status = statusVals[statusIdx] || "Open";
-    const acctType = typeVals[typeIdx] || guessAccountType(creditor);
+    // Extract dollar values specifically after each label within this block
+    const extractField = (label) => {
+      const labelRegex = new RegExp(label + "[^<]*<[\\s\\S]{0,500}", "i");
+      const labelMatch = block.match(labelRegex);
+      if (!labelMatch) return 0;
+      const afterLabel = labelMatch[0];
+      // Get all dollar amounts after this label (up to 3 for 3 bureaus)
+      const vals = [...afterLabel.matchAll(/\$([\d,.]+)/g)].map(m => parseMoney(m[1])).filter(v => v >= 0);
+      // Return the max non-zero value across bureaus
+      return vals.length > 0 ? Math.max(...vals) : 0;
+    };
 
-    result.liabilities.push({
-      creditor,
-      accountType: acctType.charAt(0).toUpperCase() + acctType.slice(1).toLowerCase(),
-      balance,
-      monthlyPayment: payment,
-      highCredit,
-      creditLimit,
-      status: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase(),
-    });
+    const monthlyPayment = extractField("Monthly Payment");
+    const balance = extractField("(?:Current )?Balance(?!.*High)");
+    const highCredit = extractField("High Credit|Highest Balance");
+    const creditLimit = extractField("Credit Limit");
+
+    // Get status from within this block
+    const statusMatch = block.match(/(?:Account Status|Status)[^>]*>[\s\S]{0,200}?(Open|Closed|Paid|Collection|Delinquent)/i);
+    const status = statusMatch ? statusMatch[1] : "Open";
+
+    // Get type from within this block
+    const typeMatch = block.match(/(?:Account Type)[^>]*>[\s\S]{0,200}?(Revolving|Installment|Mortgage|Open|Collection)/i);
+    const acctType = typeMatch ? typeMatch[1] : guessAccountType(creditor);
+
+    // Only add if we got meaningful data (at least a balance or payment)
+    if (balance > 0 || monthlyPayment > 0 || highCredit > 0) {
+      result.liabilities.push({
+        creditor,
+        accountType: acctType.charAt(0).toUpperCase() + acctType.slice(1).toLowerCase(),
+        balance,
+        monthlyPayment,
+        highCredit,
+        creditLimit,
+        status: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase(),
+      });
+    }
   }
 
   // If structured parsing found nothing, try text-based fallback
