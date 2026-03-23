@@ -9254,24 +9254,39 @@ function EmailVault({ user, teamProfile, onSignOut }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarSection, setSidebarSection] = useState(null);
   const navGroups = [
-    { id:"main", label:"", items:[
-      {id:"dashboard", icon:"⬡", label:"Dashboard", badge:0, admin:true},
-      {id:"pricing",   icon:"🏦", label:"Deals", badge:0, admin:true},
-      {id:"crm",       icon:"👥", label:"Contacts",    badge:overdueTasks.length, admin:true},
-      {id:"inbox",     icon:"✉", label:"Inbox",       badge:emails.filter(e=>!e.is_read).length, admin:true},
-      {id:"messages",  icon:"💬", label:"Messages",    badge:unreadMsgs, admin:false},
-      {id:"callcenter",icon:"☎", label:"Calls",       badge:unreadNotifs, admin:false},
-      {id:"appointments",icon:"📅", label:"Booking",    badge:todayAppts, admin:true},
-      {id:"marketing", icon:"📣", label:"Marketing",    badge:0, admin:true},
-      {id:"analytics", icon:"📊", label:"Analytics",     badge:0, admin:true},
+    { id:"core", label:"CORE", items:[
+      {id:"dashboard", icon:"📊", label:"Dashboard", badge:0, admin:true},
+      {id:"inbox",     icon:"✉️", label:"Inbox",     badge:emails.filter(e=>!e.is_read).length, admin:true},
+      {id:"callcenter",icon:"📞", label:"Calls",     badge:unreadNotifs, admin:false},
+      {id:"messages",  icon:"💬", label:"Messages",  badge:unreadMsgs, admin:false},
     ]},
-    { id:"more", label:"MORE", items:[
-      {id:"invoices",  icon:"💰", label:"Invoicing",    badge:overdueInvs, admin:true},
-      {id:"docs",      icon:"📁", label:"Documents",    badge:0, admin:true},
-      {id:"esign",     icon:"✍", label:"E-Sign",        badge:0, admin:true},
-      {id:"social",    icon:"📱", label:"Social",       badge:0, admin:true},
+    { id:"sales", label:"SALES & CRM", items:[
+      {id:"pricing",   icon:"🏦", label:"Mortgage POS", badge:0, admin:true},
+      {id:"leads",     icon:"🎯", label:"Leads",     badge:0, admin:true},
+      {id:"crm",       icon:"👥", label:"Contacts",  badge:overdueTasks.length, admin:true},
+      {id:"appointments",icon:"📅", label:"Booking", badge:todayAppts, admin:true},
+    ]},
+    { id:"marketing", label:"MARKETING", items:[
+      {id:"marketing", icon:"📣", label:"Campaigns",  badge:0, admin:true},
+      {id:"social",    icon:"📱", label:"Social",     badge:0, admin:true},
+      {id:"market",    icon:"📡", label:"Market Intel",badge:0, admin:true},
+    ]},
+    { id:"ops", label:"OPERATIONS", items:[
+      {id:"docs",      icon:"📁", label:"Documents",  badge:0, admin:true},
+      {id:"invoices",  icon:"💰", label:"Invoicing",  badge:overdueInvs, admin:true},
+      {id:"esign",     icon:"✍️", label:"E-Sign",     badge:0, admin:true},
+      {id:"compliance",icon:"📋", label:"Compliance", badge:expiringItems, admin:true},
+    ]},
+    { id:"ai", label:"ANALYTICS & AI", items:[
+      {id:"analytics", icon:"📈", label:"Analytics",    badge:0, admin:true},
+      {id:"intel",     icon:"🧠", label:"Intelligence", badge:0, admin:true},
       {id:"automations",icon:"⚡", label:"Automations",  badge:0, admin:true},
-      {id:"settings",  icon:"⚙", label:"Settings",       badge:0, admin:true},
+    ]},
+    { id:"admin", label:"ADMIN", items:[
+      {id:"biz",       icon:"🏢", label:"Business",   badge:0, admin:true},
+      {id:"vendors",   icon:"🔨", label:"Vendors",    badge:0, admin:true},
+      {id:"toolbox",   icon:"🧰", label:"Tools",      badge:0, admin:true},
+      {id:"settings",  icon:"⚙️", label:"Settings",   badge:0, admin:true},
     ]},
     { id:"apps", label:"APPS", items:[
       {id:"_wolfsurety", icon:"🐺", label:"Wolf Insurance", badge:0, admin:true, external:"https://app.wolfsurety.com"},
@@ -9387,32 +9402,29 @@ function EmailVault({ user, teamProfile, onSignOut }) {
       {/* SIDEBAR + MAIN CONTENT */}
       <div style={{flex:1,overflow:"hidden",display:"flex"}}>
 
-        {/* SIDEBAR */}
-        <div style={{width:sidebarOpen?200:0,minWidth:sidebarOpen?200:0,background:"#07070e",borderRight:sidebarOpen?"1px solid #111120":"none",overflow:"hidden",transition:"width .2s ease, min-width .2s ease",display:"flex",flexDirection:"column",flexShrink:0}}>
-          <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:sidebarOpen?"8px 0":"0"}}>
+        {/* SIDEBAR — Clean, bright, always expanded */}
+        <div style={{width:sidebarOpen?220:0,minWidth:sidebarOpen?220:0,background:"#0c0c14",borderRight:sidebarOpen?"1px solid #1a1a2a":"none",overflow:"hidden",transition:"width .2s ease, min-width .2s ease",display:"flex",flexDirection:"column",flexShrink:0}}>
+          <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:sidebarOpen?"6px 0":"0"}}>
             {filteredGroups.map(g=>(
-              <div key={g.id} style={{marginBottom:4}}>
-                <button onClick={()=>setSidebarSection(p=>p===g.id?null:g.id)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%",padding:"6px 14px",background:"none",border:"none",color:"#3a3a4a",cursor:"pointer",fontFamily:"inherit",fontSize:8,letterSpacing:".12em",textAlign:"left"}}>
-                  <span>{g.label}</span>
-                  <span style={{fontSize:8,transform:sidebarSection===g.id||g.items.some(i=>i.id===view)?"rotate(90deg)":"none",transition:"transform .15s"}}>▸</span>
-                </button>
-                {(sidebarSection===g.id||g.items.some(i=>i.id===view))&&g.items.map(n=>(
-                  <button key={n.id} onClick={()=>{if(n.external){window.open(n.external,"_blank");}else{handleNav(n.id);}}} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"7px 14px 7px 20px",background:view===n.id?"rgba(212,175,55,.08)":"none",borderLeft:view===n.id?"2px solid #d4af37":"2px solid transparent",borderTop:"none",borderRight:"none",borderBottom:"none",color:view===n.id?"#d4af37":"#666",cursor:"pointer",fontFamily:"inherit",fontSize:10,textAlign:"left",position:"relative",transition:"all .1s"}}>
-                    <span style={{fontSize:13,width:18,textAlign:"center",flexShrink:0}}>{n.icon}</span>
-                    <span style={{flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{n.label}</span>
-                    {n.badge>0&&<span style={{minWidth:16,height:16,background:"#ef4444",borderRadius:8,fontSize:8,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",padding:"0 4px",flexShrink:0}}>{n.badge}</span>}
-                    {n.external&&<span style={{fontSize:8,color:"#333"}}>↗</span>}
+              <div key={g.id} style={{marginBottom:2}}>
+                {g.label&&<div style={{padding:"10px 16px 4px",fontSize:9,color:"#d4af37",letterSpacing:".15em",fontWeight:600,opacity:0.7}}>{g.label}</div>}
+                {g.items.map(n=>(
+                  <button key={n.id} onClick={()=>{if(n.external){window.open(n.external,"_blank");}else{handleNav(n.id);}}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 16px",background:view===n.id?"rgba(212,175,55,.12)":"none",borderLeft:view===n.id?"3px solid #d4af37":"3px solid transparent",borderTop:"none",borderRight:"none",borderBottom:"none",color:view===n.id?"#f0e6c0":"#999",cursor:"pointer",fontFamily:"inherit",fontSize:11,textAlign:"left",transition:"all .15s",letterSpacing:".03em"}}>
+                    <span style={{fontSize:15,width:20,textAlign:"center",flexShrink:0}}>{n.icon}</span>
+                    <span style={{flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontWeight:view===n.id?600:400}}>{n.label}</span>
+                    {n.badge>0&&<span style={{minWidth:18,height:18,background:"#ef4444",borderRadius:9,fontSize:9,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",padding:"0 5px",flexShrink:0,fontWeight:700}}>{n.badge}</span>}
+                    {n.external&&<span style={{fontSize:9,color:"#555"}}>↗</span>}
                   </button>
                 ))}
               </div>
             ))}
           </div>
           {/* Sidebar footer */}
-          {sidebarOpen&&<div style={{borderTop:"1px solid #111120",padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:24,height:24,borderRadius:"50%",background:"rgba(212,175,55,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#d4af37",flexShrink:0}}>K</div>
+          {sidebarOpen&&<div style={{borderTop:"1px solid #1a1a2a",padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#d4af37,#b8962e)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#000",fontWeight:700,flexShrink:0}}>K</div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:9,color:"#888",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{teamProfile?.display_name||"Admin"}</div>
-              <div style={{fontSize:7,color:"#333"}}>ADMIN</div>
+              <div style={{fontSize:10,color:"#ccc",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontWeight:500}}>{teamProfile?.display_name||"Ken Wolf"}</div>
+              <div style={{fontSize:8,color:"#d4af37",letterSpacing:".1em"}}>ADMIN</div>
             </div>
           </div>}
         </div>
