@@ -1,24 +1,22 @@
 {
-  "name": "VAULT CRM by SiteCommands",
-  "short_name": "VAULT",
-  "description": "AI-Powered CRM for Real Estate, Insurance & Business Management",
+  "name": "Ziarem Business Platform",
+  "short_name": "Ziarem",
+  "description": "Multi-business CRM for mortgage, insurance, real estate, and credit repair",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#f59e0b",
+  "background_color": "#0a0a0f",
+  "theme_color": "#d4af37",
   "orientation": "any",
   "icons": [
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }
