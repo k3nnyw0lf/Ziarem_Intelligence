@@ -353,6 +353,10 @@ export default function LoanPricingView({ user, contacts, showToast }) {
   const [saveScenarioName, setSaveScenarioName] = useState("");
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [livePricing, setLivePricing] = useState(false);
+  const [pricingMode, setPricingMode] = useState("internal"); // "internal" | "loansifter" | "loansifter_full"
+  const LOANSIFTER_WIDGET_KEY = "1c5f3d6c-ee52-43dd-a3b0-2b804a907fb5";
+  const LOANSIFTER_QUICK_QUOTE_URL = `https://loansifternow.optimalblue.com/consumer/quick-quotes/${LOANSIFTER_WIDGET_KEY}`;
+  const LOANSIFTER_FULL_URL = "https://loansifternow.optimalblue.com";
   const chatEndRef = useRef(null);
 
   // ─── LOAD SAVED SCENARIOS FROM LOCAL STORAGE ──────────────────────────────
@@ -548,26 +552,64 @@ export default function LoanPricingView({ user, contacts, showToast }) {
     <div style={S.root}>
       {/* ─── LEFT PANEL: SCENARIO INPUT ─────────────────────────────────────── */}
       <div style={S.leftPanel}>
-        {/* LOANSIFTER PLACEHOLDER */}
-        <div style={{ ...S.card, border:`1px solid ${BLUE}33`, marginBottom:12 }}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
-            <span style={{ fontSize:9, fontWeight:700, color:BLUE }}>LIVE PRICING</span>
-            <div style={{ position:"relative" }}>
-              <Toggle value={livePricing} onChange={setLivePricing} />
-            </div>
-          </div>
-          {livePricing ? (
-            <div style={{ fontSize:9, color:TXT_DIM, lineHeight:1.5 }}>
-              Connect your Loansifter (Optimal Blue) account for real-time pricing from 300+ investors.
-              <br />
-              <span style={{ color:GOLD, cursor:"pointer", fontSize:8 }}>Configure API credentials &rarr;</span>
-            </div>
-          ) : (
-            <div style={{ fontSize:8, color:TXT_DIM }}>Enable for real-time rates from Optimal Blue / Loansifter</div>
-          )}
+        {/* PRICING MODE SELECTOR */}
+        <div style={{ display:"flex", gap:4, marginBottom:12 }}>
+          {[
+            { id:"internal", label:"AI Match", icon:"🧠" },
+            { id:"loansifter", label:"Quick Quote", icon:"⚡" },
+            { id:"loansifter_full", label:"Loansifter Full", icon:"🏦" },
+          ].map(m => (
+            <button key={m.id} onClick={() => setPricingMode(m.id)} style={{
+              flex:1, padding:"8px 6px", background: pricingMode===m.id ? GOLD+"22" : CARD_BG,
+              border: `1px solid ${pricingMode===m.id ? GOLD : CARD_BORDER}`, borderRadius:8,
+              color: pricingMode===m.id ? GOLD : TXT_DIM, cursor:"pointer", fontSize:10, fontWeight:600,
+              display:"flex", flexDirection:"column", alignItems:"center", gap:3, transition:"all .2s"
+            }}>
+              <span style={{ fontSize:16 }}>{m.icon}</span>
+              <span style={{ textTransform:"uppercase", letterSpacing:".04em" }}>{m.label}</span>
+            </button>
+          ))}
         </div>
 
-        {/* QUICK SCENARIOS */}
+        {/* LOANSIFTER IFRAME MODES */}
+        {pricingMode === "loansifter" && (
+          <div style={{ ...S.card, border:`1px solid ${BLUE}33`, marginBottom:12, padding:0, overflow:"hidden", borderRadius:10 }}>
+            <div style={{ padding:"8px 12px", background:BLUE+"15", borderBottom:`1px solid ${BLUE}33`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontSize:10, fontWeight:700, color:BLUE }}>LOANSIFTER QUICK QUOTE</span>
+              <span style={{ fontSize:8, color:TXT_DIM }}>Powered by Optimal Blue</span>
+            </div>
+            <iframe
+              src={LOANSIFTER_QUICK_QUOTE_URL}
+              style={{ width:"100%", height:600, border:"none", background:"#fff" }}
+              title="Loansifter Quick Quote"
+              allow="clipboard-write"
+            />
+          </div>
+        )}
+        {pricingMode === "loansifter_full" && (
+          <div style={{ ...S.card, border:`1px solid ${GOLD}33`, marginBottom:12, padding:0, overflow:"hidden", borderRadius:10 }}>
+            <div style={{ padding:"8px 12px", background:GOLD+"15", borderBottom:`1px solid ${GOLD}33`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontSize:10, fontWeight:700, color:GOLD }}>LOANSIFTER FULL PPE</span>
+              <a href={LOANSIFTER_FULL_URL} target="_blank" rel="noopener noreferrer" style={{ fontSize:8, color:BLUE, textDecoration:"none" }}>Open in new tab &rarr;</a>
+            </div>
+            <iframe
+              src={LOANSIFTER_FULL_URL}
+              style={{ width:"100%", height:700, border:"none", background:"#fff" }}
+              title="Loansifter Full"
+              allow="clipboard-write"
+            />
+          </div>
+        )}
+
+        {pricingMode === "internal" && (
+        <div style={{ ...S.card, border:`1px solid ${GREEN}22`, marginBottom:12, padding:"8px 10px" }}>
+          <div style={{ fontSize:9, color:GREEN, fontWeight:600, marginBottom:4 }}>AI SCENARIO MATCHER</div>
+          <div style={{ fontSize:8, color:TXT_DIM }}>Match against your lender database ({programs.length} programs, {lenders.length} lenders)</div>
+        </div>
+        )}
+
+        {/* QUICK SCENARIOS — only show in internal mode */}
+        {pricingMode === "internal" && (<>
         <div style={{ marginBottom:12 }}>
           <div style={S.sectionTitle}>Quick Scenarios</div>
           <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
@@ -594,7 +636,8 @@ export default function LoanPricingView({ user, contacts, showToast }) {
 
         {/* CREDIT REPORT DROP ZONE */}
         <div style={S.sectionTitle}>Credit Report Import</div>
-        <CreditReportParser
+        </>)}
+        {pricingMode === "internal" && <CreditReportParser
           showToast={showToast}
           onApplyToScenario={({ fico, monthlyDebt, liabilities, scores }) => {
             const updates = {};
@@ -604,8 +647,9 @@ export default function LoanPricingView({ user, contacts, showToast }) {
             }
             updateScenario(updates);
           }}
-        />
+        />}
 
+        {pricingMode === "internal" && (<>
         {/* BORROWER INFO */}
         <div style={S.sectionTitle}>Borrower Info</div>
         <div style={S.card}>
@@ -751,6 +795,7 @@ export default function LoanPricingView({ user, contacts, showToast }) {
             <button style={{ ...S.btnOutline, flex:1, color:"#a78bfa", borderColor:"#a78bfa55" }} onClick={() => setShowChat(true)}>AI Advisor</button>
           </div>
         </div>
+        </>)}
       </div>
 
       {/* ─── RIGHT PANEL: RESULTS ───────────────────────────────────────────── */}
