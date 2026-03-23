@@ -5261,6 +5261,105 @@ function LoginScreen({ onLogin, onBack }) {
   );
 }
 
+// ─── CLAWBOT CHAT PANEL ──────────────────────────────────────────────────────
+function KenAIPanel({ user }) {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("kenai_messages") || "[]"); } catch { return []; }
+  });
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [sessionId] = useState(() => localStorage.getItem("kenai_session") || crypto.randomUUID());
+  const bottomRef = useRef(null);
+
+  useEffect(() => { localStorage.setItem("kenai_session", sessionId); }, [sessionId]);
+  useEffect(() => { localStorage.setItem("kenai_messages", JSON.stringify(messages.slice(-100))); }, [messages]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
+
+  const send = async () => {
+    const txt = input.trim();
+    if (!txt || loading) return;
+    setInput("");
+    const userMsg = { role: "user", text: txt, ts: Date.now() };
+    setMessages(p => [...p, userMsg]);
+    setLoading(true);
+    try {
+      const r = await fetch(`${SB_URL}/functions/v1/clawbot/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: txt, session_id: sessionId, user_email: user?.email || "" }),
+      });
+      const d = await r.json();
+      setMessages(p => [...p, { role: "bot", text: d.reply || d.error || "No response", ts: Date.now(), actions: d.actions_taken }]);
+    } catch (e) {
+      setMessages(p => [...p, { role: "bot", text: "Connection error. Please try again.", ts: Date.now() }]);
+    }
+    setLoading(false);
+  };
+
+  const sPanel = { position: "fixed", bottom: 80, left: 20, width: 400, height: 600, background: "#08080f", border: "1px solid rgba(212,175,55,.25)", borderRadius: 12, display: "flex", flexDirection: "column", zIndex: 260, boxShadow: "0 0 60px rgba(212,175,55,.12)", overflow: "hidden", fontFamily: "'Inter',sans-serif" };
+  const sHeader = { padding: "12px 16px", background: "linear-gradient(135deg,#0c0c18,#12121f)", borderBottom: "1px solid rgba(212,175,55,.2)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 };
+  const sMsgs = { flex: 1, overflowY: "auto", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 10 };
+  const sInput = { display: "flex", gap: 8, padding: "10px 14px", borderTop: "1px solid rgba(212,175,55,.15)", background: "#0a0a14", flexShrink: 0 };
+  const sBubbleBot = { alignSelf: "flex-start", background: "rgba(212,175,55,.1)", border: "1px solid rgba(212,175,55,.18)", borderRadius: "2px 12px 12px 12px", padding: "10px 14px", maxWidth: "85%", fontSize: 12, color: "#e8e4d9", lineHeight: 1.55, whiteSpace: "pre-wrap", wordBreak: "break-word" };
+  const sBubbleUser = { alignSelf: "flex-end", background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.08)", borderRadius: "12px 2px 12px 12px", padding: "10px 14px", maxWidth: "85%", fontSize: 12, color: "#c0bdb0", lineHeight: 1.55, whiteSpace: "pre-wrap", wordBreak: "break-word" };
+  const sBtn = { position: "fixed", bottom: 20, left: 20, width: 50, height: 50, borderRadius: "50%", background: open ? "rgba(212,175,55,.25)" : "linear-gradient(135deg,#d4af37,#b8962e)", border: "2px solid rgba(212,175,55,.5)", color: open ? "#d4af37" : "#0a0a14", cursor: "pointer", fontSize: 22, zIndex: 261, boxShadow: "0 0 30px rgba(212,175,55,.35)", display: "flex", alignItems: "center", justifyContent: "center", transition: "all .2s" };
+
+  const formatText = (text) => {
+    return text.replace(/\*\*(.+?)\*\*/g, "").replace(/\*\*([^*]+)\*\*/g, "$1");
+  };
+
+  return (
+    <>
+      <button onClick={() => setOpen(p => !p)} style={sBtn} title="Ken AI — Your Personal Assistant">{open ? "\u2716" : "K"}</button>
+      {open && (
+        <div style={sPanel}>
+          <div style={sHeader}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 18 }}>{"\uD83E\uDD16"}</span>
+              <div>
+                <div style={{ fontSize: 13, color: "#d4af37", fontWeight: 600, letterSpacing: ".03em" }}>Hey Ken</div>
+                <div style={{ fontSize: 9, color: "#555", letterSpacing: ".05em" }}>YOUR AI ASSISTANT</div>
+              </div>
+            </div>
+            <button onClick={() => { setMessages([]); localStorage.removeItem("kenai_messages"); }} style={{ background: "none", border: "1px solid rgba(255,255,255,.08)", color: "#555", cursor: "pointer", fontSize: 9, padding: "3px 8px", borderRadius: 3, fontFamily: "inherit" }}>CLEAR</button>
+          </div>
+          <div style={sMsgs}>
+            {messages.length === 0 && (
+              <div style={{ textAlign: "center", color: "#444", fontSize: 11, padding: "40px 20px" }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>{"\uD83E\uDD16"}</div>
+                <div style={{ color: "#d4af37", fontWeight: 600, marginBottom: 6 }}>Hey Ken! I'm your AI assistant</div>
+                <div>Your AI command center. Try &quot;help&quot; to see what I can do.</div>
+              </div>
+            )}
+            {messages.map((m, i) => (
+              <div key={i} style={m.role === "bot" ? sBubbleBot : sBubbleUser}>
+                {m.text}
+              </div>
+            ))}
+            {loading && (
+              <div style={{ ...sBubbleBot, color: "#d4af37", fontStyle: "italic" }}>
+                {"\u2022 \u2022 \u2022"} Thinking...
+              </div>
+            )}
+            <div ref={bottomRef} />
+          </div>
+          <div style={sInput}>
+            <input
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+              placeholder="Hey Ken, what do you need?"
+              style={{ flex: 1, background: "#0f0f1a", border: "1px solid rgba(212,175,55,.15)", color: "#e8e4d9", fontFamily: "inherit", fontSize: 12, padding: "8px 12px", borderRadius: 6, outline: "none" }}
+            />
+            <button onClick={send} disabled={loading || !input.trim()} style={{ background: loading ? "#333" : "linear-gradient(135deg,#d4af37,#b8962e)", border: "none", color: "#0a0a14", cursor: loading ? "not-allowed" : "pointer", fontSize: 14, padding: "0 14px", borderRadius: 6, fontWeight: 700 }}>{"\u27A4"}</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── APP ROOT (landing / login / app) ─────────────────────────────────────────
 export default function EmailVaultApp() {
   const [session, setSession] = useState(null);
@@ -9222,6 +9321,9 @@ function EmailVault({ user, teamProfile, onSignOut }) {
       {/* AI Assistant */}
       {showAI&&<AIAssistant contacts={contacts} deals={deals} tasks={tasks} activities={activities} businesses={businesses} intelligence={intelligence} campaigns={campaigns} onClose={()=>setShowAI(false)} />}
       <button onClick={()=>setShowAI(p=>!p)} style={{ position:"fixed",bottom:20,right:20,width:46,height:46,borderRadius:"50%",background:"rgba(139,92,246,.15)",border:"1px solid rgba(139,92,246,.5)",color:"#a78bfa",cursor:"pointer",fontSize:20,zIndex:200,boxShadow:"0 0 30px rgba(139,92,246,.3)" }} title="Vault AI Advisor">⬡</button>
+
+      {/* Hey Ken AI Command Center */}
+      <KenAIPanel user={user} />
 
       {/* TOP BAR — slim */}
       <div style={{ display:"flex",alignItems:"center",padding:"0 12px",height:40,borderBottom:"1px solid #111120",background:"#07070e",flexShrink:0,gap:8 }}>
