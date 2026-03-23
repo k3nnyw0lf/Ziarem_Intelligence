@@ -1733,145 +1733,201 @@ function InsuranceTab({ loans, showToast }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function CreditRepairTab({ loans, contacts, showToast }) {
   const [clients, setClients] = useState([]);
+  const [rounds, setRounds] = useState([]);
+  const [subTab, setSubTab] = useState(0);
   const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ name:"", email:"", phone:"", fico:0, target_fico:0, notes:"", loan_id:"" });
+  const [form, setForm] = useState({ name:"",email:"",phone:"",ssn_last4:"",score_tu:0,score_exp:0,score_eqf:0,goal_score:700,monthly_fee:99,notes:"" });
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [disputeForm, setDisputeForm] = useState({ creditor:"",account_num:"",bureau:"TransUnion",reason:"Not Mine",explanation:"" });
+  const [generatedLetter, setGeneratedLetter] = useState("");
   const cardS = { background:CARD, border:`1px solid ${BORDER}`, borderRadius:6, padding:14 };
   const inputS = { background:BG, border:`1px solid ${BORDER}`, color:TXT, padding:"6px 10px", fontSize:10, borderRadius:4, width:"100%", fontFamily:"inherit", boxSizing:"border-box" };
-
-  // Identify loans that need credit repair (FICO < 680)
   const lowFicoLoans = loans.filter(l => l.fico && l.fico < 680);
-  const repairCandidates = loans.filter(l => l.fico && l.fico < 620);
 
   useEffect(() => {
-    // Load credit repair clients from localStorage (or future DB table)
-    const saved = localStorage.getItem("dispute_inc_clients");
-    if (saved) setClients(JSON.parse(saved));
+    sbFetch("vault_credit_repair_clients","?order=created_at.desc").then(d => setClients(d||[]));
   }, []);
 
-  const saveClients = (c) => { setClients(c); localStorage.setItem("dispute_inc_clients", JSON.stringify(c)); };
+  useEffect(() => {
+    if (selectedClient) sbFetch("vault_credit_repair_rounds",`?client_id=eq.${selectedClient.id}&order=round_number.asc`).then(d => setRounds(d||[]));
+  }, [selectedClient]);
 
-  const addClient = () => {
+  const addClient = async () => {
     if (!form.name) return;
-    const c = { ...form, id: Date.now().toString(), status:"enrolled", start_date:new Date().toISOString(), disputes:[], score_history:[{ date:new Date().toISOString(), score:form.fico }] };
-    saveClients([...clients, c]);
-    setForm({ name:"", email:"", phone:"", fico:0, target_fico:0, notes:"", loan_id:"" });
-    setShowNew(false);
-    if (showToast) showToast("Client enrolled in Dispute Inc credit repair");
+    const r = await sbInsert("vault_credit_repair_clients", form);
+    if (r) { setClients([r,...clients]); setShowNew(false); setForm({ name:"",email:"",phone:"",ssn_last4:"",score_tu:0,score_exp:0,score_eqf:0,goal_score:700,monthly_fee:99,notes:"" }); if(showToast) showToast("Client enrolled"); }
   };
 
   const enrollFromLoan = (loan) => {
-    setForm({
-      name: `${loan.first_name} ${loan.last_name}`,
-      email: loan.email || "",
-      phone: loan.phone || "",
-      fico: loan.fico || 0,
-      target_fico: 680,
-      notes: `From loan ${fmtMoney(loan.loan_amount)}. Needs ${680 - (loan.fico||0)} point improvement for conventional.`,
-      loan_id: loan.id,
-    });
+    setForm({ name:`${loan.first_name||""} ${loan.last_name||""}`.trim(), email:loan.email||"", phone:loan.phone||"", ssn_last4:"", score_tu:loan.fico||0, score_exp:loan.fico||0, score_eqf:loan.fico||0, goal_score:700, monthly_fee:99, notes:`From loan ${fmtMoney(loan.loan_amount)}` });
     setShowNew(true);
   };
 
-  const statusColors = { enrolled:"#6366f1", "in-progress":GOLD, disputed:YELLOW, improved:GREEN, completed:GREEN, paused:DIM };
+  const addRound = async () => {
+    if (!selectedClient) return;
+    const num = rounds.length + 1;
+    const r = await sbInsert("vault_credit_repair_rounds", { client_id:selectedClient.id, round_number:num, status:"pending" });
+    if (r) setRounds([...rounds, r]);
+  };
+
+  const BUREAU_ADDRS = {
+    TransUnion: "TransUnion LLC\nConsumer Dispute Center\nP.O. Box 2000\nChester, PA 19016",
+    Experian: "Experian\nP.O. Box 4500\nAllen, TX 75013",
+    Equifax: "Equifax Information Services LLC\nP.O. Box 740256\nAtlanta, GA 30374"
+  };
+
+  const generateLetter = () => {
+    const d = disputeForm;
+    const c = selectedClient;
+    if (!c || !d.creditor) return;
+    const today = new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+    const letter = `${today}\n\n${BUREAU_ADDRS[d.bureau]||d.bureau}\n\nRe: Dispute of Inaccurate Information — FCRA Section 609/611\n\nTo Whom It May Concern:\n\nI am writing to formally dispute the following item on my credit report, as it is ${d.reason.toLowerCase()}.\n\nCreditor/Company: ${d.creditor}\nAccount Number: ${d.account_num||"[See attached]"}\nReason for Dispute: ${d.reason}\n${d.explanation ? "Details: "+d.explanation+"\n" : ""}\nPursuant to the Fair Credit Reporting Act, Section 609(a)(1)(A) and Section 611, I am requesting that you verify and validate this account. If you cannot provide proper documentation and verification within 30 days, this item must be removed from my credit report immediately.\n\nPlease send me an updated copy of my credit report reflecting the corrections once the investigation is complete.\n\nSincerely,\n\n${c.name}\nSSN: XXX-XX-${c.ssn_last4||"XXXX"}\n${c.email||""}\n${c.phone||""}`;
+    setGeneratedLetter(letter);
+  };
+
+  const statusColors = { active:GREEN, enrolled:"#6366f1", graduated:GOLD, cancelled:RED, pending:DIM };
+  const SUBTABS = ["Dashboard","Dispute Letters","Rounds","Score Tracker"];
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
         <div>
-          <div style={{ fontSize:14, fontWeight:700, color:BRIGHT }}>⚡ Dispute Inc — Credit Repair</div>
-          <div style={{ fontSize:9, color:DIM }}>Help borrowers improve FICO scores for better loan pricing</div>
+          <div style={{ fontSize:14, fontWeight:700, color:BRIGHT }}>⚡ Credit Repair Center</div>
+          <div style={{ fontSize:9, color:DIM }}>Dispute letters, round tracking, score improvement</div>
         </div>
-        <button onClick={() => setShowNew(!showNew)} style={{ background:GOLD, border:"none", color:"#000", fontSize:9, fontWeight:700, padding:"6px 14px", borderRadius:4, cursor:"pointer", fontFamily:"inherit" }}>
-          + Enroll Client
-        </button>
+        <button onClick={()=>setShowNew(!showNew)} style={{ background:GOLD, border:"none", color:"#000", fontSize:9, fontWeight:700, padding:"6px 14px", borderRadius:4, cursor:"pointer", fontFamily:"inherit" }}>+ Enroll Client</button>
       </div>
 
-      {/* Stats */}
-      <div style={{ display:"flex", gap:12, marginBottom:16, flexWrap:"wrap" }}>
-        {[
-          { label:"Enrolled Clients", val:clients.length, color:"#6366f1" },
-          { label:"Low FICO Loans (<680)", val:lowFicoLoans.length, color:YELLOW },
-          { label:"Critical (<620)", val:repairCandidates.length, color:RED },
-          { label:"Avg Points Needed", val:lowFicoLoans.length ? Math.round(lowFicoLoans.reduce((s,l) => s + (680 - l.fico), 0) / lowFicoLoans.length) : 0, color:GOLD },
-        ].map(s => (
-          <div key={s.label} style={{ ...cardS, flex:1, minWidth:140, textAlign:"center" }}>
-            <div style={{ fontSize:7, color:DIM, textTransform:"uppercase", letterSpacing:".06em" }}>{s.label}</div>
-            <div style={{ fontSize:18, fontWeight:700, color:s.color, marginTop:4 }}>{s.val}</div>
-          </div>
-        ))}
+      <div style={{ display:"flex", gap:0, borderBottom:`1px solid ${BORDER}`, marginBottom:12 }}>
+        {SUBTABS.map((t,i)=>(<div key={t} onClick={()=>setSubTab(i)} style={{ padding:"6px 14px", cursor:"pointer", fontSize:9, fontWeight:subTab===i?700:400, color:subTab===i?GOLD:DIM, borderBottom:subTab===i?`2px solid ${GOLD}`:"2px solid transparent" }}>{t}</div>))}
       </div>
 
-      {/* New Client Form */}
-      {showNew && (
-        <div style={{ ...cardS, marginBottom:12, borderColor:"rgba(212,175,55,.3)" }}>
-          <div style={{ fontSize:10, fontWeight:700, color:GOLD, marginBottom:10 }}>Enroll New Client</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:8 }}>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Name</div><input style={inputS} value={form.name} onChange={e => setForm({...form, name:e.target.value})} /></div>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Email</div><input style={inputS} value={form.email} onChange={e => setForm({...form, email:e.target.value})} /></div>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Phone</div><input style={inputS} value={form.phone} onChange={e => setForm({...form, phone:e.target.value})} /></div>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 2fr", gap:8, marginBottom:8 }}>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Current FICO</div><input type="number" style={inputS} value={form.fico} onChange={e => setForm({...form, fico:Number(e.target.value)})} /></div>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Target FICO</div><input type="number" style={inputS} value={form.target_fico} onChange={e => setForm({...form, target_fico:Number(e.target.value)})} /></div>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Notes</div><input style={inputS} value={form.notes} onChange={e => setForm({...form, notes:e.target.value})} /></div>
-          </div>
-          <div style={{ display:"flex", gap:8 }}>
-            <button onClick={addClient} style={{ background:GOLD, border:"none", color:"#000", fontSize:9, fontWeight:700, padding:"5px 14px", borderRadius:3, cursor:"pointer", fontFamily:"inherit" }}>Enroll</button>
-            <button onClick={() => setShowNew(false)} style={{ background:"none", border:`1px solid ${BORDER}`, color:DIM, fontSize:9, padding:"5px 14px", borderRadius:3, cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
-          </div>
+      {/* ─── DASHBOARD ─── */}
+      {subTab===0 && (<>
+        <div style={{ display:"flex", gap:10, marginBottom:14, flexWrap:"wrap" }}>
+          {[{l:"Enrolled",v:clients.length,c:"#6366f1"},{l:"Active",v:clients.filter(c=>c.status==="active").length,c:GREEN},{l:"Low FICO Loans",v:lowFicoLoans.length,c:YELLOW},{l:"Graduated",v:clients.filter(c=>c.status==="graduated").length,c:GOLD}].map(s=>(
+            <div key={s.l} style={{...cardS,flex:1,minWidth:130,textAlign:"center"}}><div style={{fontSize:7,color:DIM,textTransform:"uppercase",letterSpacing:".06em"}}>{s.l}</div><div style={{fontSize:18,fontWeight:700,color:s.c,marginTop:4}}>{s.v}</div></div>
+          ))}
         </div>
-      )}
 
-      {/* Auto-detect: Loans needing credit repair */}
-      {lowFicoLoans.length > 0 && (
-        <div style={{ ...cardS, marginBottom:12 }}>
-          <div style={{ fontSize:10, fontWeight:700, color:YELLOW, marginBottom:8 }}>🎯 Loan Borrowers Who Need Credit Repair</div>
-          {lowFicoLoans.map(l => {
-            const already = clients.some(c => c.loan_id === l.id);
-            return (
-              <div key={l.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0", borderBottom:`1px solid ${BORDER}` }}>
-                <div>
-                  <div style={{ fontSize:9, color:BRIGHT, fontWeight:600 }}>{l.first_name} {l.last_name}</div>
-                  <div style={{ fontSize:8, color:DIM }}>FICO: <span style={{ color:l.fico<620?RED:YELLOW, fontWeight:700 }}>{l.fico}</span> · Needs <span style={{ color:GREEN, fontWeight:600 }}>+{680-l.fico} pts</span> for conventional</div>
-                </div>
-                {already ? (
-                  <span style={{ fontSize:8, color:GREEN }}>✓ Enrolled</span>
-                ) : (
-                  <button onClick={() => enrollFromLoan(l)} style={{ background:"rgba(139,92,246,.15)", border:`1px solid rgba(139,92,246,.3)`, color:"#a78bfa", fontSize:8, fontWeight:600, padding:"4px 10px", borderRadius:3, cursor:"pointer", fontFamily:"inherit" }}>
-                    ⚡ Enroll
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+        {showNew && (<div style={{...cardS,marginBottom:12,borderColor:GOLD+"44"}}>
+          <div style={{fontSize:10,fontWeight:700,color:GOLD,marginBottom:8}}>Enroll New Client</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
+            {[["Name","name"],["Email","email"],["Phone","phone"],["SSN Last 4","ssn_last4"]].map(([l,k])=>(<div key={k}><div style={{fontSize:8,color:DIM,marginBottom:2}}>{l}</div><input style={inputS} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})} /></div>))}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
+            {[["TU Score","score_tu"],["EXP Score","score_exp"],["EQF Score","score_eqf"],["Goal","goal_score"],["Fee/mo","monthly_fee"]].map(([l,k])=>(<div key={k}><div style={{fontSize:8,color:DIM,marginBottom:2}}>{l}</div><input type="number" style={inputS} value={form[k]} onChange={e=>setForm({...form,[k]:Number(e.target.value)})} /></div>))}
+          </div>
+          <div style={{marginBottom:8}}><div style={{fontSize:8,color:DIM,marginBottom:2}}>Notes</div><input style={inputS} value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} /></div>
+          <div style={{display:"flex",gap:6}}><button onClick={addClient} style={{background:GOLD,border:"none",color:"#000",fontSize:9,fontWeight:700,padding:"5px 14px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>Enroll</button><button onClick={()=>setShowNew(false)} style={{background:"none",border:`1px solid ${BORDER}`,color:DIM,fontSize:9,padding:"5px 14px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>Cancel</button></div>
+        </div>)}
 
-      {/* Active Clients */}
-      <div style={cardS}>
-        <div style={{ fontSize:10, fontWeight:700, color:GOLD, marginBottom:10, textTransform:"uppercase", letterSpacing:".06em" }}>Credit Repair Clients ({clients.length})</div>
-        {clients.length === 0 && <div style={{ fontSize:9, color:DIM, textAlign:"center", padding:20 }}>No clients enrolled yet. Click "Enroll Client" or auto-detect from loan pipeline.</div>}
-        {clients.map(c => (
-          <div key={c.id} style={{ padding:"8px 0", borderBottom:`1px solid ${BORDER}` }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <div>
-                <div style={{ fontSize:10, color:BRIGHT, fontWeight:600 }}>{c.name}</div>
-                <div style={{ fontSize:8, color:DIM }}>{c.email} · {c.phone}</div>
-              </div>
-              <div style={{ textAlign:"right" }}>
-                <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${statusColors[c.status]||DIM}18`, color:statusColors[c.status]||DIM, border:`1px solid ${statusColors[c.status]||DIM}33` }}>{c.status}</span>
-              </div>
+        {lowFicoLoans.length>0 && (<div style={{...cardS,marginBottom:12}}><div style={{fontSize:10,fontWeight:700,color:YELLOW,marginBottom:6}}>🎯 Loan Borrowers Needing Credit Repair</div>
+          {lowFicoLoans.slice(0,5).map(l=>(<div key={l.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${BORDER}`}}>
+            <div><div style={{fontSize:9,color:BRIGHT,fontWeight:600}}>{l.first_name} {l.last_name}</div><div style={{fontSize:8,color:DIM}}>FICO: <span style={{color:l.fico<620?RED:YELLOW,fontWeight:700}}>{l.fico}</span></div></div>
+            <button onClick={()=>enrollFromLoan(l)} style={{background:"rgba(139,92,246,.15)",border:"1px solid rgba(139,92,246,.3)",color:"#a78bfa",fontSize:8,fontWeight:600,padding:"3px 8px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>⚡ Enroll</button>
+          </div>))}
+        </div>)}
+
+        <div style={cardS}><div style={{fontSize:10,fontWeight:700,color:GOLD,marginBottom:8}}>All Clients ({clients.length})</div>
+          {clients.length===0&&<div style={{fontSize:9,color:DIM,textAlign:"center",padding:20}}>No clients enrolled yet.</div>}
+          {clients.map(c=>(<div key={c.id} onClick={()=>setSelectedClient(c)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${BORDER}`,cursor:"pointer"}}>
+            <div><div style={{fontSize:10,color:BRIGHT,fontWeight:600}}>{c.name}</div><div style={{fontSize:8,color:DIM}}>{c.email} · TU:{c.score_tu} EXP:{c.score_exp} EQF:{c.score_eqf}</div></div>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <span style={{fontSize:7,padding:"2px 6px",borderRadius:3,background:`${statusColors[c.status]||DIM}18`,color:statusColors[c.status]||DIM,border:`1px solid ${statusColors[c.status]||DIM}33`}}>{c.status}</span>
+              <span style={{fontSize:8,color:GOLD}}>→</span>
             </div>
-            <div style={{ display:"flex", gap:12, marginTop:4 }}>
-              <div style={{ fontSize:8, color:DIM }}>Start: <span style={{ color:RED }}>{c.fico}</span></div>
-              <div style={{ fontSize:8, color:DIM }}>Target: <span style={{ color:GREEN }}>{c.target_fico}</span></div>
-              <div style={{ fontSize:8, color:DIM }}>Gap: <span style={{ color:GOLD, fontWeight:600 }}>{c.target_fico - c.fico} pts</span></div>
-              {c.notes && <div style={{ fontSize:8, color:DIM, fontStyle:"italic" }}>{c.notes}</div>}
+          </div>))}
+        </div>
+      </>)}
+
+      {/* ─── DISPUTE LETTERS ─── */}
+      {subTab===1 && (<>
+        <div style={{...cardS,marginBottom:12}}>
+          <div style={{fontSize:10,fontWeight:700,color:GOLD,marginBottom:8}}>Generate Dispute Letter (FCRA 609/611)</div>
+          {!selectedClient ? <div style={{fontSize:9,color:DIM}}>Select a client from the Dashboard tab first.</div> : (<>
+            <div style={{fontSize:9,color:BRIGHT,marginBottom:8}}>Client: <strong>{selectedClient.name}</strong></div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+              <div><div style={{fontSize:8,color:DIM,marginBottom:2}}>Creditor Name</div><input style={inputS} value={disputeForm.creditor} onChange={e=>setDisputeForm({...disputeForm,creditor:e.target.value})} /></div>
+              <div><div style={{fontSize:8,color:DIM,marginBottom:2}}>Account #</div><input style={inputS} value={disputeForm.account_num} onChange={e=>setDisputeForm({...disputeForm,account_num:e.target.value})} /></div>
+              <div><div style={{fontSize:8,color:DIM,marginBottom:2}}>Bureau</div><select style={inputS} value={disputeForm.bureau} onChange={e=>setDisputeForm({...disputeForm,bureau:e.target.value})}><option>TransUnion</option><option>Experian</option><option>Equifax</option></select></div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:8,marginBottom:8}}>
+              <div><div style={{fontSize:8,color:DIM,marginBottom:2}}>Reason</div><select style={inputS} value={disputeForm.reason} onChange={e=>setDisputeForm({...disputeForm,reason:e.target.value})}><option>Not Mine</option><option>Inaccurate</option><option>Outdated</option><option>Duplicate</option><option>Paid/Settled</option><option>Identity Theft</option></select></div>
+              <div><div style={{fontSize:8,color:DIM,marginBottom:2}}>Additional Explanation</div><input style={inputS} value={disputeForm.explanation} onChange={e=>setDisputeForm({...disputeForm,explanation:e.target.value})} /></div>
+            </div>
+            <button onClick={generateLetter} style={{background:GOLD,border:"none",color:"#000",fontSize:9,fontWeight:700,padding:"6px 16px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>Generate Letter</button>
+          </>)}
+        </div>
+        {generatedLetter && (<div style={{...cardS}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+            <div style={{fontSize:10,fontWeight:700,color:GREEN}}>Generated Letter</div>
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={()=>{navigator.clipboard.writeText(generatedLetter);if(showToast)showToast("Copied to clipboard")}} style={{background:"none",border:`1px solid ${BORDER}`,color:TXT,fontSize:8,padding:"3px 10px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>Copy</button>
+              <button onClick={()=>{const b=new Blob([generatedLetter],{type:"text/plain"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=`dispute_${disputeForm.bureau}_${Date.now()}.txt`;a.click()}} style={{background:"none",border:`1px solid ${BORDER}`,color:TXT,fontSize:8,padding:"3px 10px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>Download</button>
             </div>
           </div>
-        ))}
-      </div>
+          <textarea value={generatedLetter} onChange={e=>setGeneratedLetter(e.target.value)} style={{...inputS,height:300,whiteSpace:"pre-wrap",lineHeight:1.6,fontSize:10}} />
+        </div>)}
+      </>)}
+
+      {/* ─── ROUNDS ─── */}
+      {subTab===2 && (<>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{fontSize:10,color:selectedClient?BRIGHT:DIM}}>{selectedClient?`Rounds for ${selectedClient.name}`:"Select a client from Dashboard"}</div>
+          {selectedClient && <button onClick={addRound} style={{background:GOLD,border:"none",color:"#000",fontSize:9,fontWeight:700,padding:"5px 12px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>+ New Round</button>}
+        </div>
+        {rounds.map(r=>(<div key={r.id} style={{...cardS,marginBottom:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+            <div style={{fontSize:11,fontWeight:700,color:GOLD}}>Round {r.round_number}</div>
+            <span style={{fontSize:7,padding:"2px 6px",borderRadius:3,background:`${r.status==="completed"?GREEN:r.status==="pending"?DIM:YELLOW}18`,color:r.status==="completed"?GREEN:r.status==="pending"?DIM:YELLOW}}>{r.status}</span>
+          </div>
+          <div style={{display:"flex",gap:16,fontSize:8,color:DIM}}>
+            <span>Items disputed: {Array.isArray(r.items_disputed)?r.items_disputed.length:0}</span>
+            <span>Items removed: {r.items_removed||0}</span>
+            <span>Sent: {r.letters_sent_at?new Date(r.letters_sent_at).toLocaleDateString():"Not sent"}</span>
+          </div>
+          {(r.score_tu_after||r.score_exp_after||r.score_eqf_after)&&<div style={{display:"flex",gap:12,marginTop:4,fontSize:8}}>
+            <span style={{color:TXT}}>After — TU:<span style={{color:GREEN,fontWeight:700}}>{r.score_tu_after}</span></span>
+            <span style={{color:TXT}}>EXP:<span style={{color:GREEN,fontWeight:700}}>{r.score_exp_after}</span></span>
+            <span style={{color:TXT}}>EQF:<span style={{color:GREEN,fontWeight:700}}>{r.score_eqf_after}</span></span>
+          </div>}
+        </div>))}
+        {rounds.length===0&&<div style={{...cardS,textAlign:"center",color:DIM,fontSize:9}}>No rounds yet. {selectedClient?"Click '+ New Round' to start.":"Select a client first."}</div>}
+      </>)}
+
+      {/* ─── SCORE TRACKER ─── */}
+      {subTab===3 && (<>
+        <div style={{fontSize:10,color:selectedClient?BRIGHT:DIM,marginBottom:12}}>{selectedClient?`Score History for ${selectedClient.name}`:"Select a client from Dashboard"}</div>
+        {selectedClient && (<div style={cardS}>
+          <div style={{display:"flex",gap:16,marginBottom:16}}>
+            {[["TransUnion",selectedClient.score_tu,"#0088cc"],["Experian",selectedClient.score_exp,"#3b82f6"],["Equifax",selectedClient.score_eqf,GREEN]].map(([b,s,c])=>(<div key={b} style={{flex:1,textAlign:"center"}}>
+              <div style={{fontSize:8,color:DIM}}>{b}</div>
+              <div style={{fontSize:22,fontWeight:700,color:c}}>{s||"—"}</div>
+              <div style={{fontSize:8,color:DIM}}>Start</div>
+            </div>))}
+            <div style={{flex:1,textAlign:"center",borderLeft:`1px solid ${BORDER}`,paddingLeft:16}}>
+              <div style={{fontSize:8,color:DIM}}>Goal</div>
+              <div style={{fontSize:22,fontWeight:700,color:GOLD}}>{selectedClient.goal_score}</div>
+              <div style={{fontSize:8,color:DIM}}>Target</div>
+            </div>
+          </div>
+          {rounds.filter(r=>r.score_tu_after).length>0 && (<>
+            <div style={{fontSize:9,fontWeight:700,color:GOLD,marginBottom:8}}>Progress by Round</div>
+            <div style={{display:"flex",alignItems:"flex-end",gap:8,height:120}}>
+              {[{label:"Start",tu:selectedClient.score_tu,exp:selectedClient.score_exp,eqf:selectedClient.score_eqf},...rounds.filter(r=>r.score_tu_after).map(r=>({label:`R${r.round_number}`,tu:r.score_tu_after,exp:r.score_exp_after,eqf:r.score_eqf_after}))].map((pt,i)=>{
+                const mid = Math.round(([pt.tu,pt.exp,pt.eqf].sort((a,b)=>a-b))[1]||0);
+                const pct = Math.max(10,Math.min(100,((mid-500)/(850-500))*100));
+                return (<div key={i} style={{flex:1,textAlign:"center"}}>
+                  <div style={{fontSize:8,color:BRIGHT,fontWeight:700,marginBottom:2}}>{mid}</div>
+                  <div style={{height:`${pct}%`,background:mid>=selectedClient.goal_score?GREEN:GOLD,borderRadius:"3px 3px 0 0",minHeight:8,transition:"height .3s"}} />
+                  <div style={{fontSize:7,color:DIM,marginTop:2}}>{pt.label}</div>
+                </div>);
+              })}
+            </div>
+          </>)}
+        </div>)}
+      </>)}
     </div>
   );
 }
@@ -1881,122 +1937,389 @@ function CreditRepairTab({ loans, contacts, showToast }) {
 // TAB 7: RE4LTY (Real Estate Company Integration)
 // ═══════════════════════════════════════════════════════════════════════════════
 function RealtyTab({ loans, contacts, showToast }) {
-  const [listings, setListings] = useState([]);
-  const [agents, setAgents] = useState([]);
-  const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ address:"", city:"", state:"FL", zip:"", price:0, beds:3, baths:2, sqft:0, type:"Single Family", status:"Active", agent:"", mls:"", notes:"" });
-  const cardS = { background:CARD, border:`1px solid ${BORDER}`, borderRadius:6, padding:14 };
-  const inputS = { background:BG, border:`1px solid ${BORDER}`, color:TXT, padding:"6px 10px", fontSize:10, borderRadius:4, width:"100%", fontFamily:"inherit", boxSizing:"border-box" };
+  // ─── MOCK DATA ──────────────────────────────────────────────────────────────
+  const MOCK_LISTINGS = [
+    { id:"m1", address:"250 Ospreys Landing #1402", city:"Naples", state:"FL", zip:"34104", price:425000, beds:3, baths:2, sqft:1850, status:"Active", type:"Condo", agent:"Maria Santos", daysOnMarket:12, mls:"N224001", photo:null, created_at:"2026-03-10" },
+    { id:"m2", address:"1200 Gulf Shore Blvd N #501", city:"Naples", state:"FL", zip:"34102", price:1250000, beds:4, baths:3, sqft:2400, status:"Active", type:"Condo", agent:"James Rivera", daysOnMarket:28, mls:"N224002", photo:null, created_at:"2026-02-22" },
+    { id:"m3", address:"8765 Estero Blvd #202", city:"Fort Myers Beach", state:"FL", zip:"33931", price:550000, beds:2, baths:2, sqft:1200, status:"Pending", type:"Condo", agent:"Lisa Chen", daysOnMarket:45, mls:"F224003", photo:null, created_at:"2026-02-05" },
+    { id:"m4", address:"4521 SW 75th Ave", city:"Miami", state:"FL", zip:"33155", price:680000, beds:4, baths:3, sqft:2100, status:"Active", type:"Single Family", agent:"Carlos Mendez", daysOnMarket:7, mls:"M224004", photo:null, created_at:"2026-03-15" },
+    { id:"m5", address:"920 Intracoastal Dr #1801", city:"Fort Lauderdale", state:"FL", zip:"33304", price:890000, beds:3, baths:2, sqft:1750, status:"Sold", type:"Condo", agent:"Sarah Kim", daysOnMarket:62, mls:"B224005", photo:null, created_at:"2026-01-18" },
+  ];
 
-  useEffect(() => {
-    const saved = localStorage.getItem("re4lty_listings");
-    if (saved) setListings(JSON.parse(saved));
-    const savedAgents = localStorage.getItem("re4lty_agents");
-    if (savedAgents) setAgents(JSON.parse(savedAgents));
-  }, []);
+  const MOCK_COMPS = [
+    { address:"245 Ospreys Landing #1308", salePrice:415000, priceSqft:228, beds:3, baths:2, saleDate:"2026-01-15", distance:"0.1 mi" },
+    { address:"260 Ospreys Landing #902", salePrice:440000, priceSqft:241, beds:3, baths:2, saleDate:"2025-12-08", distance:"0.1 mi" },
+    { address:"300 Dunes Blvd #1105", salePrice:398000, priceSqft:218, beds:3, baths:2, saleDate:"2026-02-20", distance:"0.4 mi" },
+    { address:"275 Indies Way #1504", salePrice:455000, priceSqft:246, beds:3, baths:2, saleDate:"2025-11-22", distance:"0.6 mi" },
+    { address:"310 Goodlette Rd S #608", salePrice:410000, priceSqft:225, beds:3, baths:2, saleDate:"2026-01-30", distance:"0.9 mi" },
+  ];
 
-  const saveListings = (l) => { setListings(l); localStorage.setItem("re4lty_listings", JSON.stringify(l)); };
+  // ─── STATE ──────────────────────────────────────────────────────────────────
+  const [subTab, setSubTab] = useState(0);
+  // Search
+  const [searchFilters, setSearchFilters] = useState({ city:"", state:"", zip:"", minPrice:"", maxPrice:"", beds:"", baths:"", type:"", status:"", minSqft:"", maxSqft:"" });
+  const [searchResults, setSearchResults] = useState(MOCK_LISTINGS);
+  const [hasSearched, setHasSearched] = useState(false);
+  // Saved searches
+  const [savedSearches, setSavedSearches] = useState(() => { try { const s=localStorage.getItem("re4lty_saved_searches"); return s?JSON.parse(s):[]; } catch{ return []; }});
+  // Favorites
+  const [favorites, setFavorites] = useState(() => { try { const f=localStorage.getItem("re4lty_favorites"); return f?JSON.parse(f):[]; } catch{ return []; }});
+  // Comps
+  const [compAddress, setCompAddress] = useState("");
+  const [compResults, setCompResults] = useState([]);
+  const [compRan, setCompRan] = useState(false);
+  // MLS
+  const [mlsConfigs, setMlsConfigs] = useState({ miami:{ status:"Connected", key:"" }, stellar:{ status:"Pending", key:"" }, swfl:{ status:"Not Connected", key:"" } });
+  const [editingMls, setEditingMls] = useState(null);
 
-  const addListing = () => {
-    if (!form.address) return;
-    saveListings([...listings, { ...form, id:Date.now().toString(), created_at:new Date().toISOString() }]);
-    setForm({ address:"", city:"", state:"FL", zip:"", price:0, beds:3, baths:2, sqft:0, type:"Single Family", status:"Active", agent:"", mls:"", notes:"" });
-    setShowNew(false);
-    if (showToast) showToast("Listing added");
+  // ─── HELPERS ────────────────────────────────────────────────────────────────
+  const rCardS = { background:CARD, border:`1px solid ${BORDER}`, borderRadius:6, padding:14 };
+  const rInputS = { background:INPUT_BG, border:`1px solid ${INPUT_BD}`, color:TXT, padding:"6px 10px", fontSize:10, borderRadius:4, width:"100%", fontFamily:"inherit", boxSizing:"border-box", letterSpacing:".05em", outline:"none" };
+  const rSelectS = { ...rInputS, appearance:"none", cursor:"pointer" };
+  const rBtnS = { background:GOLD, color:"#000", border:"none", borderRadius:4, padding:"6px 14px", fontSize:10, fontWeight:600, cursor:"pointer", letterSpacing:".05em", fontFamily:"inherit" };
+  const rBtnOutS = { ...rBtnS, background:"transparent", border:`1px solid ${GOLD}`, color:GOLD };
+  const statusColors = { Active:GREEN, Pending:YELLOW, "Under Contract":GOLD, Sold:PURPLE, Withdrawn:DIM, Expired:RED };
+
+  const persistFavorites = (f) => { setFavorites(f); localStorage.setItem("re4lty_favorites", JSON.stringify(f)); };
+  const persistSavedSearches = (s) => { setSavedSearches(s); localStorage.setItem("re4lty_saved_searches", JSON.stringify(s)); };
+
+  const toggleFavorite = (listing) => {
+    const exists = favorites.find(f=>f.id===listing.id);
+    if (exists) { persistFavorites(favorites.filter(f=>f.id!==listing.id)); if(showToast) showToast("Removed from favorites"); }
+    else { persistFavorites([...favorites, listing]); if(showToast) showToast("Added to favorites"); }
+  };
+  const isFav = (id) => favorites.some(f=>f.id===id);
+
+  const runSearch = () => {
+    const f = searchFilters;
+    let results = [...MOCK_LISTINGS];
+    if(f.city) results = results.filter(r=>r.city.toLowerCase().includes(f.city.toLowerCase()));
+    if(f.state) results = results.filter(r=>r.state.toLowerCase()===f.state.toLowerCase());
+    if(f.zip) results = results.filter(r=>r.zip.includes(f.zip));
+    if(f.minPrice) results = results.filter(r=>r.price>=Number(f.minPrice));
+    if(f.maxPrice) results = results.filter(r=>r.price<=Number(f.maxPrice));
+    if(f.beds) results = results.filter(r=>r.beds>=Number(f.beds));
+    if(f.baths) results = results.filter(r=>r.baths>=Number(f.baths));
+    if(f.type) results = results.filter(r=>r.type===f.type);
+    if(f.status) results = results.filter(r=>r.status===f.status);
+    if(f.minSqft) results = results.filter(r=>r.sqft>=Number(f.minSqft));
+    if(f.maxSqft) results = results.filter(r=>r.sqft<=Number(f.maxSqft));
+    setSearchResults(results);
+    setHasSearched(true);
   };
 
-  // Cross-reference: loans looking for properties
-  const preApproved = loans.filter(l => ["Pre-Qual","Application"].includes(l.stage) && l.loan_amount);
-  const statusColors = { Active:GREEN, Pending:YELLOW, "Under Contract":GOLD, Sold:"#6366f1", Withdrawn:DIM, Expired:RED };
+  const saveCurrentSearch = () => {
+    const name = `Search ${savedSearches.length+1} — ${searchFilters.city||"All"} ${searchFilters.state||""} ${searchFilters.status||"Any"}`.trim();
+    persistSavedSearches([...savedSearches, { id:Date.now().toString(), name, filters:{...searchFilters}, savedAt:new Date().toISOString() }]);
+    if(showToast) showToast("Search saved");
+  };
+
+  const loadSavedSearch = (s) => { setSearchFilters(s.filters); setSubTab(0); setTimeout(()=>{ runSearch(); },50); };
+
+  const runCompAnalysis = () => {
+    if(!compAddress.trim()) return;
+    setCompResults(MOCK_COMPS);
+    setCompRan(true);
+  };
+
+  const compStats = compResults.length > 0 ? {
+    avg: Math.round(compResults.reduce((s,c)=>s+c.salePrice,0)/compResults.length),
+    median: compResults.map(c=>c.salePrice).sort((a,b)=>a-b)[Math.floor(compResults.length/2)],
+    min: Math.min(...compResults.map(c=>c.salePrice)),
+    max: Math.max(...compResults.map(c=>c.salePrice)),
+    avgPsf: Math.round(compResults.reduce((s,c)=>s+c.priceSqft,0)/compResults.length),
+  } : null;
+
+  // ─── SUB TABS ───────────────────────────────────────────────────────────────
+  const SUB_TABS = [
+    { icon:"\uD83D\uDD0D", label:"Property Search" },
+    { icon:"\uD83D\uDCBE", label:"Saved Searches" },
+    { icon:"\u2B50", label:"Favorites" },
+    { icon:"\uD83D\uDCCA", label:"Comp Analysis" },
+    { icon:"\uD83D\uDD17", label:"MLS Connections" },
+  ];
 
   return (
     <div>
       {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
         <div>
-          <div style={{ fontSize:14, fontWeight:700, color:BRIGHT }}>🏠 Re4lty Inc — Real Estate</div>
-          <div style={{ fontSize:9, color:DIM }}>Property listings, buyer matching, referral pipeline</div>
+          <div style={{ fontSize:14, fontWeight:700, color:BRIGHT }}>{"\uD83C\uDFE0"} Re4lty Inc — Real Estate Platform</div>
+          <div style={{ fontSize:9, color:DIM }}>Property search, comps analysis, MLS integration, favorites & saved searches</div>
         </div>
-        <button onClick={() => setShowNew(!showNew)} style={{ background:GOLD, border:"none", color:"#000", fontSize:9, fontWeight:700, padding:"6px 14px", borderRadius:4, cursor:"pointer", fontFamily:"inherit" }}>
-          + Add Listing
-        </button>
       </div>
 
-      {/* Stats */}
-      <div style={{ display:"flex", gap:12, marginBottom:16, flexWrap:"wrap" }}>
-        {[
-          { label:"Active Listings", val:listings.filter(l=>l.status==="Active").length, color:GREEN },
-          { label:"Under Contract", val:listings.filter(l=>l.status==="Under Contract").length, color:GOLD },
-          { label:"Pre-Approved Buyers", val:preApproved.length, color:BLUE },
-          { label:"Total Volume", val:fmtMoney(listings.reduce((s,l)=>s+Number(l.price||0),0)), color:GOLD },
-        ].map(s => (
-          <div key={s.label} style={{ ...cardS, flex:1, minWidth:140, textAlign:"center" }}>
-            <div style={{ fontSize:7, color:DIM, textTransform:"uppercase", letterSpacing:".06em" }}>{s.label}</div>
-            <div style={{ fontSize:16, fontWeight:700, color:s.color, marginTop:4 }}>{s.val}</div>
+      {/* Sub-tab navigation */}
+      <div style={{ display:"flex", gap:0, marginBottom:16, borderBottom:`1px solid ${BORDER}` }}>
+        {SUB_TABS.map((st,i)=>(
+          <div key={i} onClick={()=>setSubTab(i)} style={{
+            padding:"8px 16px", cursor:"pointer", fontSize:9, fontWeight:subTab===i?700:500,
+            color:subTab===i?PURPLE:DIM, borderBottom:subTab===i?`2px solid ${PURPLE}`:"2px solid transparent",
+            letterSpacing:".05em", transition:"all .2s", display:"flex", alignItems:"center", gap:5, userSelect:"none"
+          }}>
+            <span style={{ fontSize:12 }}>{st.icon}</span>
+            <span style={{ textTransform:"uppercase" }}>{st.label}</span>
           </div>
         ))}
       </div>
 
-      {/* New Listing Form */}
-      {showNew && (
-        <div style={{ ...cardS, marginBottom:12, borderColor:"rgba(212,175,55,.3)" }}>
-          <div style={{ fontSize:10, fontWeight:700, color:GOLD, marginBottom:10 }}>New Listing</div>
-          <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:8, marginBottom:8 }}>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Address</div><input style={inputS} value={form.address} onChange={e => setForm({...form, address:e.target.value})} /></div>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>City</div><input style={inputS} value={form.city} onChange={e => setForm({...form, city:e.target.value})} /></div>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>State</div><input style={inputS} value={form.state} onChange={e => setForm({...form, state:e.target.value})} /></div>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Zip</div><input style={inputS} value={form.zip} onChange={e => setForm({...form, zip:e.target.value})} /></div>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr 1fr", gap:8, marginBottom:8 }}>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Price</div><input type="number" style={inputS} value={form.price} onChange={e => setForm({...form, price:Number(e.target.value)})} /></div>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Beds</div><input type="number" style={inputS} value={form.beds} onChange={e => setForm({...form, beds:Number(e.target.value)})} /></div>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Baths</div><input type="number" style={inputS} value={form.baths} onChange={e => setForm({...form, baths:Number(e.target.value)})} /></div>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>SqFt</div><input type="number" style={inputS} value={form.sqft} onChange={e => setForm({...form, sqft:Number(e.target.value)})} /></div>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>MLS#</div><input style={inputS} value={form.mls} onChange={e => setForm({...form, mls:e.target.value})} /></div>
-            <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Agent</div><input style={inputS} value={form.agent} onChange={e => setForm({...form, agent:e.target.value})} /></div>
-          </div>
-          <div style={{ display:"flex", gap:8 }}>
-            <button onClick={addListing} style={{ background:GOLD, border:"none", color:"#000", fontSize:9, fontWeight:700, padding:"5px 14px", borderRadius:3, cursor:"pointer", fontFamily:"inherit" }}>Add Listing</button>
-            <button onClick={() => setShowNew(false)} style={{ background:"none", border:`1px solid ${BORDER}`, color:DIM, fontSize:9, padding:"5px 14px", borderRadius:3, cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* Pre-Approved Buyers → Match to Listings */}
-      {preApproved.length > 0 && (
-        <div style={{ ...cardS, marginBottom:12 }}>
-          <div style={{ fontSize:10, fontWeight:700, color:BLUE, marginBottom:8 }}>🎯 Pre-Approved Buyers Looking for Property</div>
-          {preApproved.map(l => (
-            <div key={l.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0", borderBottom:`1px solid ${BORDER}` }}>
-              <div>
-                <div style={{ fontSize:9, color:BRIGHT, fontWeight:600 }}>{l.first_name} {l.last_name}</div>
-                <div style={{ fontSize:8, color:DIM }}>Approved: {fmtMoney(l.loan_amount)} · FICO: {l.fico} · {l.property_type||"SFR"}</div>
+      {/* ═══ SUB-TAB 0: Property Search ═══ */}
+      {subTab===0 && (
+        <div>
+          {/* Filters */}
+          <div style={{ ...rCardS, marginBottom:16, borderColor:PURPLE+"33" }}>
+            <div style={{ fontSize:10, fontWeight:700, color:PURPLE, marginBottom:10, textTransform:"uppercase", letterSpacing:".06em" }}>Search Filters</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr", gap:8, marginBottom:8 }}>
+              <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>City</div><input style={rInputS} placeholder="e.g. Naples" value={searchFilters.city} onChange={e=>setSearchFilters({...searchFilters, city:e.target.value})} /></div>
+              <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>State</div>
+                <select style={rSelectS} value={searchFilters.state} onChange={e=>setSearchFilters({...searchFilters, state:e.target.value})}>
+                  <option value="">Any</option>{US_STATES.map(s=><option key={s} value={s}>{s}</option>)}
+                </select>
               </div>
-              <span style={{ fontSize:8, padding:"3px 8px", borderRadius:3, background:"rgba(99,102,241,.12)", color:BLUE, border:"1px solid rgba(99,102,241,.25)" }}>
-                {listings.filter(lst => lst.status==="Active" && Number(lst.price) <= Number(l.loan_amount)*1.1).length} matching listings
-              </span>
+              <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>ZIP</div><input style={rInputS} placeholder="e.g. 34104" value={searchFilters.zip} onChange={e=>setSearchFilters({...searchFilters, zip:e.target.value})} /></div>
+              <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Min Price</div><input type="number" style={rInputS} placeholder="$0" value={searchFilters.minPrice} onChange={e=>setSearchFilters({...searchFilters, minPrice:e.target.value})} /></div>
+              <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Max Price</div><input type="number" style={rInputS} placeholder="Any" value={searchFilters.maxPrice} onChange={e=>setSearchFilters({...searchFilters, maxPrice:e.target.value})} /></div>
             </div>
-          ))}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr 1fr", gap:8, marginBottom:10 }}>
+              <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Beds (min)</div><input type="number" style={rInputS} placeholder="Any" value={searchFilters.beds} onChange={e=>setSearchFilters({...searchFilters, beds:e.target.value})} /></div>
+              <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Baths (min)</div><input type="number" style={rInputS} placeholder="Any" value={searchFilters.baths} onChange={e=>setSearchFilters({...searchFilters, baths:e.target.value})} /></div>
+              <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Property Type</div>
+                <select style={rSelectS} value={searchFilters.type} onChange={e=>setSearchFilters({...searchFilters, type:e.target.value})}>
+                  <option value="">Any</option>{PROPERTY_TYPES.map(t=><option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+              <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Status</div>
+                <select style={rSelectS} value={searchFilters.status} onChange={e=>setSearchFilters({...searchFilters, status:e.target.value})}>
+                  <option value="">Any</option><option value="Active">Active</option><option value="Pending">Pending</option><option value="Sold">Sold</option>
+                </select>
+              </div>
+              <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Min SqFt</div><input type="number" style={rInputS} placeholder="0" value={searchFilters.minSqft} onChange={e=>setSearchFilters({...searchFilters, minSqft:e.target.value})} /></div>
+              <div><div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Max SqFt</div><input type="number" style={rInputS} placeholder="Any" value={searchFilters.maxSqft} onChange={e=>setSearchFilters({...searchFilters, maxSqft:e.target.value})} /></div>
+            </div>
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={runSearch} style={rBtnS}>{"\uD83D\uDD0D"} Search Properties</button>
+              <button onClick={saveCurrentSearch} style={rBtnOutS}>{"\uD83D\uDCBE"} Save Search</button>
+              <button onClick={()=>{setSearchFilters({ city:"", state:"", zip:"", minPrice:"", maxPrice:"", beds:"", baths:"", type:"", status:"", minSqft:"", maxSqft:"" });setSearchResults(MOCK_LISTINGS);setHasSearched(false);}} style={{ ...rBtnOutS, borderColor:DIM, color:DIM }}>Clear</button>
+            </div>
+          </div>
+
+          {/* Bridge API / Data Source Notice */}
+          <div style={{ ...rCardS, marginBottom:16, borderColor:BLUE+"33", display:"flex", alignItems:"center", gap:10, padding:10 }}>
+            <span style={{ fontSize:14 }}>{"\uD83C\uDF10"}</span>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:9, fontWeight:600, color:BLUE }}>Bridge API Integration</div>
+              <div style={{ fontSize:8, color:DIM }}>{mlsConfigs.miami.status==="Connected"||mlsConfigs.stellar.status==="Connected"||mlsConfigs.swfl.status==="Connected" ? "Live MLS data available via Bridge API" : "Showing demo data — Connect an MLS in the MLS Connections tab to pull live listings"}</div>
+            </div>
+            <span style={{ ...badgeS(mlsConfigs.miami.status==="Connected"?GREEN:YELLOW), fontSize:7 }}>{mlsConfigs.miami.status==="Connected"?"LIVE":"DEMO"}</span>
+          </div>
+
+          {/* Results */}
+          <div style={{ fontSize:9, color:DIM, marginBottom:8 }}>{hasSearched ? `${searchResults.length} result${searchResults.length!==1?"s":""}` : `Showing ${searchResults.length} demo listings`}</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(260px, 1fr))", gap:12 }}>
+            {searchResults.map(p=>(
+              <div key={p.id} style={{ ...rCardS, position:"relative", transition:"border-color .2s" }}>
+                {/* Photo placeholder */}
+                <div style={{ background:BORDER, height:110, borderRadius:4, marginBottom:8, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                  <span style={{ fontSize:32, opacity:.3 }}>{"\uD83C\uDFE0"}</span>
+                </div>
+                {/* Favorite star */}
+                <div onClick={()=>toggleFavorite(p)} style={{ position:"absolute", top:20, right:20, cursor:"pointer", fontSize:16, filter:isFav(p.id)?"drop-shadow(0 0 4px #d4af37)":"none", transition:"all .2s" }}>
+                  {isFav(p.id)?"\u2B50":"\u2606"}
+                </div>
+                {/* Status badge */}
+                <span style={{ position:"absolute", top:20, left:20, fontSize:7, padding:"2px 7px", borderRadius:3, background:`${statusColors[p.status]||DIM}22`, color:statusColors[p.status]||DIM, fontWeight:700, letterSpacing:".04em", textTransform:"uppercase" }}>{p.status}</span>
+                {/* Info */}
+                <div style={{ fontSize:14, fontWeight:700, color:GOLD, marginBottom:2 }}>{fmtMoney(p.price)}</div>
+                <div style={{ fontSize:10, color:BRIGHT, fontWeight:600, marginBottom:2 }}>{p.address}</div>
+                <div style={{ fontSize:9, color:DIM, marginBottom:6 }}>{p.city}, {p.state} {p.zip}</div>
+                <div style={{ display:"flex", gap:10, fontSize:9, color:TXT, marginBottom:6 }}>
+                  <span>{p.beds} bd</span>
+                  <span style={{ color:BORDER }}>|</span>
+                  <span>{p.baths} ba</span>
+                  <span style={{ color:BORDER }}>|</span>
+                  <span>{Number(p.sqft).toLocaleString()} sqft</span>
+                </div>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:8, color:DIM }}>
+                  <span>{p.daysOnMarket}d on market</span>
+                  <span>{p.agent}</span>
+                </div>
+                {p.mls && <div style={{ fontSize:7, color:DIM, marginTop:4 }}>MLS# {p.mls}</div>}
+              </div>
+            ))}
+          </div>
+          {searchResults.length===0 && <div style={{ textAlign:"center", padding:40, color:DIM, fontSize:10 }}>No properties match your filters. Try broadening your search.</div>}
         </div>
       )}
 
-      {/* Listings */}
-      <div style={cardS}>
-        <div style={{ fontSize:10, fontWeight:700, color:GOLD, marginBottom:10, textTransform:"uppercase", letterSpacing:".06em" }}>Listings ({listings.length})</div>
-        {listings.length === 0 && <div style={{ fontSize:9, color:DIM, textAlign:"center", padding:20 }}>No listings yet. Click "Add Listing" to start.</div>}
-        {listings.map(l => (
-          <div key={l.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:`1px solid ${BORDER}` }}>
-            <div>
-              <div style={{ fontSize:10, color:BRIGHT, fontWeight:600 }}>{l.address}</div>
-              <div style={{ fontSize:8, color:DIM }}>{l.city}, {l.state} {l.zip} · {l.beds}bd/{l.baths}ba · {Number(l.sqft).toLocaleString()} sqft{l.mls ? ` · MLS# ${l.mls}`:""}</div>
-            </div>
-            <div style={{ textAlign:"right" }}>
-              <div style={{ fontSize:11, color:GOLD, fontWeight:700 }}>{fmtMoney(l.price)}</div>
-              <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:`${statusColors[l.status]||DIM}18`, color:statusColors[l.status]||DIM }}>{l.status}</span>
+      {/* ═══ SUB-TAB 1: Saved Searches ═══ */}
+      {subTab===1 && (
+        <div>
+          <div style={{ fontSize:10, fontWeight:700, color:PURPLE, marginBottom:12, textTransform:"uppercase", letterSpacing:".06em" }}>{"\uD83D\uDCBE"} Saved Searches ({savedSearches.length})</div>
+          {savedSearches.length===0 && <div style={{ ...rCardS, textAlign:"center", color:DIM, fontSize:10, padding:30 }}>No saved searches yet. Use the Property Search tab to search and save criteria.</div>}
+          <div style={{ display:"grid", gap:10 }}>
+            {savedSearches.map(s=>(
+              <div key={s.id} style={{ ...rCardS, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div>
+                  <div style={{ fontSize:10, fontWeight:600, color:BRIGHT }}>{s.name}</div>
+                  <div style={{ fontSize:8, color:DIM, marginTop:2 }}>
+                    {[s.filters.city, s.filters.state, s.filters.zip, s.filters.minPrice?`$${Number(s.filters.minPrice).toLocaleString()}+`:"", s.filters.maxPrice?`Up to $${Number(s.filters.maxPrice).toLocaleString()}`:"", s.filters.beds?`${s.filters.beds}+ beds`:"", s.filters.type, s.filters.status].filter(Boolean).join(" · ") || "All properties"}
+                  </div>
+                  <div style={{ fontSize:7, color:DIM, marginTop:2 }}>Saved: {new Date(s.savedAt).toLocaleDateString()}</div>
+                </div>
+                <div style={{ display:"flex", gap:6 }}>
+                  <button onClick={()=>loadSavedSearch(s)} style={{ ...rBtnS, padding:"4px 10px", fontSize:9 }}>{"\u25B6"} Run</button>
+                  <button onClick={()=>{persistSavedSearches(savedSearches.filter(x=>x.id!==s.id)); if(showToast) showToast("Search deleted");}} style={{ ...rBtnOutS, padding:"4px 10px", fontSize:9, borderColor:RED, color:RED }}>{"\u2715"}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ SUB-TAB 2: Favorites / Watchlist ═══ */}
+      {subTab===2 && (
+        <div>
+          <div style={{ fontSize:10, fontWeight:700, color:PURPLE, marginBottom:12, textTransform:"uppercase", letterSpacing:".06em" }}>{"\u2B50"} Favorites / Watchlist ({favorites.length})</div>
+          {favorites.length===0 && <div style={{ ...rCardS, textAlign:"center", color:DIM, fontSize:10, padding:30 }}>No favorites yet. Star properties from the search results to track them here.</div>}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(260px, 1fr))", gap:12 }}>
+            {favorites.map(p=>(
+              <div key={p.id} style={{ ...rCardS, position:"relative" }}>
+                <div style={{ background:BORDER, height:90, borderRadius:4, marginBottom:8, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <span style={{ fontSize:28, opacity:.3 }}>{"\uD83C\uDFE0"}</span>
+                </div>
+                <div onClick={()=>toggleFavorite(p)} style={{ position:"absolute", top:16, right:18, cursor:"pointer", fontSize:16, filter:"drop-shadow(0 0 4px #d4af37)" }}>{"\u2B50"}</div>
+                <span style={{ position:"absolute", top:16, left:18, fontSize:7, padding:"2px 7px", borderRadius:3, background:`${statusColors[p.status]||DIM}22`, color:statusColors[p.status]||DIM, fontWeight:700, letterSpacing:".04em", textTransform:"uppercase" }}>{p.status}</span>
+                <div style={{ fontSize:13, fontWeight:700, color:GOLD, marginBottom:2 }}>{fmtMoney(p.price)}</div>
+                <div style={{ fontSize:10, color:BRIGHT, fontWeight:600 }}>{p.address}</div>
+                <div style={{ fontSize:9, color:DIM, marginBottom:4 }}>{p.city}, {p.state} {p.zip}</div>
+                <div style={{ display:"flex", gap:10, fontSize:9, color:TXT }}>
+                  <span>{p.beds} bd</span><span style={{ color:BORDER }}>|</span>
+                  <span>{p.baths} ba</span><span style={{ color:BORDER }}>|</span>
+                  <span>{Number(p.sqft).toLocaleString()} sqft</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ═══ SUB-TAB 3: Comp Analysis ═══ */}
+      {subTab===3 && (
+        <div>
+          <div style={{ ...rCardS, marginBottom:16, borderColor:PURPLE+"33" }}>
+            <div style={{ fontSize:10, fontWeight:700, color:PURPLE, marginBottom:10, textTransform:"uppercase", letterSpacing:".06em" }}>{"\uD83D\uDCCA"} Comparable Sales Analysis</div>
+            <div style={{ display:"flex", gap:8, alignItems:"flex-end" }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Subject Property Address</div>
+                <input style={rInputS} placeholder="Enter full address, e.g. 250 Ospreys Landing #1402, Naples FL 34104" value={compAddress} onChange={e=>setCompAddress(e.target.value)} />
+              </div>
+              <button onClick={runCompAnalysis} style={{ ...rBtnS, whiteSpace:"nowrap" }}>{"\uD83D\uDCCA"} Run Comp Analysis</button>
             </div>
           </div>
-        ))}
-      </div>
+
+          {compRan && compResults.length>0 && (
+            <>
+              {/* Summary Stats */}
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr", gap:10, marginBottom:16 }}>
+                {[
+                  { label:"Avg Price", val:fmtMoney(compStats.avg), color:GOLD },
+                  { label:"Median Price", val:fmtMoney(compStats.median), color:GREEN },
+                  { label:"Price Range", val:`${fmtMoney(compStats.min)} — ${fmtMoney(compStats.max)}`, color:BLUE },
+                  { label:"Avg $/SqFt", val:`$${compStats.avgPsf}`, color:PURPLE },
+                  { label:"Comps Found", val:compResults.length, color:GOLD },
+                ].map(s=>(
+                  <div key={s.label} style={{ ...rCardS, textAlign:"center" }}>
+                    <div style={{ fontSize:7, color:DIM, textTransform:"uppercase", letterSpacing:".06em" }}>{s.label}</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:s.color, marginTop:4 }}>{s.val}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Comp Table */}
+              <div style={{ ...rCardS }}>
+                <div style={{ fontSize:10, fontWeight:700, color:GOLD, marginBottom:10, textTransform:"uppercase", letterSpacing:".06em" }}>Comparable Sales</div>
+                <div style={{ overflowX:"auto" }}>
+                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:9 }}>
+                    <thead>
+                      <tr style={{ borderBottom:`1px solid ${BORDER}` }}>
+                        {["Address","Sale Price","$/SqFt","Beds","Baths","Sale Date","Distance"].map(h=>(
+                          <th key={h} style={{ textAlign:"left", padding:"6px 8px", color:DIM, fontWeight:600, fontSize:8, textTransform:"uppercase", letterSpacing:".05em" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {compResults.map((c,i)=>(
+                        <tr key={i} style={{ borderBottom:`1px solid ${BORDER}22` }}>
+                          <td style={{ padding:"6px 8px", color:BRIGHT, fontWeight:500 }}>{c.address}</td>
+                          <td style={{ padding:"6px 8px", color:GOLD, fontWeight:700 }}>{fmtMoney(c.salePrice)}</td>
+                          <td style={{ padding:"6px 8px", color:TXT }}>${c.priceSqft}</td>
+                          <td style={{ padding:"6px 8px", color:TXT }}>{c.beds}</td>
+                          <td style={{ padding:"6px 8px", color:TXT }}>{c.baths}</td>
+                          <td style={{ padding:"6px 8px", color:DIM }}>{c.saleDate}</td>
+                          <td style={{ padding:"6px 8px", color:DIM }}>{c.distance}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+          {compRan && compResults.length===0 && <div style={{ ...rCardS, textAlign:"center", color:DIM, fontSize:10, padding:30 }}>No comparable sales found. Try a different address.</div>}
+          {!compRan && <div style={{ ...rCardS, textAlign:"center", color:DIM, fontSize:10, padding:30 }}>Enter a subject property address above and click "Run Comp Analysis" to see comparable sales.</div>}
+        </div>
+      )}
+
+      {/* ═══ SUB-TAB 4: MLS Connections ═══ */}
+      {subTab===4 && (
+        <div>
+          <div style={{ fontSize:10, fontWeight:700, color:PURPLE, marginBottom:4, textTransform:"uppercase", letterSpacing:".06em" }}>{"\uD83D\uDD17"} MLS Connection Status</div>
+          <div style={{ fontSize:8, color:DIM, marginBottom:16 }}>Connect to MLS feeds via Bridge API. When connected, property search will pull live data.</div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14 }}>
+            {[
+              { key:"miami", name:"Miami MLS (MIAMI)", region:"Miami-Dade, Broward" },
+              { key:"stellar", name:"Stellar MLS", region:"Central & SW Florida" },
+              { key:"swfl", name:"SWFL MLS", region:"Lee, Collier, Charlotte" },
+            ].map(mls=>{
+              const cfg = mlsConfigs[mls.key];
+              const sColor = cfg.status==="Connected"?GREEN:cfg.status==="Pending"?YELLOW:DIM;
+              return (
+                <div key={mls.key} style={{ ...rCardS, borderColor:sColor+"44" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:BRIGHT }}>{mls.name}</div>
+                    <span style={{ fontSize:7, padding:"2px 8px", borderRadius:3, background:sColor+"22", color:sColor, fontWeight:700, letterSpacing:".04em", textTransform:"uppercase" }}>{cfg.status}</span>
+                  </div>
+                  <div style={{ fontSize:8, color:DIM, marginBottom:10 }}>Region: {mls.region}</div>
+
+                  {editingMls===mls.key ? (
+                    <div>
+                      <div style={{ fontSize:8, color:DIM, marginBottom:3 }}>Bridge API Key</div>
+                      <input style={{ ...rInputS, marginBottom:8 }} placeholder="Enter API key..." value={cfg.key} onChange={e=>setMlsConfigs({...mlsConfigs, [mls.key]:{...cfg, key:e.target.value}})} />
+                      <div style={{ display:"flex", gap:6 }}>
+                        <button onClick={()=>{setMlsConfigs({...mlsConfigs, [mls.key]:{...cfg, status:cfg.key?"Connected":"Not Connected"}}); setEditingMls(null); if(showToast) showToast(cfg.key?`${mls.name} connected`:`${mls.name} disconnected`);}} style={{ ...rBtnS, padding:"4px 10px", fontSize:9 }}>Save</button>
+                        <button onClick={()=>setEditingMls(null)} style={{ ...rBtnOutS, padding:"4px 10px", fontSize:9, borderColor:DIM, color:DIM }}>Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={()=>setEditingMls(mls.key)} style={{ ...rBtnOutS, padding:"5px 12px", fontSize:9, width:"100%" }}>{"\u2699"} Configure</button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Bridge API info */}
+          <div style={{ ...rCardS, marginTop:16, borderColor:BLUE+"22" }}>
+            <div style={{ fontSize:10, fontWeight:700, color:BLUE, marginBottom:6 }}>{"\uD83C\uDF10"} Bridge API Integration</div>
+            <div style={{ fontSize:9, color:DIM, lineHeight:1.6 }}>
+              When an MLS is connected with a valid Bridge API key, property searches will query live MLS data.
+              Until connected, the platform displays demo listings for UI preview purposes.
+              Bridge API supports property search, listing details, media, open houses, and agent rosters.
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

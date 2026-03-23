@@ -108,8 +108,8 @@ export default function ComposeVideoEmail({
 
       if (insertErr) throw new Error("Save failed: " + insertErr.message);
 
-      // Send via API route
-      const res = await fetch("/api/video-email/send", {
+      // Send via Supabase Edge Function
+      const res = await fetch("https://sfelhasepvaoianyuvxe.supabase.co/functions/v1/video-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ videoEmailId: record.id }),
