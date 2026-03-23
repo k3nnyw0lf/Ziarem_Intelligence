@@ -154,6 +154,19 @@ const btnOutS = { ...btnS, background:"transparent", border:`1px solid ${GOLD}`,
 const btnSmS = { ...btnS, padding:"4px 10px", fontSize:9 };
 const badgeS = (bg) => ({ background:bg+"22", color:bg, padding:"2px 6px", borderRadius:3, fontSize:8, fontWeight:600, letterSpacing:".04em" });
 
+// ─── EDGE FUNCTION HELPER ────────────────────────────────────────────────────
+const EDGE_URL = SB_URL + "/functions/v1";
+const EDGE_HEADERS = { "Content-Type":"application/json", apikey:SB_KEY, Authorization:`Bearer ${SB_KEY}` };
+async function edgeFn(path, body, method="POST") {
+  try {
+    const opts = { method, headers:EDGE_HEADERS };
+    if (body && method!=="GET") opts.body = JSON.stringify(body);
+    const r = await fetch(`${EDGE_URL}/${path}`, opts);
+    const t = await r.text();
+    try { return JSON.parse(t); } catch { return { raw: t, ok: r.ok }; }
+  } catch(e) { console.error("edgeFn", e); return { error: e.message }; }
+}
+
 function fmtMoney(n) { if (!n && n!==0) return "$0"; return "$"+Number(n).toLocaleString("en-US",{maximumFractionDigits:0}); }
 function fmtPct(n) { return n!=null ? Number(n).toFixed(1)+"%" : "—"; }
 function daysBetween(d1,d2) { if(!d1) return 0; const a=new Date(d1),b=d2?new Date(d2):new Date(); return Math.max(0,Math.floor((b-a)/(86400000))); }
@@ -527,6 +540,59 @@ function PipelineTab({ loans, allLoans, loading, reload, openNewApp, openLoanDet
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
 
+  // ─── Edge Function States ──────────────────────────────────────────────────
+  const [inviteModal, setInviteModal] = useState(null);
+  const [inviteForm, setInviteForm] = useState({ client_name:"", email:"", phone:"", language:"en" });
+  const [inviteResult, setInviteResult] = useState(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [rateAlertModal, setRateAlertModal] = useState(null);
+  const [rateThreshold, setRateThreshold] = useState("");
+  const [rateAlertLoading, setRateAlertLoading] = useState(false);
+  const [followUpLoading, setFollowUpLoading] = useState(null);
+  const [referralModal, setReferralModal] = useState(false);
+  const [referralForm, setReferralForm] = useState({ referrer_name:"", referrer_email:"", referrer_company:"", referrer_type:"realtor", referred_name:"", referred_email:"", referred_phone:"", deal_type:"mortgage" });
+  const [referralLoading, setReferralLoading] = useState(false);
+
+  const handleInviteClient = async () => {
+    if (!inviteModal || !inviteForm.email) return;
+    setInviteLoading(true);
+    const res = await sbInsert("vault_client_invites", { loan_id:inviteModal.id, client_name:inviteForm.client_name||`${inviteModal.first_name||""} ${inviteModal.last_name||""}`.trim(), email:inviteForm.email, phone:inviteForm.phone, language:inviteForm.language, token:crypto.randomUUID() });
+    setInviteLoading(false);
+    if (res && res.token) {
+      setInviteResult(`${EDGE_URL}/client-portal?token=${res.token}`);
+      if (showToast) showToast("Client invite created","success");
+    } else if (res && res.id) {
+      const token = res.id;
+      setInviteResult(`${EDGE_URL}/client-portal?token=${token}`);
+      if (showToast) showToast("Client invite created","success");
+    } else { if (showToast) showToast("Failed to create invite","error"); }
+  };
+
+  const handleSetRateAlert = async () => {
+    if (!rateAlertModal || !rateThreshold) return;
+    setRateAlertLoading(true);
+    const res = await edgeFn("rate-alert/set", { loan_id:rateAlertModal.id, threshold_rate:Number(rateThreshold) });
+    setRateAlertLoading(false);
+    setRateAlertModal(null); setRateThreshold("");
+    if (showToast) showToast(res?.error ? "Rate alert failed" : "Rate alert set","success");
+  };
+
+  const handleStartFollowUp = async (loan) => {
+    setFollowUpLoading(loan.id);
+    await edgeFn("follow-up-engine/create", { loan_id:loan.id, client_name:`${loan.first_name||""} ${loan.last_name||""}`.trim(), client_email:loan.email||"", client_phone:loan.phone||"", sequence_type:"new_lead" });
+    setFollowUpLoading(null);
+    if (showToast) showToast("Follow-up sequence started","success");
+  };
+
+  const handleLogReferral = async () => {
+    setReferralLoading(true);
+    await edgeFn("follow-up-engine/referral/track", referralForm);
+    setReferralLoading(false);
+    setReferralModal(false);
+    setReferralForm({ referrer_name:"", referrer_email:"", referrer_company:"", referrer_type:"realtor", referred_name:"", referred_email:"", referred_phone:"", deal_type:"mortgage" });
+    if (showToast) showToast("Referral logged","success");
+  };
+
   const stagesForPipeline = activeStages || STAGES;
 
   // Get unique loan officers for filter
@@ -637,6 +703,47 @@ function PipelineTab({ loans, allLoans, loading, reload, openNewApp, openLoanDet
         message={`Are you sure you want to permanently delete the loan for ${deleteConfirm?.first_name||""} ${deleteConfirm?.last_name||""}? This will also remove all associated documents.`}
       />
 
+      {/* ─── Invite Client Modal ──────────────────────────────────────── */}
+      <Modal open={!!inviteModal} onClose={()=>{setInviteModal(null);setInviteResult(null);setInviteForm({client_name:"",email:"",phone:"",language:"en"});}} title="Invite Client to Portal" width={400}>
+        {!inviteResult ? (<div>
+          <div style={{marginBottom:8}}><label style={labelS}>Client Name</label><input style={inputS} value={inviteForm.client_name} onChange={e=>setInviteForm({...inviteForm,client_name:e.target.value})} placeholder={inviteModal?`${inviteModal.first_name||""} ${inviteModal.last_name||""}`.trim():""} /></div>
+          <div style={{marginBottom:8}}><label style={labelS}>Email</label><input style={inputS} type="email" value={inviteForm.email} onChange={e=>setInviteForm({...inviteForm,email:e.target.value})} placeholder={inviteModal?.email||""} /></div>
+          <div style={{marginBottom:8}}><label style={labelS}>Phone</label><input style={inputS} value={inviteForm.phone} onChange={e=>setInviteForm({...inviteForm,phone:e.target.value})} placeholder={inviteModal?.phone||""} /></div>
+          <div style={{marginBottom:12}}><label style={labelS}>Language</label><select style={selectS} value={inviteForm.language} onChange={e=>setInviteForm({...inviteForm,language:e.target.value})}><option value="en">English</option><option value="es">Spanish</option></select></div>
+          <button onClick={handleInviteClient} disabled={inviteLoading} style={btnS}>{inviteLoading?"Sending...":"Send Invite"}</button>
+        </div>) : (<div>
+          <div style={{fontSize:9,color:GREEN,marginBottom:8,fontWeight:600}}>Client portal link created!</div>
+          <div style={{background:INPUT_BG,border:`1px solid ${INPUT_BD}`,borderRadius:4,padding:8,fontSize:9,color:GOLD,wordBreak:"break-all",marginBottom:10}}>{inviteResult}</div>
+          <button onClick={()=>{navigator.clipboard.writeText(inviteResult);if(showToast)showToast("Link copied","success");}} style={btnS}>Copy Link</button>
+        </div>)}
+      </Modal>
+
+      {/* ─── Rate Alert Modal ─────────────────────────────────────────── */}
+      <Modal open={!!rateAlertModal} onClose={()=>{setRateAlertModal(null);setRateThreshold("");}} title="Set Rate Alert" width={340}>
+        <div style={{marginBottom:8}}><label style={labelS}>Current Rate</label><div style={{fontSize:12,color:GOLD,fontWeight:700}}>{rateAlertModal?.rate ? rateAlertModal.rate+"%" : "N/A"}</div></div>
+        <div style={{marginBottom:12}}><label style={labelS}>Alert When Rate Drops Below (%)</label><input style={inputS} type="number" step="0.125" value={rateThreshold} onChange={e=>setRateThreshold(e.target.value)} placeholder="e.g. 6.5" /></div>
+        <button onClick={handleSetRateAlert} disabled={rateAlertLoading||!rateThreshold} style={btnS}>{rateAlertLoading?"Setting...":"Set Alert"}</button>
+      </Modal>
+
+      {/* ─── Log Referral Modal ───────────────────────────────────────── */}
+      <Modal open={referralModal} onClose={()=>setReferralModal(false)} title="Log Referral" width={480}>
+        <div style={{fontSize:9,fontWeight:600,color:GOLD,marginBottom:6}}>REFERRER</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+          <div style={{flex:"1 1 45%"}}><label style={labelS}>Name</label><input style={inputS} value={referralForm.referrer_name} onChange={e=>setReferralForm({...referralForm,referrer_name:e.target.value})} /></div>
+          <div style={{flex:"1 1 45%"}}><label style={labelS}>Email</label><input style={inputS} value={referralForm.referrer_email} onChange={e=>setReferralForm({...referralForm,referrer_email:e.target.value})} /></div>
+          <div style={{flex:"1 1 45%"}}><label style={labelS}>Company</label><input style={inputS} value={referralForm.referrer_company} onChange={e=>setReferralForm({...referralForm,referrer_company:e.target.value})} /></div>
+          <div style={{flex:"1 1 45%"}}><label style={labelS}>Type</label><select style={selectS} value={referralForm.referrer_type} onChange={e=>setReferralForm({...referralForm,referrer_type:e.target.value})}><option value="realtor">Realtor</option><option value="builder">Builder</option><option value="attorney">Attorney</option><option value="cpa">CPA</option><option value="financial_advisor">Financial Advisor</option><option value="past_client">Past Client</option><option value="other">Other</option></select></div>
+        </div>
+        <div style={{fontSize:9,fontWeight:600,color:GOLD,marginBottom:6}}>REFERRED CLIENT</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+          <div style={{flex:"1 1 30%"}}><label style={labelS}>Name</label><input style={inputS} value={referralForm.referred_name} onChange={e=>setReferralForm({...referralForm,referred_name:e.target.value})} /></div>
+          <div style={{flex:"1 1 30%"}}><label style={labelS}>Email</label><input style={inputS} value={referralForm.referred_email} onChange={e=>setReferralForm({...referralForm,referred_email:e.target.value})} /></div>
+          <div style={{flex:"1 1 30%"}}><label style={labelS}>Phone</label><input style={inputS} value={referralForm.referred_phone} onChange={e=>setReferralForm({...referralForm,referred_phone:e.target.value})} /></div>
+        </div>
+        <div style={{marginBottom:12}}><label style={labelS}>Deal Type</label><select style={selectS} value={referralForm.deal_type} onChange={e=>setReferralForm({...referralForm,deal_type:e.target.value})}><option value="mortgage">Mortgage</option><option value="insurance">Insurance</option><option value="real_estate">Real Estate</option><option value="credit_repair">Credit Repair</option></select></div>
+        <button onClick={handleLogReferral} disabled={referralLoading} style={btnS}>{referralLoading?"Saving...":"Log Referral"}</button>
+      </Modal>
+
       {/* Quick Stats Dashboard */}
       <div style={{ display:"flex", gap:10, marginBottom:14, flexWrap:"wrap" }}>
         {[
@@ -664,6 +771,7 @@ function PipelineTab({ loans, allLoans, loading, reload, openNewApp, openLoanDet
       <div style={{ ...cardS, marginBottom:12, padding:10 }}>
         <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
           <button onClick={()=>openNewApp(null)} style={{ ...btnS, display:"flex", alignItems:"center", gap:4 }}>+ New Deal</button>
+          <button onClick={()=>setReferralModal(true)} style={{ ...btnOutS, display:"flex", alignItems:"center", gap:4, padding:"4px 10px", fontSize:9 }}>{"\uD83E\uDD1D"} Log Referral</button>
           <div style={{ display:"flex", gap:0, borderRadius:4, overflow:"hidden", border:`1px solid ${BORDER}` }}>
             <button onClick={()=>setViewMode("kanban")} style={{ ...btnSmS, background:viewMode==="kanban"?bizColor+"33":"transparent", color:viewMode==="kanban"?bizColor:DIM, border:"none" }}>Kanban</button>
             <button onClick={()=>setViewMode("table")} style={{ ...btnSmS, background:viewMode==="table"?bizColor+"33":"transparent", color:viewMode==="table"?bizColor:DIM, border:"none" }}>Table</button>
@@ -721,7 +829,11 @@ function PipelineTab({ loans, allLoans, loading, reload, openNewApp, openLoanDet
                 <div style={{ display:"flex", flexDirection:"column", gap:6, maxHeight:"60vh", overflowY:"auto" }}>
                   {(byStage[stage]||[]).map(loan => (
                     <LoanCard key={loan.id} loan={loan} allLoans={allLoans||loans} bizColor={bizColor}
-                      onDragStart={()=>setDragLoan(loan)} onClick={()=>setQuickViewLoan(loan)} onDoubleClick={()=>openLoanDetail(loan)} />
+                      onDragStart={()=>setDragLoan(loan)} onClick={()=>setQuickViewLoan(loan)} onDoubleClick={()=>openLoanDetail(loan)}
+                      onInviteClient={()=>{setInviteModal(loan);setInviteForm({client_name:`${loan.first_name||""} ${loan.last_name||""}`.trim(),email:loan.email||"",phone:loan.phone||"",language:"en"});setInviteResult(null);}}
+                      onSetRateAlert={()=>setRateAlertModal(loan)}
+                      onStartFollowUp={()=>handleStartFollowUp(loan)}
+                      followUpLoading={followUpLoading} />
                   ))}
                   {(byStage[stage]||[]).length===0 && <div style={{ fontSize:8, color:DIM, textAlign:"center", padding:16, border:`1px dashed ${BORDER}`, borderRadius:4 }}>Drop here</div>}
                 </div>
@@ -782,7 +894,7 @@ function PipelineTab({ loans, allLoans, loading, reload, openNewApp, openLoanDet
 
 
 // ─── LOAN CARD (Kanban) ───────────────────────────────────────────────────────
-function LoanCard({ loan, allLoans, bizColor, onDragStart, onClick, onDoubleClick }) {
+function LoanCard({ loan, allLoans, bizColor, onDragStart, onClick, onDoubleClick, onInviteClient, onSetRateAlert, onStartFollowUp, followUpLoading }) {
   const [hovered, setHovered] = useState(false);
   const days = daysBetween(loan.stage_entered_at||loan.created_at);
   const dayColor = days<3?GREEN:days<7?YELLOW:RED;
@@ -873,6 +985,25 @@ function LoanCard({ loan, allLoans, bizColor, onDragStart, onClick, onDoubleClic
           </span>
         )}
       </div>
+
+      {/* ── Edge Function Action Buttons ────────────────────────────── */}
+      <div style={{ display:"flex", gap:3, marginTop:4, flexWrap:"wrap" }}>
+        {onInviteClient && (
+          <button onClick={e=>{e.stopPropagation();onInviteClient();}} style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:GOLD+"18", color:GOLD, border:`1px solid ${GOLD}33`, cursor:"pointer", fontWeight:600, letterSpacing:".03em" }}>
+            {"\uD83D\uDCE8"} Invite
+          </button>
+        )}
+        {onSetRateAlert && ["Funded","Closed"].includes(loan.stage) && (
+          <button onClick={e=>{e.stopPropagation();onSetRateAlert();}} style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:GREEN+"18", color:GREEN, border:`1px solid ${GREEN}33`, cursor:"pointer", fontWeight:600, letterSpacing:".03em" }}>
+            {"\uD83D\uDD14"} Rate Alert
+          </button>
+        )}
+        {onStartFollowUp && ["Lead","Pre-Qual"].includes(loan.stage) && (
+          <button onClick={e=>{e.stopPropagation();onStartFollowUp();}} disabled={followUpLoading===loan.id} style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:BLUE+"18", color:BLUE, border:`1px solid ${BLUE}33`, cursor:"pointer", fontWeight:600, letterSpacing:".03em", opacity:followUpLoading===loan.id?.5:1 }}>
+            {followUpLoading===loan.id ? "..." : "\uD83D\uDE80 Follow-Up"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -926,7 +1057,37 @@ function ApplicationTab({ prefill, user, showToast, reload, setTab, selectedLoan
 
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
   const STEPS = ["Borrower Info","Employment & Income","Assets & Liabilities","Property & Loan","Declarations","Review & Submit"];
+
+  const handleScanDocument = async (file) => {
+    if (!file) return;
+    setScanLoading(true);
+    setScanResult(null);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const base64 = reader.result.split(",")[1];
+        const docType = file.name.toLowerCase().includes("w2") ? "w2" : file.name.toLowerCase().includes("paystub") ? "paystub" : file.name.toLowerCase().includes("bank") ? "bank_statement" : "other";
+        const res = await edgeFn("doc-scanner/extract", { file_base64:base64, doc_type:docType, loan_id:prefill?.id||null });
+        setScanLoading(false);
+        setScanResult(res);
+      };
+      reader.readAsDataURL(file);
+    } catch(e) { console.error(e); setScanLoading(false); }
+  };
+
+  const applyScanToForm = () => {
+    if (!scanResult) return;
+    const data = scanResult;
+    const mapping = { first_name:"first_name", last_name:"last_name", phone:"phone", email:"email", address:"address", city:"city", state:"state", zip:"zip", employer_name:"employer_name", position_title:"position_title", monthly_base:"monthly_base", ssn_masked:"ssn_masked", dob:"dob" };
+    Object.entries(mapping).forEach(([formKey, dataKey]) => {
+      if (data[dataKey] && !form[formKey]) upd(formKey, data[dataKey]);
+    });
+    setScanResult(null);
+    if (showToast) showToast("Extracted data applied to form","success");
+  };
 
   const upd = (field, val) => setForm(p => ({ ...p, [field]:val }));
   const updDecl = (field, val) => setForm(p => ({ ...p, declarations:{ ...p.declarations, [field]:val } }));
@@ -1025,6 +1186,40 @@ function ApplicationTab({ prefill, user, showToast, reload, setTab, selectedLoan
 
   return (
     <div>
+      {/* ── Document Scanner ─────────────────────────────────────────── */}
+      <div style={{ ...cardS, marginBottom:12, display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+        <span style={{ fontSize:13 }}>{"\uD83D\uDCF7"}</span>
+        <div style={{ flex:1 }}>
+          <div style={{ fontSize:9, fontWeight:600, color:GOLD }}>Scan Document (PDF/Image)</div>
+          <div style={{ fontSize:8, color:DIM }}>Extract borrower data from W-2, pay stubs, bank statements</div>
+        </div>
+        <label style={{ ...btnS, fontSize:9, padding:"5px 12px", cursor:"pointer", display:"inline-flex", alignItems:"center", gap:4, opacity:scanLoading?.6:1 }}>
+          {scanLoading ? "Scanning..." : "\uD83D\uDCC4 Scan Document"}
+          <input type="file" accept=".pdf,.png,.jpg,.jpeg,.tiff,.webp" style={{ display:"none" }} onChange={e=>handleScanDocument(e.target.files[0])} disabled={scanLoading} />
+        </label>
+      </div>
+      {scanResult && !scanResult.error && (
+        <div style={{ ...cardS, marginBottom:12, borderColor:GREEN+"33" }}>
+          <div style={{ fontSize:9, fontWeight:700, color:GREEN, marginBottom:8 }}>Extracted Data</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(180px, 1fr))", gap:4, marginBottom:10 }}>
+            {Object.entries(scanResult).filter(([k])=>!["error","raw","ok"].includes(k)).map(([k,v])=>(
+              <div key={k} style={{ fontSize:9 }}>
+                <span style={{ color:DIM }}>{k.replace(/_/g," ")}: </span>
+                <span style={{ color:BRIGHT }}>{typeof v==="object"?JSON.stringify(v):String(v)}</span>
+              </div>
+            ))}
+          </div>
+          <button onClick={applyScanToForm} style={btnS}>Apply to Form</button>
+          <button onClick={()=>setScanResult(null)} style={{ ...btnOutS, marginLeft:8 }}>Dismiss</button>
+        </div>
+      )}
+      {scanResult && scanResult.error && (
+        <div style={{ ...cardS, marginBottom:12, borderColor:RED+"33" }}>
+          <div style={{ fontSize:9, color:RED }}>{scanResult.error || scanResult.raw || "Scan failed"}</div>
+          <button onClick={()=>setScanResult(null)} style={{ ...btnOutS, marginTop:6, fontSize:8 }}>Dismiss</button>
+        </div>
+      )}
+
       {/* Progress bar */}
       <div style={{ display:"flex", gap:0, marginBottom:16 }}>
         {STEPS.map((s,i)=>(
@@ -2040,6 +2235,37 @@ function RealtyTab({ loans, contacts, showToast }) {
     { icon:"\uD83D\uDD17", label:"MLS" },
   ];
 
+  // ─── Edge Function States ──────────────────────────────────────────────────
+  const [analyzePanel, setAnalyzePanel] = useState(null);
+  const [analyzeLoading, setAnalyzeLoading] = useState(null);
+  const [topDealsModal, setTopDealsModal] = useState(false);
+  const [topDealsForm, setTopDealsForm] = useState({ city:"Naples", state:"FL", max_price:"1000000" });
+  const [topDealsResults, setTopDealsResults] = useState(null);
+  const [topDealsLoading, setTopDealsLoading] = useState(false);
+  const [negotiatePanel, setNegotiatePanel] = useState(null);
+  const [negotiateLoading, setNegotiateLoading] = useState(null);
+
+  const handleAnalyzeProperty = async (listing) => {
+    setAnalyzeLoading(listing.id);
+    const res = await edgeFn("deal-intelligence/analyze", { address:listing.address, city:listing.city, state:listing.state, zip:listing.zip });
+    setAnalyzeLoading(null);
+    setAnalyzePanel({ listing, data:res });
+  };
+
+  const handleTopDeals = async () => {
+    setTopDealsLoading(true);
+    const res = await edgeFn("deal-intelligence/top-deals", { city:topDealsForm.city, state:topDealsForm.state, max_price:Number(topDealsForm.max_price) });
+    setTopDealsLoading(false);
+    setTopDealsResults(res);
+  };
+
+  const handleNegotiate = async (listing) => {
+    setNegotiateLoading(listing.id);
+    const res = await edgeFn("deal-intelligence/negotiate", { property_address:listing.address, list_price:listing.price, days_on_market:listing.daysOnMarket });
+    setNegotiateLoading(null);
+    setNegotiatePanel({ listing, data:res });
+  };
+
   // ─── TRANSACTION STATE ──────────────────────────────────────────────────────
   const [transactions, setTransactions] = useState([]);
   const [selectedTx, setSelectedTx] = useState(null);
@@ -2113,12 +2339,116 @@ function RealtyTab({ loans, contacts, showToast }) {
 
   return (
     <div>
+      {/* ─── Analyze Property Slide-Out Panel ────────────────────────── */}
+      {analyzePanel && (
+        <div style={{ position:"fixed", top:0, right:0, width:420, height:"100vh", background:CARD, borderLeft:`1px solid ${BORDER}`, zIndex:1000, overflowY:"auto", padding:20, boxShadow:"-4px 0 24px rgba(0,0,0,.6)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase" }}>Property Analysis</div>
+            <div onClick={()=>setAnalyzePanel(null)} style={{ cursor:"pointer", fontSize:14, color:DIM }}>X</div>
+          </div>
+          <div style={{ fontSize:10, color:BRIGHT, fontWeight:600, marginBottom:4 }}>{analyzePanel.listing.address}</div>
+          <div style={{ fontSize:9, color:DIM, marginBottom:12 }}>{analyzePanel.listing.city}, {analyzePanel.listing.state} {analyzePanel.listing.zip}</div>
+          {analyzePanel.data && !analyzePanel.data.error ? (
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {[
+                { label:"Flood Zone", key:"flood_zone", icon:"\uD83C\uDF0A", color:BLUE },
+                { label:"Tax Estimate", key:"tax_estimate", icon:"\uD83D\uDCB0", color:GOLD },
+                { label:"Neighborhood", key:"neighborhood", icon:"\uD83C\uDFD8\uFE0F", color:GREEN },
+                { label:"Hurricane Risk", key:"hurricane_risk", icon:"\uD83C\uDF00", color:RED },
+                { label:"Insurance Est.", key:"insurance", icon:"\uD83D\uDEE1\uFE0F", color:ORANGE },
+                { label:"Walkability", key:"walkability", icon:"\uD83D\uDEB6", color:PURPLE },
+              ].map(item => (
+                <div key={item.key} style={{ background:INPUT_BG, border:`1px solid ${INPUT_BD}`, borderRadius:4, padding:10, borderLeft:`3px solid ${item.color}` }}>
+                  <div style={{ fontSize:8, color:DIM, letterSpacing:".06em", textTransform:"uppercase", marginBottom:2 }}>{item.icon} {item.label}</div>
+                  <div style={{ fontSize:10, color:BRIGHT }}>{typeof analyzePanel.data[item.key]==="object" ? JSON.stringify(analyzePanel.data[item.key]) : (analyzePanel.data[item.key] || "N/A")}</div>
+                </div>
+              ))}
+              {Object.entries(analyzePanel.data).filter(([k])=>!["flood_zone","tax_estimate","neighborhood","hurricane_risk","insurance","walkability","error","raw","ok"].includes(k)).map(([k,v])=>(
+                <div key={k} style={{ background:INPUT_BG, border:`1px solid ${INPUT_BD}`, borderRadius:4, padding:10 }}>
+                  <div style={{ fontSize:8, color:DIM, letterSpacing:".06em", textTransform:"uppercase", marginBottom:2 }}>{k.replace(/_/g," ")}</div>
+                  <div style={{ fontSize:10, color:BRIGHT }}>{typeof v==="object"?JSON.stringify(v):String(v)}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize:9, color:DIM }}>No analysis data returned. {analyzePanel.data?.error || analyzePanel.data?.raw || ""}</div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Negotiate Slide-Out Panel ────────────────────────────────── */}
+      {negotiatePanel && (
+        <div style={{ position:"fixed", top:0, right:0, width:420, height:"100vh", background:CARD, borderLeft:`1px solid ${BORDER}`, zIndex:1000, overflowY:"auto", padding:20, boxShadow:"-4px 0 24px rgba(0,0,0,.6)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <div style={{ fontSize:11, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase" }}>Negotiation Playbook</div>
+            <div onClick={()=>setNegotiatePanel(null)} style={{ cursor:"pointer", fontSize:14, color:DIM }}>X</div>
+          </div>
+          <div style={{ fontSize:10, color:BRIGHT, fontWeight:600, marginBottom:4 }}>{negotiatePanel.listing.address}</div>
+          <div style={{ fontSize:9, color:DIM, marginBottom:4 }}>List: {fmtMoney(negotiatePanel.listing.price)} | {negotiatePanel.listing.daysOnMarket}d on market</div>
+          {negotiatePanel.data && !negotiatePanel.data.error ? (
+            <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:8 }}>
+              {[
+                { label:"Recommended Offer", key:"recommended_offer", color:GREEN },
+                { label:"Strategy", key:"strategy", color:GOLD },
+                { label:"Counter-Offer Playbook", key:"counter_offer_playbook", color:BLUE },
+                { label:"Market Position", key:"market_position", color:PURPLE },
+              ].map(item => (
+                <div key={item.key} style={{ background:INPUT_BG, border:`1px solid ${INPUT_BD}`, borderRadius:4, padding:10, borderLeft:`3px solid ${item.color}` }}>
+                  <div style={{ fontSize:8, color:DIM, letterSpacing:".06em", textTransform:"uppercase", marginBottom:2 }}>{item.label}</div>
+                  <div style={{ fontSize:10, color:BRIGHT, whiteSpace:"pre-wrap" }}>{typeof negotiatePanel.data[item.key]==="object" ? JSON.stringify(negotiatePanel.data[item.key],null,2) : (negotiatePanel.data[item.key] || "N/A")}</div>
+                </div>
+              ))}
+              {Object.entries(negotiatePanel.data).filter(([k])=>!["recommended_offer","strategy","counter_offer_playbook","market_position","error","raw","ok"].includes(k)).map(([k,v])=>(
+                <div key={k} style={{ background:INPUT_BG, border:`1px solid ${INPUT_BD}`, borderRadius:4, padding:10 }}>
+                  <div style={{ fontSize:8, color:DIM, letterSpacing:".06em", textTransform:"uppercase", marginBottom:2 }}>{k.replace(/_/g," ")}</div>
+                  <div style={{ fontSize:10, color:BRIGHT, whiteSpace:"pre-wrap" }}>{typeof v==="object"?JSON.stringify(v,null,2):String(v)}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize:9, color:DIM }}>No negotiation data returned. {negotiatePanel.data?.error || negotiatePanel.data?.raw || ""}</div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Top 10 Deals Modal ───────────────────────────────────────── */}
+      <Modal open={topDealsModal} onClose={()=>{setTopDealsModal(false);setTopDealsResults(null);}} title="Top 10 Deals" width={620}>
+        <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap" }}>
+          <div style={{ flex:"1 1 30%" }}><label style={labelS}>City</label><input style={inputS} value={topDealsForm.city} onChange={e=>setTopDealsForm({...topDealsForm,city:e.target.value})} /></div>
+          <div style={{ flex:"1 1 20%" }}><label style={labelS}>State</label><select style={selectS} value={topDealsForm.state} onChange={e=>setTopDealsForm({...topDealsForm,state:e.target.value})}>{US_STATES.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
+          <div style={{ flex:"1 1 30%" }}><label style={labelS}>Max Price</label><input style={inputS} type="number" value={topDealsForm.max_price} onChange={e=>setTopDealsForm({...topDealsForm,max_price:e.target.value})} /></div>
+          <div style={{ flex:"0 0 auto", display:"flex", alignItems:"flex-end" }}><button onClick={handleTopDeals} disabled={topDealsLoading} style={btnS}>{topDealsLoading ? "Searching..." : "Find Deals"}</button></div>
+        </div>
+        {topDealsResults && !topDealsResults.error ? (
+          <div>
+            {Array.isArray(topDealsResults) ? topDealsResults.map((deal,i) => (
+              <div key={i} style={{ background:INPUT_BG, border:`1px solid ${INPUT_BD}`, borderRadius:4, padding:10, marginBottom:6, borderLeft:`3px solid ${GOLD}` }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div style={{ fontSize:10, color:BRIGHT, fontWeight:600 }}>{deal.address || deal.property_address || `Deal #${i+1}`}</div>
+                  {deal.score!=null && <span style={badgeS(GOLD)}>Score: {deal.score}</span>}
+                </div>
+                {deal.price && <div style={{ fontSize:11, color:GOLD, fontWeight:700 }}>{fmtMoney(deal.price)}</div>}
+                {deal.negotiation_tactics && <div style={{ fontSize:8, color:DIM, marginTop:4 }}>{typeof deal.negotiation_tactics==="string"?deal.negotiation_tactics:JSON.stringify(deal.negotiation_tactics)}</div>}
+                {Object.entries(deal).filter(([k])=>!["address","property_address","price","score","negotiation_tactics"].includes(k)).map(([k,v])=>(
+                  <div key={k} style={{ fontSize:8, color:TXT, marginTop:2 }}><span style={{ color:DIM }}>{k.replace(/_/g," ")}: </span>{typeof v==="object"?JSON.stringify(v):String(v)}</div>
+                ))}
+              </div>
+            )) : (
+              <div style={{ fontSize:9, color:TXT }}>{typeof topDealsResults==="object" ? JSON.stringify(topDealsResults,null,2) : String(topDealsResults)}</div>
+            )}
+          </div>
+        ) : topDealsResults?.error ? (
+          <div style={{ fontSize:9, color:RED }}>{topDealsResults.error}</div>
+        ) : null}
+      </Modal>
+
       {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
         <div>
           <div style={{ fontSize:14, fontWeight:700, color:BRIGHT }}>{"\uD83C\uDFE0"} Re4lty Inc — Real Estate Platform</div>
           <div style={{ fontSize:9, color:DIM }}>Property search, comps analysis, MLS integration, favorites & saved searches</div>
         </div>
+        <button onClick={()=>setTopDealsModal(true)} style={{ ...rBtnS, display:"flex", alignItems:"center", gap:4 }}>{"\uD83C\uDFC6"} Top 10 Deals</button>
       </div>
 
       {/* Sub-tab navigation */}
@@ -2216,6 +2546,10 @@ function RealtyTab({ loans, contacts, showToast }) {
                   <span>{p.agent}</span>
                 </div>
                 {p.mls && <div style={{ fontSize:7, color:DIM, marginTop:4 }}>MLS# {p.mls}</div>}
+                <div style={{ display:"flex", gap:4, marginTop:8 }}>
+                  <button onClick={()=>handleAnalyzeProperty(p)} disabled={analyzeLoading===p.id} style={{ ...rBtnOutS, fontSize:8, padding:"3px 8px", flex:1 }}>{analyzeLoading===p.id ? "..." : "\uD83D\uDD0D Analyze"}</button>
+                  <button onClick={()=>handleNegotiate(p)} disabled={negotiateLoading===p.id} style={{ ...rBtnOutS, fontSize:8, padding:"3px 8px", flex:1, borderColor:GREEN, color:GREEN }}>{negotiateLoading===p.id ? "..." : "\uD83E\uDD1D Negotiate"}</button>
+                </div>
               </div>
             ))}
           </div>
@@ -2436,6 +2770,16 @@ function RealtyTab({ loans, contacts, showToast }) {
 // TAB 8: ANALYTICS
 // ═══════════════════════════════════════════════════════════════════════════════
 function AnalyticsTab({ loans }) {
+  const [referralLeaderboard, setReferralLeaderboard] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  useEffect(() => {
+    setLeaderboardLoading(true);
+    edgeFn("follow-up-engine/referral/leaderboard", null, "GET")
+      .then(res => { if (Array.isArray(res)) setReferralLeaderboard(res); else setReferralLeaderboard([]); })
+      .catch(() => setReferralLeaderboard([]))
+      .finally(() => setLeaderboardLoading(false));
+  }, []);
+
   // Loans by stage
   const byStage = useMemo(() => {
     const m = {};
@@ -2645,6 +2989,40 @@ function AnalyticsTab({ loans }) {
           </div>
         );
       })()}
+
+      {/* ─── Referral Leaderboard ─────────────────────────────────────── */}
+      <div style={{ ...cardS, marginTop:12 }}>
+        <div style={{ fontSize:10, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase", marginBottom:10, display:"flex", alignItems:"center", gap:6 }}>
+          {"\uD83C\uDFC6"} Referral Leaderboard
+          {leaderboardLoading && <span style={{ fontSize:8, color:DIM, fontWeight:400 }}>Loading...</span>}
+        </div>
+        {referralLeaderboard.length > 0 ? (
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:9 }}>
+            <thead>
+              <tr style={{ borderBottom:`1px solid ${BORDER}` }}>
+                {["#","Referral Partner","Company","Referrals","Total Fees"].map(h=>(
+                  <th key={h} style={{ padding:"4px 6px", textAlign:"left", fontSize:8, color:DIM, letterSpacing:".06em", fontWeight:600 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {referralLeaderboard.slice(0,5).map((r,i) => (
+                <tr key={i} style={{ borderBottom:`1px solid ${BORDER}11` }}>
+                  <td style={{ padding:"4px 6px", color:i===0?GOLD:i===1?"#c0c0c0":i===2?"#cd7f32":TXT, fontWeight:700 }}>{i+1}</td>
+                  <td style={{ padding:"4px 6px", color:BRIGHT }}>{r.referrer_name || r.name || "—"}</td>
+                  <td style={{ padding:"4px 6px", color:DIM }}>{r.referrer_company || r.company || "—"}</td>
+                  <td style={{ padding:"4px 6px", color:BLUE }}>{r.referral_count || r.count || 0}</td>
+                  <td style={{ padding:"4px 6px", color:GREEN, fontWeight:700 }}>{fmtMoney(r.total_fees || r.fees || 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div style={{ fontSize:9, color:DIM, textAlign:"center", padding:16 }}>
+            {leaderboardLoading ? "Loading referral data..." : "No referral data yet. Log referrals from the Pipeline tab."}
+          </div>
+        )}
+      </div>
 
       {/* No data message */}
       {loans.length===0 && (
