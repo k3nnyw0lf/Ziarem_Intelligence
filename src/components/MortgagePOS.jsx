@@ -1927,18 +1927,48 @@ function InsuranceTab({ loans, showToast }) {
 // TAB 6: CREDIT REPAIR (Dispute Inc Integration)
 // ═══════════════════════════════════════════════════════════════════════════════
 function CreditRepairTab({ loans, contacts, showToast }) {
+  // ─── STATE ────────────────────────────────────────────────────────────────────
   const [clients, setClients] = useState([]);
   const [rounds, setRounds] = useState([]);
   const [subTab, setSubTab] = useState(0);
   const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ name:"",email:"",phone:"",ssn_last4:"",score_tu:0,score_exp:0,score_eqf:0,goal_score:700,monthly_fee:99,notes:"" });
+  const [form, setForm] = useState({ name:"",email:"",phone:"",ssn_last4:"",address:"",city:"",state:"",zip:"",score_tu:0,score_exp:0,score_eqf:0,goal_score:700,monthly_fee:99,notes:"",status:"enrolled" });
   const [selectedClient, setSelectedClient] = useState(null);
-  const [disputeForm, setDisputeForm] = useState({ creditor:"",account_num:"",bureau:"TransUnion",reason:"Not Mine",explanation:"" });
-  const [generatedLetter, setGeneratedLetter] = useState("");
+  const [editingClient, setEditingClient] = useState(null);
+
+  // Dispute Engine state
+  const [tradelines, setTradelines] = useState([]);
+  const [selectedItems, setSelectedItems] = useState({});
+  const [disputeStrategies, setDisputeStrategies] = useState({});
+  const [generatedLetters, setGeneratedLetters] = useState([]);
+  const [disputeStep, setDisputeStep] = useState(0);
+  const [manualTradeline, setManualTradeline] = useState({ creditor:"",account_num:"",balance:"",payment:"",status:"Open",type:"Revolving",date_opened:"",last_reported:"",remarks:"" });
+
+  // ID Theft state
+  const [idTheft, setIdTheft] = useState({ ftc_report_num:"",ftc_date:"",police_report_num:"",police_date:"",ftc_filed:false,police_filed:false,freeze_tu:false,freeze_exp:false,freeze_eqf:false,freeze_nctue:false,freeze_chex:false,pin_tu:"",pin_exp:"",pin_eqf:"",pin_nctue:"",pin_chex:"",fraud_alert_type:"",fraud_alert_expires:"",fraudulent_accounts:[] });
+  const [newFraudAcct, setNewFraudAcct] = useState({ creditor:"",account_num:"",balance:"",date_opened:"" });
+
+  // Round Tracker state
+  const [roundDetail, setRoundDetail] = useState(null);
+  const [roundForm, setRoundForm] = useState({ items_disputed:[],letters_sent_at:"",bureau_responses:{},items_removed:0,items_updated:0,items_verified:0,score_tu_after:0,score_exp_after:0,score_eqf_after:0,notes:"" });
+
+  // Letter Templates state
+  const [templateCategory, setTemplateCategory] = useState("609");
+  const [templateVariation, setTemplateVariation] = useState(0);
+  const [editableTemplate, setEditableTemplate] = useState("");
+
+  // ─── STYLES ───────────────────────────────────────────────────────────────────
   const cardS = { background:CARD, border:`1px solid ${BORDER}`, borderRadius:6, padding:14 };
   const inputS = { background:BG, border:`1px solid ${BORDER}`, color:TXT, padding:"6px 10px", fontSize:10, borderRadius:4, width:"100%", fontFamily:"inherit", boxSizing:"border-box" };
+  const btnGold = { background:GOLD, border:"none", color:"#000", fontSize:9, fontWeight:700, padding:"6px 14px", borderRadius:4, cursor:"pointer", fontFamily:"inherit" };
+  const btnOutline = { background:"none", border:`1px solid ${BORDER}`, color:TXT, fontSize:8, padding:"4px 10px", borderRadius:3, cursor:"pointer", fontFamily:"inherit" };
+  const btnDanger = { background:"rgba(239,68,68,.12)", border:`1px solid rgba(239,68,68,.3)`, color:RED, fontSize:8, fontWeight:600, padding:"4px 10px", borderRadius:3, cursor:"pointer", fontFamily:"inherit" };
+  const labelS = { fontSize:8, color:DIM, marginBottom:2 };
+  const sectionTitle = (txt,col) => ({ fontSize:10, fontWeight:700, color:col||GOLD, marginBottom:8 });
   const lowFicoLoans = loans.filter(l => l.fico && l.fico < 680);
+  const statusColors = { active:GREEN, enrolled:"#6366f1", graduated:GOLD, cancelled:RED, pending:DIM };
 
+  // ─── DATA LOADING ─────────────────────────────────────────────────────────────
   useEffect(() => {
     sbFetch("vault_credit_repair_clients","?order=created_at.desc").then(d => setClients(d||[]));
   }, []);
@@ -1947,181 +1977,930 @@ function CreditRepairTab({ loans, contacts, showToast }) {
     if (selectedClient) sbFetch("vault_credit_repair_rounds",`?client_id=eq.${selectedClient.id}&order=round_number.asc`).then(d => setRounds(d||[]));
   }, [selectedClient]);
 
+  // ─── BUREAU ADDRESSES ─────────────────────────────────────────────────────────
+  const BUREAU_ADDRS = {
+    TransUnion: { name:"TransUnion LLC", dept:"Consumer Dispute Center", po:"P.O. Box 2000", city:"Chester, PA 19016" },
+    Experian: { name:"Experian", dept:"National Consumer Assistance Center", po:"P.O. Box 4500", city:"Allen, TX 75013" },
+    Equifax: { name:"Equifax Information Services LLC", dept:"Consumer Dispute Center", po:"P.O. Box 740256", city:"Atlanta, GA 30374" }
+  };
+  const fmtBureauAddr = (b) => { const a = BUREAU_ADDRS[b]; return a ? `${a.name}\n${a.dept}\n${a.po}\n${a.city}` : b; };
+  const fmtBureauBlock = (b) => { const a = BUREAU_ADDRS[b]; return a ? `${a.name}, ${a.po}, ${a.city}` : b; };
+
+  // ─── CLIENT CRUD ──────────────────────────────────────────────────────────────
   const addClient = async () => {
     if (!form.name) return;
     const r = await sbInsert("vault_credit_repair_clients", form);
-    if (r) { setClients([r,...clients]); setShowNew(false); setForm({ name:"",email:"",phone:"",ssn_last4:"",score_tu:0,score_exp:0,score_eqf:0,goal_score:700,monthly_fee:99,notes:"" }); if(showToast) showToast("Client enrolled"); }
+    if (r) { setClients([r,...clients]); setShowNew(false); setForm({ name:"",email:"",phone:"",ssn_last4:"",address:"",city:"",state:"",zip:"",score_tu:0,score_exp:0,score_eqf:0,goal_score:700,monthly_fee:99,notes:"",status:"enrolled" }); if(showToast) showToast("Client enrolled"); }
+  };
+
+  const updateClient = async (id, updates) => {
+    const r = await sbUpdate("vault_credit_repair_clients", id, updates);
+    if (r) {
+      setClients(clients.map(c => c.id === id ? { ...c, ...updates } : c));
+      if (selectedClient && selectedClient.id === id) setSelectedClient({ ...selectedClient, ...updates });
+      if(showToast) showToast("Client updated");
+    }
   };
 
   const enrollFromLoan = (loan) => {
-    setForm({ name:`${loan.first_name||""} ${loan.last_name||""}`.trim(), email:loan.email||"", phone:loan.phone||"", ssn_last4:"", score_tu:loan.fico||0, score_exp:loan.fico||0, score_eqf:loan.fico||0, goal_score:700, monthly_fee:99, notes:`From loan ${fmtMoney(loan.loan_amount)}` });
+    setForm({ name:`${loan.first_name||""} ${loan.last_name||""}`.trim(), email:loan.email||"", phone:loan.phone||"", ssn_last4:"", address:loan.address||"", city:loan.city||"", state:loan.state||"", zip:loan.zip||"", score_tu:loan.fico||0, score_exp:loan.fico||0, score_eqf:loan.fico||0, goal_score:700, monthly_fee:99, notes:`From loan ${fmtMoney(loan.loan_amount)}`, status:"enrolled" });
     setShowNew(true);
   };
 
+  // ─── ROUND CRUD ───────────────────────────────────────────────────────────────
   const addRound = async () => {
     if (!selectedClient) return;
     const num = rounds.length + 1;
-    const r = await sbInsert("vault_credit_repair_rounds", { client_id:selectedClient.id, round_number:num, status:"pending" });
-    if (r) setRounds([...rounds, r]);
+    const r = await sbInsert("vault_credit_repair_rounds", { client_id:selectedClient.id, round_number:num, status:"pending", items_disputed:[], bureau_responses:{} });
+    if (r) { setRounds([...rounds, r]); if(showToast) showToast(`Round ${num} created`); }
   };
 
-  const BUREAU_ADDRS = {
-    TransUnion: "TransUnion LLC\nConsumer Dispute Center\nP.O. Box 2000\nChester, PA 19016",
-    Experian: "Experian\nP.O. Box 4500\nAllen, TX 75013",
-    Equifax: "Equifax Information Services LLC\nP.O. Box 740256\nAtlanta, GA 30374"
+  const updateRound = async (id, updates) => {
+    const r = await sbUpdate("vault_credit_repair_rounds", id, updates);
+    if (r) {
+      setRounds(rounds.map(rd => rd.id === id ? { ...rd, ...updates } : rd));
+      if(showToast) showToast("Round updated");
+    }
   };
 
-  const generateLetter = () => {
-    const d = disputeForm;
-    const c = selectedClient;
-    if (!c || !d.creditor) return;
+  // ─── TRADELINE PARSING ────────────────────────────────────────────────────────
+  const parseHTMLReport = (htmlStr) => {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlStr, "text/html");
+      const items = [];
+      const rows = doc.querySelectorAll("tr, .account-row, .tradeline, [class*='account'], [class*='trade']");
+      const textContent = doc.body ? doc.body.textContent : "";
+      const lines = textContent.split("\n").map(l => l.trim()).filter(Boolean);
+      let current = null;
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (/^(creditor|company|account\s*name|furnisher)/i.test(line) && i + 1 < lines.length) {
+          if (current && current.creditor) items.push(current);
+          current = { creditor:lines[i+1], account_num:"", balance:"", payment:"", status:"Open", type:"Revolving", date_opened:"", last_reported:"", remarks:"", selected:false };
+        }
+        if (current) {
+          if (/account\s*#|account\s*number/i.test(line) && i+1 < lines.length) current.account_num = lines[i+1];
+          if (/balance/i.test(line) && i+1 < lines.length) current.balance = lines[i+1].replace(/[^0-9.,$-]/g,"");
+          if (/payment|monthly/i.test(line) && i+1 < lines.length) current.payment = lines[i+1].replace(/[^0-9.,$-]/g,"");
+          if (/status|condition/i.test(line) && i+1 < lines.length) current.status = lines[i+1];
+          if (/type|account\s*type/i.test(line) && i+1 < lines.length) current.type = lines[i+1];
+          if (/opened|date\s*opened/i.test(line) && i+1 < lines.length) current.date_opened = lines[i+1];
+          if (/reported|last\s*reported/i.test(line) && i+1 < lines.length) current.last_reported = lines[i+1];
+          if (/remarks|comment/i.test(line) && i+1 < lines.length) current.remarks = lines[i+1];
+        }
+      }
+      if (current && current.creditor) items.push(current);
+      return items;
+    } catch(e) { return []; }
+  };
+
+  const handleFileImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const parsed = parseHTMLReport(ev.target.result);
+      if (parsed.length > 0) {
+        setTradelines(parsed);
+        if(showToast) showToast(`Imported ${parsed.length} tradelines`);
+      } else {
+        if(showToast) showToast("Could not parse tradelines. Try manual entry.");
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const addManualTradeline = () => {
+    if (!manualTradeline.creditor) return;
+    setTradelines([...tradelines, { ...manualTradeline, selected:false }]);
+    setManualTradeline({ creditor:"",account_num:"",balance:"",payment:"",status:"Open",type:"Revolving",date_opened:"",last_reported:"",remarks:"" });
+  };
+
+  const toggleTradelineSelect = (idx) => {
+    const updated = [...tradelines];
+    updated[idx] = { ...updated[idx], selected:!updated[idx].selected };
+    setTradelines(updated);
+  };
+
+  const selectAllTradelines = () => {
+    const allSelected = tradelines.every(t => t.selected);
+    setTradelines(tradelines.map(t => ({ ...t, selected:!allSelected })));
+  };
+
+  // ─── AI DISPUTE STRATEGY AUTO-DETECT ──────────────────────────────────────────
+  const STRATEGY_TYPES = {
+    "609": { label:"FCRA 609 - Verification Request", color:"#3b82f6", desc:"Request original signed agreement and method of verification" },
+    "611": { label:"FCRA 611 - Formal Dispute", color:PURPLE, desc:"Dispute specific inaccuracies with factual basis" },
+    "605b": { label:"FCRA 605B - ID Theft Block", color:RED, desc:"Block fraudulent accounts within 4 business days" },
+    "623": { label:"FCRA 623 - Direct Furnisher Dispute", color:ORANGE, desc:"Dispute directly with the creditor after bureau fails" },
+    "fdcpa": { label:"FDCPA Debt Validation", color:YELLOW, desc:"Demand validation of debt from collector" },
+    "goodwill": { label:"Goodwill Removal Request", color:GREEN, desc:"Appeal to remove negative mark on paid account" },
+    "pfd": { label:"Pay-for-Delete Negotiation", color:GOLD, desc:"Offer payment in exchange for removal" }
+  };
+
+  const autoDetectStrategy = (item) => {
+    const st = (item.status || "").toLowerCase();
+    const rm = (item.remarks || "").toLowerCase();
+    const tp = (item.type || "").toLowerCase();
+    const bal = parseFloat((item.balance||"0").replace(/[$,]/g,"")) || 0;
+    if (rm.includes("fraud") || rm.includes("identity theft") || rm.includes("not mine")) return "605b";
+    if (tp.includes("collection") || rm.includes("collection") || rm.includes("placed for collection")) return "fdcpa";
+    if (st.includes("paid") || st.includes("settled") || st.includes("closed") && bal === 0) return "goodwill";
+    if (rm.includes("late") || rm.includes("delinq") || rm.includes("past due")) {
+      if (bal > 0) return "pfd";
+      return "goodwill";
+    }
+    if (rm.includes("inaccurate") || rm.includes("wrong") || rm.includes("incorrect") || rm.includes("duplicate")) return "611";
+    return "609";
+  };
+
+  const runAutoStrategy = () => {
+    const strats = {};
+    tradelines.forEach((t, i) => {
+      if (t.selected) strats[i] = autoDetectStrategy(t);
+    });
+    setDisputeStrategies(strats);
+    setDisputeStep(2);
+  };
+
+  // ─── HUMANIZED LETTER GENERATION ENGINE ───────────────────────────────────────
+  const _seed = (s) => { let h=0; for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return Math.abs(h); };
+  const _pick = (arr, seed) => arr[seed % arr.length];
+
+  const TONES = ["frustrated","confused","professional","first_time"];
+  const FORMATS = ["formal","email","bullets","narrative"];
+
+  const OPENINGS = {
+    frustrated: [
+      "I am writing because I recently reviewed my credit report and was quite concerned to find information that does not accurately reflect my credit history.",
+      "After pulling my credit report, I was frustrated to discover what appears to be inaccurate information that is unfairly damaging my credit standing.",
+      "I have been working hard to maintain good credit, so you can imagine my disappointment when I reviewed my report and found discrepancies that need to be addressed."
+    ],
+    confused: [
+      "I recently obtained a copy of my credit report and I am confused by some of the information listed. I do not recognize or agree with certain items.",
+      "While reviewing my credit file, I came across some entries that I do not understand and believe may be reporting incorrectly.",
+      "I am reaching out because after looking through my credit report for the first time in a while, I noticed some items that do not look right to me."
+    ],
+    professional: [
+      "This letter serves as a formal notification regarding inaccuracies identified on my credit report maintained by your bureau.",
+      "I am writing to formally bring to your attention certain items on my credit report that require investigation and correction.",
+      "Please accept this correspondence as my formal request to investigate and address the following discrepancies on my credit file."
+    ],
+    first_time: [
+      "I recently checked my credit report for the first time in preparation for a major purchase, and I was surprised to find information that I believe is inaccurate.",
+      "I am not very familiar with the credit dispute process, but after reviewing my report I noticed some things that do not seem correct and I would like your help getting them fixed.",
+      "I am writing to you for the first time because I discovered some issues on my credit report that I need to bring to your attention."
+    ]
+  };
+
+  const CLOSINGS_BUREAU = [
+    "I expect this matter to be resolved within the 30-day timeframe as required by federal law. If this item cannot be properly verified, I request that it be promptly removed from my credit file. Please send me an updated copy of my report once your investigation is complete.",
+    "Please investigate this matter thoroughly and provide me with the results within 30 days as mandated. Should you be unable to verify this information, I ask that it be deleted immediately. I also request a corrected copy of my credit report.",
+    "I am requesting that you complete your investigation within the legally required timeframe. If the information cannot be substantiated, it must be removed. Please forward me a copy of my updated credit report and the method of verification used.",
+    "I trust you will handle this matter with the urgency it deserves. If verification is not possible within 30 days, federal law requires deletion. Please update my file accordingly and send me confirmation of the changes."
+  ];
+
+  const CLOSINGS_CREDITOR = [
+    "If I do not receive a satisfactory response within 30 days, I will have no choice but to escalate this matter to the Consumer Financial Protection Bureau and my state Attorney General's office.",
+    "I expect a prompt resolution. Should you fail to investigate and respond appropriately, I am prepared to file formal complaints with the CFPB and relevant regulatory agencies.",
+    "Please treat this matter with the seriousness it warrants. I have documented everything and will not hesitate to pursue all available remedies if this is not resolved.",
+    "I look forward to your timely response. I have retained copies of all correspondence and will take additional action through regulatory channels if necessary."
+  ];
+
+  const CLOSINGS_GOODWILL = [
+    "I understand you are under no obligation to make this change, but I would truly appreciate your consideration. This one mark is the only thing standing between me and my financial goals.",
+    "I know this is an unusual request, and I am grateful for any consideration you can give. Removing this item would make a tremendous difference in my ability to move forward financially.",
+    "Thank you for taking the time to review my situation. Any goodwill adjustment you can make would be deeply appreciated and would help me continue on the right financial path."
+  ];
+
+  const generate609Letter = (item, client, bureau, seed) => {
+    const tone = _pick(TONES, seed);
     const today = new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
-    const letter = `${today}\n\n${BUREAU_ADDRS[d.bureau]||d.bureau}\n\nRe: Dispute of Inaccurate Information — FCRA Section 609/611\n\nTo Whom It May Concern:\n\nI am writing to formally dispute the following item on my credit report, as it is ${d.reason.toLowerCase()}.\n\nCreditor/Company: ${d.creditor}\nAccount Number: ${d.account_num||"[See attached]"}\nReason for Dispute: ${d.reason}\n${d.explanation ? "Details: "+d.explanation+"\n" : ""}\nPursuant to the Fair Credit Reporting Act, Section 609(a)(1)(A) and Section 611, I am requesting that you verify and validate this account. If you cannot provide proper documentation and verification within 30 days, this item must be removed from my credit report immediately.\n\nPlease send me an updated copy of my credit report reflecting the corrections once the investigation is complete.\n\nSincerely,\n\n${c.name}\nSSN: XXX-XX-${c.ssn_last4||"XXXX"}\n${c.email||""}\n${c.phone||""}`;
-    setGeneratedLetter(letter);
+    const opening = _pick(OPENINGS[tone], seed + 1);
+    const closing = _pick(CLOSINGS_BUREAU, seed + 2);
+    const acctRef = item.account_num ? `account number ending in ${item.account_num.slice(-4)}` : "the account referenced";
+
+    const body = `Specifically, I am disputing the account listed under ${item.creditor} (${acctRef}). Under Section 609(a)(1)(A) of the Fair Credit Reporting Act, I have the right to request that you provide me with the original documentation used to verify this account.\n\nI am requesting the following:\n\n1. The original signed contract or agreement bearing my signature\n2. Complete payment history for this account from inception\n3. The method of verification used to confirm this information\n4. Any and all documentation from the original creditor substantiating this entry\n\nUntil these documents can be produced and verified, this account should not remain on my credit report. Reporting unverified information is a violation of the FCRA, and I expect this to be handled accordingly.`;
+
+    return `${today}\n\n${client.name}\n${client.address||"[Your Address]"}\n${client.city||"[City]"}, ${client.state||"[ST]"} ${client.zip||"[ZIP]"}\n\n${fmtBureauAddr(bureau)}\n\nRe: Request for Verification of Account — ${item.creditor}\n\nTo Whom It May Concern:\n\n${opening}\n\n${body}\n\n${closing}\n\nSincerely,\n\n${client.name}\nDate of Birth: [DOB]\nSSN: XXX-XX-${client.ssn_last4||"XXXX"}\n${client.phone||""}\n${client.email||""}`;
   };
 
-  const statusColors = { active:GREEN, enrolled:"#6366f1", graduated:GOLD, cancelled:RED, pending:DIM };
-  const SUBTABS = ["Dashboard","Dispute Letters","Rounds","Score Tracker"];
+  const generate611Letter = (item, client, bureau, seed) => {
+    const tone = _pick(TONES, seed);
+    const today = new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+    const opening = _pick(OPENINGS[tone], seed + 3);
+    const closing = _pick(CLOSINGS_BUREAU, seed + 4);
+    const acctRef = item.account_num ? `ending in ${item.account_num.slice(-4)}` : "(see details below)";
 
+    const reasons = [];
+    const st = (item.status||"").toLowerCase();
+    const rm = (item.remarks||"").toLowerCase();
+    if (rm.includes("duplicate") || rm.includes("dup")) reasons.push("This account appears to be a duplicate of another entry already on my report");
+    if (rm.includes("wrong") || rm.includes("incorrect")) reasons.push("The information being reported contains factual errors");
+    if (st.includes("late") && !rm.includes("late")) reasons.push("The payment status is being reported incorrectly");
+    if (reasons.length === 0) reasons.push("The account information as reported does not accurately reflect the true history of this account");
+
+    const body = `I am formally disputing the following account under Section 611 of the Fair Credit Reporting Act:\n\nCreditor: ${item.creditor}\nAccount Number: ${acctRef}\nReported Balance: ${item.balance||"N/A"}\nAccount Status: ${item.status||"N/A"}\nDate Opened: ${item.date_opened||"N/A"}\n\nThe specific basis for my dispute is as follows:\n${reasons.map((r,i) => `\n${i+1}. ${r}`).join("")}\n\nPursuant to FCRA Section 611(a), you are required to conduct a reasonable investigation into this dispute and provide me with the results within 30 days. During your investigation, this item should be marked as "disputed" on my credit file. If the furnisher cannot substantiate the accuracy of this information, it must be corrected or deleted.`;
+
+    return `${today}\n\n${client.name}\n${client.address||"[Your Address]"}\n${client.city||"[City]"}, ${client.state||"[ST]"} ${client.zip||"[ZIP]"}\n\n${fmtBureauAddr(bureau)}\n\nRe: Formal Dispute of Inaccurate Information — ${item.creditor}\n\nTo Whom It May Concern:\n\n${opening}\n\n${body}\n\n${closing}\n\nSincerely,\n\n${client.name}\nSSN: XXX-XX-${client.ssn_last4||"XXXX"}\n${client.phone||""}\n${client.email||""}`;
+  };
+
+  const generate605bLetter = (item, client, bureau, seed) => {
+    const today = new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+    const closing = _pick(CLOSINGS_BUREAU, seed + 5);
+    const acctRef = item.account_num ? `ending in ${item.account_num.slice(-4)}` : "(details below)";
+
+    return `${today}\n\n${client.name}\n${client.address||"[Your Address]"}\n${client.city||"[City]"}, ${client.state||"[ST]"} ${client.zip||"[ZIP]"}\n\n${fmtBureauAddr(bureau)}\n\nRe: Identity Theft — Request to Block Fraudulent Account Under FCRA Section 605B\n\nTo Whom It May Concern:\n\nI am a victim of identity theft and I am writing to request that you block the following fraudulent account from my credit report pursuant to Section 605B of the Fair Credit Reporting Act.\n\nFraudulent Account Details:\nCreditor: ${item.creditor}\nAccount Number: ${acctRef}\nReported Balance: ${item.balance||"N/A"}\nDate Opened: ${item.date_opened||"N/A"}\n\nI did not open this account, authorize anyone to open it on my behalf, nor did I benefit from it in any way. This account is the result of identity theft.\n\nEnclosed with this letter, please find:\n1. Copy of my FTC Identity Theft Report${idTheft.ftc_report_num ? ` (Report #${idTheft.ftc_report_num})` : ""}\n2. Copy of my police report${idTheft.police_report_num ? ` (Report #${idTheft.police_report_num})` : ""}\n3. Copy of my government-issued photo identification\n4. Proof of my current address\n\nUnder FCRA Section 605B, you are required to block this fraudulent information within four (4) business days of receiving this letter and the required documentation. You may not re-insert this blocked information unless you have reasonable grounds to believe the block was requested in error.\n\n${closing}\n\nSincerely,\n\n${client.name}\nSSN: XXX-XX-${client.ssn_last4||"XXXX"}\n${client.phone||""}\n${client.email||""}`;
+  };
+
+  const generate623Letter = (item, client, seed) => {
+    const tone = _pick(TONES, seed);
+    const today = new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+    const opening = _pick(OPENINGS[tone], seed + 6);
+    const closing = _pick(CLOSINGS_CREDITOR, seed + 7);
+    const acctRef = item.account_num ? `ending in ${item.account_num.slice(-4)}` : "";
+
+    return `${today}\n\n${client.name}\n${client.address||"[Your Address]"}\n${client.city||"[City]"}, ${client.state||"[ST]"} ${client.zip||"[ZIP]"}\n\n${item.creditor}\nDispute Department\n[Creditor Address]\n\nRe: Direct Dispute Under FCRA Section 623 — Account ${acctRef}\n\nTo Whom It May Concern:\n\n${opening}\n\nI previously disputed this account through the credit bureaus, however it was verified without correction. I am now exercising my right under FCRA Section 623(a)(8) to dispute this information directly with you as the furnisher.\n\nAccount Details:\nCreditor: ${item.creditor}\nAccount Number: ${acctRef}\nReported Balance: ${item.balance||"N/A"}\nAccount Status: ${item.status||"N/A"}\n\nThe information you are furnishing to the credit reporting agencies regarding this account is inaccurate. Specifically, I believe the reported information does not reflect the true history or current status of this account.\n\nUnder FCRA Section 623(b), upon receiving this direct dispute, you are required to:\n1. Conduct a thorough investigation of the disputed information\n2. Review all relevant information provided\n3. Report the results to the credit reporting agencies\n4. Correct any information found to be inaccurate\n\n${closing}\n\nSincerely,\n\n${client.name}\nSSN: XXX-XX-${client.ssn_last4||"XXXX"}\n${client.phone||""}\n${client.email||""}`;
+  };
+
+  const generateFDCPALetter = (item, client, seed) => {
+    const today = new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+    const opening = _pick(OPENINGS.professional, seed + 8);
+    const closing = _pick(CLOSINGS_CREDITOR, seed + 9);
+    const acctRef = item.account_num ? `ending in ${item.account_num.slice(-4)}` : "";
+
+    return `${today}\n\n${client.name}\n${client.address||"[Your Address]"}\n${client.city||"[City]"}, ${client.state||"[ST]"} ${client.zip||"[ZIP]"}\n\n${item.creditor}\nDebt Validation Department\n[Collector Address]\n\nRe: Debt Validation Request Under FDCPA Section 809(b) — Account ${acctRef}\n\nTo Whom It May Concern:\n\n${opening}\n\nI am writing in response to the collection account you are reporting. Pursuant to Section 809(b) of the Fair Debt Collection Practices Act, I am requesting that you validate this alleged debt.\n\nPlease provide the following documentation:\n\n1. Verification of the exact amount claimed to be owed, including an itemized accounting of all charges, interest, and fees\n2. The name and address of the original creditor\n3. A copy of the original signed agreement between myself and the original creditor\n4. Proof that you are licensed to collect debts in my state\n5. Documentation showing the complete chain of ownership of this debt from the original creditor to your company\n6. Proof that the statute of limitations has not expired on this alleged debt\n\nUntil you have provided adequate validation, you must cease all collection activity on this account, including reporting to the credit bureaus. Continued reporting of unvalidated debt constitutes a violation of the FDCPA.\n\nPlease note that this is not a refusal to pay, but rather a request for validation as is my right under federal law.\n\n${closing}\n\nSincerely,\n\n${client.name}\n${client.phone||""}\n${client.email||""}`;
+  };
+
+  const generateGoodwillLetter = (item, client, seed) => {
+    const tone = _pick(["first_time","confused"], seed);
+    const today = new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+    const closing = _pick(CLOSINGS_GOODWILL, seed + 10);
+    const acctRef = item.account_num ? `ending in ${item.account_num.slice(-4)}` : "";
+
+    const narratives = [
+      "Looking back, the late payment was the result of circumstances beyond my control at the time. I was dealing with a temporary financial hardship that has since been fully resolved. Since then, I have been diligent about making every payment on time.",
+      "I take full responsibility for the missed payment, which occurred during a difficult period in my life. I have since taken significant steps to improve my financial management and have maintained a perfect payment record.",
+      "The negative mark on my account was an isolated incident that does not reflect my overall payment behavior. I have been a loyal customer and have consistently maintained my account in good standing both before and after this occurrence."
+    ];
+
+    return `${today}\n\n${client.name}\n${client.address||"[Your Address]"}\n${client.city||"[City]"}, ${client.state||"[ST]"} ${client.zip||"[ZIP]"}\n\n${item.creditor}\nCustomer Relations Department\n[Creditor Address]\n\nRe: Goodwill Adjustment Request — Account ${acctRef}\n\nDear Sir or Madam:\n\nI am writing to kindly request a goodwill adjustment on my account with ${item.creditor}. I have been a customer and I value my relationship with your company.\n\n${_pick(narratives, seed + 11)}\n\nThe negative item on my credit report is preventing me from achieving important financial goals, and I am hoping that you might consider removing it as a gesture of goodwill. My account is currently ${item.status||"in good standing"} with a balance of ${item.balance||"$0"}.\n\n${closing}\n\nRespectfully,\n\n${client.name}\n${client.phone||""}\n${client.email||""}`;
+  };
+
+  const generatePFDLetter = (item, client, seed) => {
+    const today = new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+    const acctRef = item.account_num ? `ending in ${item.account_num.slice(-4)}` : "";
+    const bal = item.balance || "[Amount]";
+
+    const offers = [
+      `I am prepared to make a payment of ${bal} to resolve this account, provided that you agree in writing to remove this account from all three major credit bureaus (TransUnion, Experian, and Equifax) upon receipt of payment.`,
+      `I would like to propose a settlement arrangement: I will pay the outstanding balance of ${bal} in full, and in return, I am asking that you request deletion of this account from my credit reports with all three bureaus.`,
+      `In an effort to resolve this matter, I am offering to pay ${bal} to satisfy this debt completely. My only condition is that upon receipt of payment, you submit a request to delete this tradeline from TransUnion, Experian, and Equifax.`
+    ];
+
+    return `${today}\n\n${client.name}\n${client.address||"[Your Address]"}\n${client.city||"[City]"}, ${client.state||"[ST]"} ${client.zip||"[ZIP]"}\n\n${item.creditor}\nSettlement Department\n[Creditor/Collector Address]\n\nRe: Pay-for-Delete Settlement Proposal — Account ${acctRef}\n\nTo Whom It May Concern:\n\nI am reaching out regarding the above-referenced account that is currently being reported on my credit file. I would like to find a mutually beneficial resolution.\n\n${_pick(offers, seed + 12)}\n\nPlease understand that this offer is contingent upon your written agreement to delete the account. Simply updating the status to "paid" or "settled" does not fulfill this request. I need complete deletion from all credit bureau reports.\n\nIf you agree to these terms, please respond in writing so that I can arrange payment promptly. This offer is valid for 30 days from the date of this letter.\n\nI look forward to resolving this matter amicably.\n\nSincerely,\n\n${client.name}\n${client.phone||""}\n${client.email||""}`;
+  };
+
+  // ─── MASTER LETTER GENERATOR ──────────────────────────────────────────────────
+  const generateAllLetters = () => {
+    if (!selectedClient) return;
+    const letters = [];
+    const bureaus = ["TransUnion","Experian","Equifax"];
+    const now = Date.now();
+
+    tradelines.forEach((item, idx) => {
+      if (!item.selected) return;
+      const strategy = disputeStrategies[idx] || "609";
+      const seed = _seed(`${item.creditor}${item.account_num}${now}${idx}`);
+
+      if (strategy === "605b" || strategy === "623" || strategy === "fdcpa" || strategy === "goodwill" || strategy === "pfd") {
+        let letter = "";
+        if (strategy === "605b") bureaus.forEach(b => { letter = generate605bLetter(item, selectedClient, b, seed); letters.push({ strategy, bureau:b, creditor:item.creditor, account:item.account_num, letter }); });
+        else if (strategy === "623") { letter = generate623Letter(item, selectedClient, seed); letters.push({ strategy, bureau:"Creditor", creditor:item.creditor, account:item.account_num, letter }); }
+        else if (strategy === "fdcpa") { letter = generateFDCPALetter(item, selectedClient, seed); letters.push({ strategy, bureau:"Collector", creditor:item.creditor, account:item.account_num, letter }); }
+        else if (strategy === "goodwill") { letter = generateGoodwillLetter(item, selectedClient, seed); letters.push({ strategy, bureau:"Creditor", creditor:item.creditor, account:item.account_num, letter }); }
+        else if (strategy === "pfd") { letter = generatePFDLetter(item, selectedClient, seed); letters.push({ strategy, bureau:"Creditor", creditor:item.creditor, account:item.account_num, letter }); }
+      } else {
+        bureaus.forEach(b => {
+          const bSeed = seed + bureaus.indexOf(b) * 7;
+          let letter = "";
+          if (strategy === "609") letter = generate609Letter(item, selectedClient, b, bSeed);
+          else if (strategy === "611") letter = generate611Letter(item, selectedClient, b, bSeed);
+          letters.push({ strategy, bureau:b, creditor:item.creditor, account:item.account_num, letter });
+        });
+      }
+    });
+
+    setGeneratedLetters(letters);
+    setDisputeStep(3);
+  };
+
+  const copyLetter = (txt) => { navigator.clipboard.writeText(txt); if(showToast) showToast("Letter copied to clipboard"); };
+  const downloadLetter = (txt, name) => { const b=new Blob([txt],{type:"text/plain"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=name;a.click();URL.revokeObjectURL(u); };
+  const downloadAllLetters = () => { generatedLetters.forEach((l,i) => { setTimeout(()=>downloadLetter(l.letter,`dispute_${l.strategy}_${l.bureau}_${l.creditor.replace(/\s/g,"_")}_${i+1}.txt`), i*200); }); };
+
+  // ─── LETTER TEMPLATES LIBRARY ─────────────────────────────────────────────────
+  const TEMPLATES = {
+    "609": {
+      label: "FCRA 609 - Verification Request",
+      variations: [
+        { name:"Standard 609", text:"[DATE]\n\n[YOUR NAME]\n[YOUR ADDRESS]\n[CITY, STATE ZIP]\n\n[BUREAU ADDRESS]\n\nRe: Request for Method of Verification — [CREDITOR NAME]\n\nTo Whom It May Concern:\n\nI am writing to request verification of the following account that appears on my credit report. Under Section 609(a)(1)(A) of the Fair Credit Reporting Act, I have the right to see any and all documentation used to verify this account.\n\nCreditor: [CREDITOR]\nAccount Number: [ACCOUNT NUMBER]\n\nPlease provide me with the following:\n1. Original signed agreement bearing my signature\n2. Complete payment history\n3. Method of verification used\n4. Name and contact of person who verified this information\n\nIf this information cannot be produced, I request that this item be immediately removed from my credit report.\n\nPlease send me an updated copy of my credit report once the investigation is complete.\n\nSincerely,\n[YOUR NAME]\nSSN: XXX-XX-[LAST4]\n[PHONE]\n[EMAIL]" },
+        { name:"Detailed 609", text:"[DATE]\n\n[YOUR NAME]\n[YOUR ADDRESS]\n[CITY, STATE ZIP]\n\n[BUREAU ADDRESS]\n\nRe: Formal Request for Account Verification Under Fair Credit Reporting Act\n\nDear Consumer Relations Department:\n\nI recently reviewed my credit report and found an account that I need verified. As a consumer, the FCRA grants me the right to request documentation.\n\nAccount in Question:\n- Company: [CREDITOR]\n- Account #: [ACCOUNT NUMBER]\n- Reported Balance: [BALANCE]\n- Account Status: [STATUS]\n\nI am exercising my rights under 15 U.S.C. Section 1681g to request:\n\n(a) The original application or signed contract for this account\n(b) A certified payment history from the date of origination\n(c) The specific method by which this account was verified as accurate\n(d) The name, address, and telephone number of each person contacted in connection with such information\n\nI understand you have 30 days to complete your investigation. If you cannot provide the requested documentation, this item must be deleted from my file.\n\nThank you for your prompt attention.\n\nRespectfully,\n[YOUR NAME]\nSSN: XXX-XX-[LAST4]" },
+        { name:"Brief 609", text:"[DATE]\n\n[YOUR NAME]\n[YOUR ADDRESS]\n[CITY, STATE ZIP]\n\n[BUREAU ADDRESS]\n\nRe: Verification Request — [CREDITOR]\n\nTo Whom It May Concern:\n\nI noticed an account on my credit report from [CREDITOR] (Account: [ACCOUNT NUMBER]) that I need verified.\n\nUnder FCRA Section 609, please provide the original documentation and method of verification for this account. If you cannot verify it with original documents within 30 days, please remove it.\n\nPlease send me updated results.\n\nThank you,\n[YOUR NAME]\nSSN: XXX-XX-[LAST4]\n[PHONE]" }
+      ]
+    },
+    "611": {
+      label: "FCRA 611 - Formal Dispute",
+      variations: [
+        { name:"Standard 611", text:"[DATE]\n\n[YOUR NAME]\n[YOUR ADDRESS]\n[CITY, STATE ZIP]\n\n[BUREAU ADDRESS]\n\nRe: Formal Dispute Under FCRA Section 611\n\nTo Whom It May Concern:\n\nI am writing to formally dispute the accuracy of the following information on my credit report:\n\nCreditor: [CREDITOR]\nAccount Number: [ACCOUNT NUMBER]\nReason: [DISPUTE REASON]\n\nThis information is inaccurate because: [EXPLANATION]\n\nPursuant to Section 611 of the FCRA, you must investigate this dispute within 30 days and correct or delete any information that cannot be verified. During the investigation, this item must be marked as disputed.\n\nPlease send updated results.\n\nSincerely,\n[YOUR NAME]\nSSN: XXX-XX-[LAST4]" },
+        { name:"Detailed 611 with Evidence", text:"[DATE]\n\n[YOUR NAME]\n[YOUR ADDRESS]\n[CITY, STATE ZIP]\n\n[BUREAU ADDRESS]\n\nRe: Dispute of Inaccurate Credit Information — FCRA Section 611\n\nDear Dispute Department:\n\nI have identified inaccurate information on my credit file that requires immediate investigation.\n\nDisputed Account:\nCreditor: [CREDITOR]\nAccount #: [ACCOUNT NUMBER]\nBalance Reported: [BALANCE]\nStatus Reported: [STATUS]\nDate Opened: [DATE OPENED]\n\nThe specific inaccuracies are:\n1. [SPECIFIC ERROR 1]\n2. [SPECIFIC ERROR 2]\n\nEnclosed you will find supporting documentation that substantiates my dispute.\n\nUnder 15 U.S.C. 1681i, you are required to:\n- Forward all relevant information to the furnisher\n- Conduct a reasonable reinvestigation\n- Record the current status of the disputed information\n- Delete or modify information found to be inaccurate or unverifiable\n- Provide written results within 30 days\n\nSincerely,\n[YOUR NAME]\nSSN: XXX-XX-[LAST4]" },
+        { name:"Concise 611", text:"[DATE]\n\n[YOUR NAME]\n[YOUR ADDRESS]\n[CITY, STATE ZIP]\n\n[BUREAU ADDRESS]\n\nRe: Credit Report Dispute\n\nTo Whom It May Concern:\n\nI dispute the following on my credit report:\n\n- Creditor: [CREDITOR]\n- Account: [ACCOUNT NUMBER]\n- Issue: [DISPUTE REASON]\n\nThis is inaccurate. Please investigate per FCRA Section 611 and correct or remove within 30 days.\n\nThank you,\n[YOUR NAME]\nSSN: XXX-XX-[LAST4]\n[PHONE]" }
+      ]
+    },
+    "605b": {
+      label: "FCRA 605B - Identity Theft Block",
+      variations: [
+        { name:"Standard 605B Block Request", text:"[DATE]\n\n[YOUR NAME]\n[YOUR ADDRESS]\n[CITY, STATE ZIP]\n\n[BUREAU ADDRESS]\n\nRe: Identity Theft — Request to Block Under FCRA Section 605B\n\nTo Whom It May Concern:\n\nI am a victim of identity theft. I am writing to request that you block the following fraudulent account(s) from my credit report pursuant to FCRA Section 605B (15 U.S.C. 1681c-2).\n\nFraudulent Account(s):\nCreditor: [CREDITOR]\nAccount Number: [ACCOUNT NUMBER]\nBalance: [BALANCE]\n\nI did not open this account, did not authorize anyone to open it, and received no benefit from it.\n\nEnclosed:\n1. FTC Identity Theft Report (Report #[FTC NUMBER])\n2. Police Report (Report #[POLICE NUMBER])\n3. Government-issued photo ID\n4. Proof of address\n\nYou are required to block this information within 4 business days.\n\nSincerely,\n[YOUR NAME]\nSSN: XXX-XX-[LAST4]" }
+      ]
+    },
+    "623": {
+      label: "FCRA 623 - Direct Furnisher Dispute",
+      variations: [
+        { name:"Standard 623 Direct Dispute", text:"[DATE]\n\n[YOUR NAME]\n[YOUR ADDRESS]\n[CITY, STATE ZIP]\n\n[CREDITOR NAME]\nDispute Department\n[CREDITOR ADDRESS]\n\nRe: Direct Dispute Under FCRA Section 623(a)(8)\n\nTo Whom It May Concern:\n\nI previously disputed the account listed below through the credit reporting agencies. The information was verified, however I believe the verification was in error.\n\nI am now exercising my right under FCRA Section 623(a)(8) to dispute directly with you as the furnisher.\n\nAccount: [ACCOUNT NUMBER]\nReported Balance: [BALANCE]\nReported Status: [STATUS]\n\nThe information you are furnishing is inaccurate because: [EXPLANATION]\n\nAs the furnisher, you are required to conduct an investigation, review all relevant information, and report results to the credit bureaus.\n\nIf I do not receive a response within 30 days, I will escalate this matter to the CFPB.\n\nSincerely,\n[YOUR NAME]\nSSN: XXX-XX-[LAST4]" }
+      ]
+    },
+    "fdcpa": {
+      label: "FDCPA - Debt Validation",
+      variations: [
+        { name:"Standard Debt Validation", text:"[DATE]\n\n[YOUR NAME]\n[YOUR ADDRESS]\n[CITY, STATE ZIP]\n\n[COLLECTOR NAME]\n[COLLECTOR ADDRESS]\n\nRe: Debt Validation Request — FDCPA Section 809(b)\n\nTo Whom It May Concern:\n\nI am writing in response to the collection account reported under your name. I am exercising my right under the Fair Debt Collection Practices Act to request validation of this alleged debt.\n\nPlease provide:\n1. Exact amount owed with itemized accounting\n2. Name and address of original creditor\n3. Original signed contract or agreement\n4. Proof of your license to collect in my state\n5. Complete chain of ownership documentation\n6. Proof the statute of limitations has not expired\n\nUntil proper validation is received, cease all collection activity including credit bureau reporting.\n\nThis is not a refusal to pay — it is a validation request under federal law.\n\nSincerely,\n[YOUR NAME]" }
+      ]
+    },
+    "goodwill": {
+      label: "Goodwill Removal Request",
+      variations: [
+        { name:"Standard Goodwill Letter", text:"[DATE]\n\n[YOUR NAME]\n[YOUR ADDRESS]\n[CITY, STATE ZIP]\n\n[CREDITOR NAME]\nCustomer Relations\n[CREDITOR ADDRESS]\n\nRe: Goodwill Adjustment Request — Account [ACCOUNT NUMBER]\n\nDear Sir or Madam:\n\nI am reaching out to request a goodwill adjustment on my account. I value my relationship with your company and hope you will consider my request.\n\nDuring a difficult period, I fell behind on payments. Since then, I have been diligent about maintaining my account in good standing. The negative mark from that time is the only blemish on my otherwise positive credit history.\n\nI understand you are under no obligation to grant this request, but removing this item would make a significant difference in my ability to [achieve financial goal — home purchase, etc.].\n\nThank you for your consideration.\n\nRespectfully,\n[YOUR NAME]\n[PHONE]\n[EMAIL]" }
+      ]
+    },
+    "pfd": {
+      label: "Pay-for-Delete Offer",
+      variations: [
+        { name:"Standard Pay-for-Delete", text:"[DATE]\n\n[YOUR NAME]\n[YOUR ADDRESS]\n[CITY, STATE ZIP]\n\n[CREDITOR/COLLECTOR NAME]\nSettlement Department\n[ADDRESS]\n\nRe: Settlement and Deletion Proposal — Account [ACCOUNT NUMBER]\n\nTo Whom It May Concern:\n\nI am writing regarding the above-referenced account. I would like to propose a resolution that benefits both parties.\n\nI am willing to pay [AMOUNT] to resolve this account in full, provided that you agree in writing to:\n1. Accept this amount as payment in full\n2. Request deletion of this tradeline from all three credit bureaus\n\nSimply updating the status to 'paid' does not satisfy this request — I need full deletion.\n\nPlease respond in writing with your agreement to these terms. This offer is valid for 30 days.\n\nSincerely,\n[YOUR NAME]\n[PHONE]" }
+      ]
+    },
+    "cfpb": {
+      label: "CFPB Complaint Draft",
+      variations: [
+        { name:"CFPB Complaint", text:"[DATE]\n\nConsumer Financial Protection Bureau\nP.O. Box 4503\nIowa City, Iowa 52244\n\nRe: Formal Complaint — [BUREAU/CREDITOR NAME]\n\nTo Whom It May Concern:\n\nI am filing this complaint regarding [BUREAU/CREDITOR] for failing to properly investigate my dispute as required by the FCRA.\n\nOn [DATE OF ORIGINAL DISPUTE], I submitted a formal dispute regarding the following account:\nCreditor: [CREDITOR]\nAccount: [ACCOUNT NUMBER]\n\nThe [bureau/creditor] has [failed to investigate / verified without proper investigation / failed to respond within 30 days].\n\nI believe this constitutes a violation of [FCRA Section 611 / 623 / other applicable section].\n\nI am requesting your assistance in resolving this matter. Enclosed please find copies of all correspondence and supporting documentation.\n\nSincerely,\n[YOUR NAME]\n[ADDRESS]\n[PHONE]\n[EMAIL]" }
+      ]
+    },
+    "ag": {
+      label: "Attorney General Complaint",
+      variations: [
+        { name:"AG Complaint", text:"[DATE]\n\nOffice of the Attorney General\nConsumer Protection Division\n[STATE AG ADDRESS]\n\nRe: Consumer Complaint — [COMPANY NAME]\n\nDear Attorney General:\n\nI am writing to file a formal complaint against [COMPANY NAME] for violations of consumer protection laws and the Fair Credit Reporting Act.\n\nI have attempted to resolve this matter directly, but the company has [failed to respond / refused to correct inaccurate information / continued to report unverified data].\n\nDetails of the Complaint:\nCompany: [COMPANY NAME]\nAccount: [ACCOUNT NUMBER]\nNature of Complaint: [DESCRIPTION]\nDates of Correspondence: [DATES]\n\nI am requesting your office investigate this matter and take appropriate action.\n\nEnclosed: copies of all correspondence and documentation.\n\nSincerely,\n[YOUR NAME]\n[ADDRESS]\n[PHONE]\n[EMAIL]" }
+      ]
+    }
+  };
+
+  // ─── SUB-TAB NAVIGATION ───────────────────────────────────────────────────────
+  const SUBTABS = ["Clients","Dispute Engine","ID Theft Center","Round Tracker","Letter Templates"];
+
+  // ─── RENDER ───────────────────────────────────────────────────────────────────
   return (
     <div>
+      {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
         <div>
-          <div style={{ fontSize:14, fontWeight:700, color:BRIGHT }}>⚡ Credit Repair Center</div>
-          <div style={{ fontSize:9, color:DIM }}>Dispute letters, round tracking, score improvement</div>
+          <div style={{ fontSize:14, fontWeight:700, color:BRIGHT }}>Credit Repair Center</div>
+          <div style={{ fontSize:9, color:DIM }}>Professional dispute system with FCRA/FDCPA letter generation</div>
         </div>
-        <button onClick={()=>setShowNew(!showNew)} style={{ background:GOLD, border:"none", color:"#000", fontSize:9, fontWeight:700, padding:"6px 14px", borderRadius:4, cursor:"pointer", fontFamily:"inherit" }}>+ Enroll Client</button>
+        <div style={{ display:"flex", gap:6 }}>
+          {selectedClient && <div style={{ fontSize:8, color:GOLD, border:`1px solid ${GOLD}33`, borderRadius:4, padding:"4px 10px", background:`${GOLD}11` }}>Client: {selectedClient.name}</div>}
+          <button onClick={()=>{setShowNew(!showNew);setSubTab(0);}} style={btnGold}>+ Enroll Client</button>
+        </div>
       </div>
 
+      {/* Sub-tab bar */}
       <div style={{ display:"flex", gap:0, borderBottom:`1px solid ${BORDER}`, marginBottom:12 }}>
-        {SUBTABS.map((t,i)=>(<div key={t} onClick={()=>setSubTab(i)} style={{ padding:"6px 14px", cursor:"pointer", fontSize:9, fontWeight:subTab===i?700:400, color:subTab===i?GOLD:DIM, borderBottom:subTab===i?`2px solid ${GOLD}`:"2px solid transparent" }}>{t}</div>))}
+        {SUBTABS.map((t,i)=>(<div key={t} onClick={()=>setSubTab(i)} style={{ padding:"6px 14px", cursor:"pointer", fontSize:9, fontWeight:subTab===i?700:400, color:subTab===i?GOLD:DIM, borderBottom:subTab===i?`2px solid ${GOLD}`:"2px solid transparent", transition:"all .15s" }}>{t}</div>))}
       </div>
 
-      {/* ─── DASHBOARD ─── */}
+      {/* ═══════════════════ SUB-TAB 0: CLIENTS ═══════════════════ */}
       {subTab===0 && (<>
+        {/* Stats */}
         <div style={{ display:"flex", gap:10, marginBottom:14, flexWrap:"wrap" }}>
           {[{l:"Enrolled",v:clients.length,c:"#6366f1"},{l:"Active",v:clients.filter(c=>c.status==="active").length,c:GREEN},{l:"Low FICO Loans",v:lowFicoLoans.length,c:YELLOW},{l:"Graduated",v:clients.filter(c=>c.status==="graduated").length,c:GOLD}].map(s=>(
             <div key={s.l} style={{...cardS,flex:1,minWidth:130,textAlign:"center"}}><div style={{fontSize:7,color:DIM,textTransform:"uppercase",letterSpacing:".06em"}}>{s.l}</div><div style={{fontSize:18,fontWeight:700,color:s.c,marginTop:4}}>{s.v}</div></div>
           ))}
         </div>
 
+        {/* Enroll form */}
         {showNew && (<div style={{...cardS,marginBottom:12,borderColor:GOLD+"44"}}>
-          <div style={{fontSize:10,fontWeight:700,color:GOLD,marginBottom:8}}>Enroll New Client</div>
+          <div style={sectionTitle("Enroll New Client",GOLD)}>Enroll New Client</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
-            {[["Name","name"],["Email","email"],["Phone","phone"],["SSN Last 4","ssn_last4"]].map(([l,k])=>(<div key={k}><div style={{fontSize:8,color:DIM,marginBottom:2}}>{l}</div><input style={inputS} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})} /></div>))}
+            {[["Name","name"],["Email","email"],["Phone","phone"],["SSN Last 4","ssn_last4"]].map(([l,k])=>(<div key={k}><div style={labelS}>{l}</div><input style={inputS} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})} /></div>))}
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
+            {[["Address","address"],["City","city"],["State","state"],["ZIP","zip"]].map(([l,k])=>(<div key={k}><div style={labelS}>{l}</div><input style={inputS} value={form[k]} onChange={e=>setForm({...form,[k]:e.target.value})} /></div>))}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
-            {[["TU Score","score_tu"],["EXP Score","score_exp"],["EQF Score","score_eqf"],["Goal","goal_score"],["Fee/mo","monthly_fee"]].map(([l,k])=>(<div key={k}><div style={{fontSize:8,color:DIM,marginBottom:2}}>{l}</div><input type="number" style={inputS} value={form[k]} onChange={e=>setForm({...form,[k]:Number(e.target.value)})} /></div>))}
+            {[["TU Score","score_tu"],["EXP Score","score_exp"],["EQF Score","score_eqf"],["Goal","goal_score"],["Fee/mo","monthly_fee"]].map(([l,k])=>(<div key={k}><div style={labelS}>{l}</div><input type="number" style={inputS} value={form[k]} onChange={e=>setForm({...form,[k]:Number(e.target.value)})} /></div>))}
           </div>
-          <div style={{marginBottom:8}}><div style={{fontSize:8,color:DIM,marginBottom:2}}>Notes</div><input style={inputS} value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} /></div>
-          <div style={{display:"flex",gap:6}}><button onClick={addClient} style={{background:GOLD,border:"none",color:"#000",fontSize:9,fontWeight:700,padding:"5px 14px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>Enroll</button><button onClick={()=>setShowNew(false)} style={{background:"none",border:`1px solid ${BORDER}`,color:DIM,fontSize:9,padding:"5px 14px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>Cancel</button></div>
+          <div style={{marginBottom:8}}><div style={labelS}>Notes</div><input style={inputS} value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} /></div>
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={addClient} style={btnGold}>Enroll</button>
+            <button onClick={()=>setShowNew(false)} style={btnOutline}>Cancel</button>
+          </div>
         </div>)}
 
-        {lowFicoLoans.length>0 && (<div style={{...cardS,marginBottom:12}}><div style={{fontSize:10,fontWeight:700,color:YELLOW,marginBottom:6}}>🎯 Loan Borrowers Needing Credit Repair</div>
+        {/* Low FICO loans */}
+        {lowFicoLoans.length>0 && (<div style={{...cardS,marginBottom:12}}>
+          <div style={sectionTitle("",YELLOW)}>Loan Borrowers Needing Credit Repair ({lowFicoLoans.length})</div>
           {lowFicoLoans.slice(0,5).map(l=>(<div key={l.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${BORDER}`}}>
-            <div><div style={{fontSize:9,color:BRIGHT,fontWeight:600}}>{l.first_name} {l.last_name}</div><div style={{fontSize:8,color:DIM}}>FICO: <span style={{color:l.fico<620?RED:YELLOW,fontWeight:700}}>{l.fico}</span></div></div>
-            <button onClick={()=>enrollFromLoan(l)} style={{background:"rgba(139,92,246,.15)",border:"1px solid rgba(139,92,246,.3)",color:"#a78bfa",fontSize:8,fontWeight:600,padding:"3px 8px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>⚡ Enroll</button>
+            <div><div style={{fontSize:9,color:BRIGHT,fontWeight:600}}>{l.first_name} {l.last_name}</div><div style={{fontSize:8,color:DIM}}>FICO: <span style={{color:l.fico<620?RED:YELLOW,fontWeight:700}}>{l.fico}</span> | {fmtMoney(l.loan_amount)}</div></div>
+            <button onClick={()=>enrollFromLoan(l)} style={{background:"rgba(139,92,246,.15)",border:"1px solid rgba(139,92,246,.3)",color:"#a78bfa",fontSize:8,fontWeight:600,padding:"3px 8px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>Enroll</button>
           </div>))}
         </div>)}
 
-        <div style={cardS}><div style={{fontSize:10,fontWeight:700,color:GOLD,marginBottom:8}}>All Clients ({clients.length})</div>
+        {/* Client list */}
+        <div style={cardS}>
+          <div style={sectionTitle("",GOLD)}>All Clients ({clients.length})</div>
           {clients.length===0&&<div style={{fontSize:9,color:DIM,textAlign:"center",padding:20}}>No clients enrolled yet.</div>}
-          {clients.map(c=>(<div key={c.id} onClick={()=>setSelectedClient(c)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${BORDER}`,cursor:"pointer"}}>
-            <div><div style={{fontSize:10,color:BRIGHT,fontWeight:600}}>{c.name}</div><div style={{fontSize:8,color:DIM}}>{c.email} · TU:{c.score_tu} EXP:{c.score_exp} EQF:{c.score_eqf}</div></div>
+          {clients.map(c=>(<div key={c.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:`1px solid ${BORDER}`,cursor:"pointer",transition:"background .1s"}} onClick={()=>{setSelectedClient(c);setEditingClient(null);}}>
+            <div>
+              <div style={{fontSize:10,color:BRIGHT,fontWeight:600}}>{c.name}</div>
+              <div style={{fontSize:8,color:DIM}}>{c.email} | TU:{c.score_tu} EXP:{c.score_exp} EQF:{c.score_eqf} | Goal:{c.goal_score}</div>
+            </div>
             <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              <span style={{fontSize:7,padding:"2px 6px",borderRadius:3,background:`${statusColors[c.status]||DIM}18`,color:statusColors[c.status]||DIM,border:`1px solid ${statusColors[c.status]||DIM}33`}}>{c.status}</span>
-              <span style={{fontSize:8,color:GOLD}}>→</span>
+              <select value={c.status||"enrolled"} onClick={e=>e.stopPropagation()} onChange={e=>{e.stopPropagation();updateClient(c.id,{status:e.target.value});}} style={{...inputS,width:"auto",fontSize:7,padding:"2px 6px"}}>
+                <option value="enrolled">Enrolled</option>
+                <option value="active">Active</option>
+                <option value="graduated">Graduated</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              <span style={{fontSize:7,padding:"2px 6px",borderRadius:3,background:`${statusColors[c.status]||DIM}18`,color:statusColors[c.status]||DIM,border:`1px solid ${statusColors[c.status]||DIM}33`}}>{c.status||"enrolled"}</span>
             </div>
           </div>))}
         </div>
-      </>)}
 
-      {/* ─── DISPUTE LETTERS ─── */}
-      {subTab===1 && (<>
-        <div style={{...cardS,marginBottom:12}}>
-          <div style={{fontSize:10,fontWeight:700,color:GOLD,marginBottom:8}}>Generate Dispute Letter (FCRA 609/611)</div>
-          {!selectedClient ? <div style={{fontSize:9,color:DIM}}>Select a client from the Dashboard tab first.</div> : (<>
-            <div style={{fontSize:9,color:BRIGHT,marginBottom:8}}>Client: <strong>{selectedClient.name}</strong></div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
-              <div><div style={{fontSize:8,color:DIM,marginBottom:2}}>Creditor Name</div><input style={inputS} value={disputeForm.creditor} onChange={e=>setDisputeForm({...disputeForm,creditor:e.target.value})} /></div>
-              <div><div style={{fontSize:8,color:DIM,marginBottom:2}}>Account #</div><input style={inputS} value={disputeForm.account_num} onChange={e=>setDisputeForm({...disputeForm,account_num:e.target.value})} /></div>
-              <div><div style={{fontSize:8,color:DIM,marginBottom:2}}>Bureau</div><select style={inputS} value={disputeForm.bureau} onChange={e=>setDisputeForm({...disputeForm,bureau:e.target.value})}><option>TransUnion</option><option>Experian</option><option>Equifax</option></select></div>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:8,marginBottom:8}}>
-              <div><div style={{fontSize:8,color:DIM,marginBottom:2}}>Reason</div><select style={inputS} value={disputeForm.reason} onChange={e=>setDisputeForm({...disputeForm,reason:e.target.value})}><option>Not Mine</option><option>Inaccurate</option><option>Outdated</option><option>Duplicate</option><option>Paid/Settled</option><option>Identity Theft</option></select></div>
-              <div><div style={{fontSize:8,color:DIM,marginBottom:2}}>Additional Explanation</div><input style={inputS} value={disputeForm.explanation} onChange={e=>setDisputeForm({...disputeForm,explanation:e.target.value})} /></div>
-            </div>
-            <button onClick={generateLetter} style={{background:GOLD,border:"none",color:"#000",fontSize:9,fontWeight:700,padding:"6px 16px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>Generate Letter</button>
-          </>)}
-        </div>
-        {generatedLetter && (<div style={{...cardS}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <div style={{fontSize:10,fontWeight:700,color:GREEN}}>Generated Letter</div>
-            <div style={{display:"flex",gap:6}}>
-              <button onClick={()=>{navigator.clipboard.writeText(generatedLetter);if(showToast)showToast("Copied to clipboard")}} style={{background:"none",border:`1px solid ${BORDER}`,color:TXT,fontSize:8,padding:"3px 10px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>Copy</button>
-              <button onClick={()=>{const b=new Blob([generatedLetter],{type:"text/plain"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=`dispute_${disputeForm.bureau}_${Date.now()}.txt`;a.click()}} style={{background:"none",border:`1px solid ${BORDER}`,color:TXT,fontSize:8,padding:"3px 10px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>Download</button>
-            </div>
+        {/* Selected client detail */}
+        {selectedClient && (<div style={{...cardS,marginTop:12,borderColor:GOLD+"33"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+            <div style={sectionTitle("",GOLD)}>Client: {selectedClient.name}</div>
+            <button onClick={()=>setSelectedClient(null)} style={btnOutline}>Deselect</button>
           </div>
-          <textarea value={generatedLetter} onChange={e=>setGeneratedLetter(e.target.value)} style={{...inputS,height:300,whiteSpace:"pre-wrap",lineHeight:1.6,fontSize:10}} />
-        </div>)}
-      </>)}
-
-      {/* ─── ROUNDS ─── */}
-      {subTab===2 && (<>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <div style={{fontSize:10,color:selectedClient?BRIGHT:DIM}}>{selectedClient?`Rounds for ${selectedClient.name}`:"Select a client from Dashboard"}</div>
-          {selectedClient && <button onClick={addRound} style={{background:GOLD,border:"none",color:"#000",fontSize:9,fontWeight:700,padding:"5px 12px",borderRadius:3,cursor:"pointer",fontFamily:"inherit"}}>+ New Round</button>}
-        </div>
-        {rounds.map(r=>(<div key={r.id} style={{...cardS,marginBottom:8}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-            <div style={{fontSize:11,fontWeight:700,color:GOLD}}>Round {r.round_number}</div>
-            <span style={{fontSize:7,padding:"2px 6px",borderRadius:3,background:`${r.status==="completed"?GREEN:r.status==="pending"?DIM:YELLOW}18`,color:r.status==="completed"?GREEN:r.status==="pending"?DIM:YELLOW}}>{r.status}</span>
-          </div>
-          <div style={{display:"flex",gap:16,fontSize:8,color:DIM}}>
-            <span>Items disputed: {Array.isArray(r.items_disputed)?r.items_disputed.length:0}</span>
-            <span>Items removed: {r.items_removed||0}</span>
-            <span>Sent: {r.letters_sent_at?new Date(r.letters_sent_at).toLocaleDateString():"Not sent"}</span>
-          </div>
-          {(r.score_tu_after||r.score_exp_after||r.score_eqf_after)&&<div style={{display:"flex",gap:12,marginTop:4,fontSize:8}}>
-            <span style={{color:TXT}}>After — TU:<span style={{color:GREEN,fontWeight:700}}>{r.score_tu_after}</span></span>
-            <span style={{color:TXT}}>EXP:<span style={{color:GREEN,fontWeight:700}}>{r.score_exp_after}</span></span>
-            <span style={{color:TXT}}>EQF:<span style={{color:GREEN,fontWeight:700}}>{r.score_eqf_after}</span></span>
-          </div>}
-        </div>))}
-        {rounds.length===0&&<div style={{...cardS,textAlign:"center",color:DIM,fontSize:9}}>No rounds yet. {selectedClient?"Click '+ New Round' to start.":"Select a client first."}</div>}
-      </>)}
-
-      {/* ─── SCORE TRACKER ─── */}
-      {subTab===3 && (<>
-        <div style={{fontSize:10,color:selectedClient?BRIGHT:DIM,marginBottom:12}}>{selectedClient?`Score History for ${selectedClient.name}`:"Select a client from Dashboard"}</div>
-        {selectedClient && (<div style={cardS}>
-          <div style={{display:"flex",gap:16,marginBottom:16}}>
-            {[["TransUnion",selectedClient.score_tu,"#0088cc"],["Experian",selectedClient.score_exp,"#3b82f6"],["Equifax",selectedClient.score_eqf,GREEN]].map(([b,s,c])=>(<div key={b} style={{flex:1,textAlign:"center"}}>
+          <div style={{display:"flex",gap:16,marginBottom:12}}>
+            {[["TransUnion",selectedClient.score_tu,"#0088cc"],["Experian",selectedClient.score_exp,"#3b82f6"],["Equifax",selectedClient.score_eqf,GREEN]].map(([b,s,col])=>(<div key={b} style={{flex:1,textAlign:"center"}}>
               <div style={{fontSize:8,color:DIM}}>{b}</div>
-              <div style={{fontSize:22,fontWeight:700,color:c}}>{s||"—"}</div>
-              <div style={{fontSize:8,color:DIM}}>Start</div>
+              <div style={{fontSize:22,fontWeight:700,color:col}}>{s||"--"}</div>
             </div>))}
             <div style={{flex:1,textAlign:"center",borderLeft:`1px solid ${BORDER}`,paddingLeft:16}}>
               <div style={{fontSize:8,color:DIM}}>Goal</div>
               <div style={{fontSize:22,fontWeight:700,color:GOLD}}>{selectedClient.goal_score}</div>
-              <div style={{fontSize:8,color:DIM}}>Target</div>
             </div>
           </div>
-          {rounds.filter(r=>r.score_tu_after).length>0 && (<>
-            <div style={{fontSize:9,fontWeight:700,color:GOLD,marginBottom:8}}>Progress by Round</div>
-            <div style={{display:"flex",alignItems:"flex-end",gap:8,height:120}}>
+          <div style={{display:"flex",gap:8,fontSize:8,color:DIM,flexWrap:"wrap"}}>
+            <span>Phone: {selectedClient.phone||"--"}</span>
+            <span>|</span>
+            <span>Email: {selectedClient.email||"--"}</span>
+            <span>|</span>
+            <span>SSN: XXX-XX-{selectedClient.ssn_last4||"XXXX"}</span>
+            <span>|</span>
+            <span>Fee: ${selectedClient.monthly_fee||0}/mo</span>
+          </div>
+          {selectedClient.notes && <div style={{fontSize:8,color:DIM,marginTop:4}}>Notes: {selectedClient.notes}</div>}
+          {/* Score progress chart */}
+          {rounds.filter(r=>r.score_tu_after).length>0 && (<div style={{marginTop:12}}>
+            <div style={{fontSize:9,fontWeight:700,color:GOLD,marginBottom:8}}>Score Progress</div>
+            <div style={{display:"flex",alignItems:"flex-end",gap:8,height:100}}>
               {[{label:"Start",tu:selectedClient.score_tu,exp:selectedClient.score_exp,eqf:selectedClient.score_eqf},...rounds.filter(r=>r.score_tu_after).map(r=>({label:`R${r.round_number}`,tu:r.score_tu_after,exp:r.score_exp_after,eqf:r.score_eqf_after}))].map((pt,i)=>{
                 const mid = Math.round(([pt.tu,pt.exp,pt.eqf].sort((a,b)=>a-b))[1]||0);
-                const pct = Math.max(10,Math.min(100,((mid-500)/(850-500))*100));
+                const pct = Math.max(10,Math.min(100,((mid-400)/(850-400))*100));
                 return (<div key={i} style={{flex:1,textAlign:"center"}}>
-                  <div style={{fontSize:8,color:BRIGHT,fontWeight:700,marginBottom:2}}>{mid}</div>
-                  <div style={{height:`${pct}%`,background:mid>=selectedClient.goal_score?GREEN:GOLD,borderRadius:"3px 3px 0 0",minHeight:8,transition:"height .3s"}} />
+                  <div style={{fontSize:7,color:BRIGHT,fontWeight:700,marginBottom:2}}>{mid}</div>
+                  <div style={{height:`${pct}%`,background:mid>=selectedClient.goal_score?GREEN:GOLD,borderRadius:"3px 3px 0 0",minHeight:6,transition:"height .3s"}} />
                   <div style={{fontSize:7,color:DIM,marginTop:2}}>{pt.label}</div>
                 </div>);
               })}
             </div>
-          </>)}
+          </div>)}
         </div>)}
+      </>)}
+
+      {/* ═══════════════════ SUB-TAB 1: DISPUTE ENGINE ═══════════════════ */}
+      {subTab===1 && (<>
+        {!selectedClient ? (
+          <div style={{...cardS,textAlign:"center",padding:30}}>
+            <div style={{fontSize:12,color:DIM,marginBottom:6}}>No client selected</div>
+            <div style={{fontSize:9,color:DIM}}>Go to the Clients tab and select a client first.</div>
+          </div>
+        ) : (<>
+          {/* Step indicator */}
+          <div style={{display:"flex",gap:0,marginBottom:14}}>
+            {["Import Tradelines","AI Strategy","Review & Edit","Generated Letters"].map((s,i)=>(<div key={s} style={{flex:1,textAlign:"center",padding:"6px 4px",fontSize:8,fontWeight:disputeStep===i?700:400,color:disputeStep===i?GOLD:i<disputeStep?GREEN:DIM,borderBottom:`2px solid ${disputeStep===i?GOLD:i<disputeStep?GREEN+"55":"transparent"}`,cursor:"pointer"}} onClick={()=>{if(i<=disputeStep||i===0)setDisputeStep(i);}}>{i+1}. {s}</div>))}
+          </div>
+
+          {/* STEP 0: Import */}
+          {disputeStep===0 && (<>
+            <div style={{...cardS,marginBottom:12}}>
+              <div style={sectionTitle("","#3b82f6")}>Import Credit Report</div>
+              <div style={{fontSize:9,color:DIM,marginBottom:10}}>Drop a MyScoreIQ HTML export or manually enter tradelines below.</div>
+              <div style={{display:"flex",gap:8,marginBottom:12}}>
+                <label style={{...btnOutline,display:"inline-flex",alignItems:"center",gap:4,cursor:"pointer"}}>
+                  Upload HTML Report
+                  <input type="file" accept=".html,.htm" onChange={handleFileImport} style={{display:"none"}} />
+                </label>
+                {tradelines.length>0 && <button onClick={()=>{setTradelines([]);setDisputeStrategies({});setGeneratedLetters([]);}} style={btnDanger}>Clear All</button>}
+              </div>
+
+              {/* Manual entry */}
+              <div style={{borderTop:`1px solid ${BORDER}`,paddingTop:10,marginTop:8}}>
+                <div style={{fontSize:9,fontWeight:600,color:BRIGHT,marginBottom:8}}>Manual Entry</div>
+                <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr",gap:6,marginBottom:6}}>
+                  <div><div style={labelS}>Creditor</div><input style={inputS} value={manualTradeline.creditor} onChange={e=>setManualTradeline({...manualTradeline,creditor:e.target.value})} /></div>
+                  <div><div style={labelS}>Account #</div><input style={inputS} value={manualTradeline.account_num} onChange={e=>setManualTradeline({...manualTradeline,account_num:e.target.value})} /></div>
+                  <div><div style={labelS}>Balance</div><input style={inputS} value={manualTradeline.balance} onChange={e=>setManualTradeline({...manualTradeline,balance:e.target.value})} placeholder="$0" /></div>
+                  <div><div style={labelS}>Payment</div><input style={inputS} value={manualTradeline.payment} onChange={e=>setManualTradeline({...manualTradeline,payment:e.target.value})} placeholder="$0/mo" /></div>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr 2fr",gap:6,marginBottom:8}}>
+                  <div><div style={labelS}>Status</div><select style={inputS} value={manualTradeline.status} onChange={e=>setManualTradeline({...manualTradeline,status:e.target.value})}><option>Open</option><option>Closed</option><option>Paid</option><option>Settled</option><option>Collection</option><option>Charge-Off</option><option>Late</option><option>Derogatory</option></select></div>
+                  <div><div style={labelS}>Type</div><select style={inputS} value={manualTradeline.type} onChange={e=>setManualTradeline({...manualTradeline,type:e.target.value})}><option>Revolving</option><option>Installment</option><option>Mortgage</option><option>Collection</option><option>Student Loan</option><option>Auto Loan</option><option>Medical</option><option>Other</option></select></div>
+                  <div><div style={labelS}>Date Opened</div><input type="date" style={inputS} value={manualTradeline.date_opened} onChange={e=>setManualTradeline({...manualTradeline,date_opened:e.target.value})} /></div>
+                  <div><div style={labelS}>Last Reported</div><input type="date" style={inputS} value={manualTradeline.last_reported} onChange={e=>setManualTradeline({...manualTradeline,last_reported:e.target.value})} /></div>
+                  <div><div style={labelS}>Remarks/Notes</div><input style={inputS} value={manualTradeline.remarks} onChange={e=>setManualTradeline({...manualTradeline,remarks:e.target.value})} placeholder="Late, collection, fraud, etc." /></div>
+                </div>
+                <button onClick={addManualTradeline} style={btnGold}>+ Add Tradeline</button>
+              </div>
+            </div>
+
+            {/* Tradeline table */}
+            {tradelines.length>0 && (<div style={{...cardS}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                <div style={sectionTitle("",BRIGHT)}>Tradelines ({tradelines.length})</div>
+                <div style={{display:"flex",gap:6}}>
+                  <button onClick={selectAllTradelines} style={btnOutline}>{tradelines.every(t=>t.selected)?"Deselect All":"Select All"}</button>
+                  <button onClick={()=>{if(tradelines.some(t=>t.selected)){runAutoStrategy();}else{if(showToast)showToast("Select items to dispute first");}}} style={{...btnGold,background:tradelines.some(t=>t.selected)?GOLD:`${GOLD}44`}}>Next: AI Strategy</button>
+                </div>
+              </div>
+              <div style={{overflowX:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:9}}>
+                  <thead><tr style={{borderBottom:`1px solid ${BORDER}`}}>
+                    <th style={{padding:"4px 6px",textAlign:"left",color:DIM,fontWeight:600,fontSize:7}}>SEL</th>
+                    <th style={{padding:"4px 6px",textAlign:"left",color:DIM,fontWeight:600,fontSize:7}}>CREDITOR</th>
+                    <th style={{padding:"4px 6px",textAlign:"left",color:DIM,fontWeight:600,fontSize:7}}>ACCT #</th>
+                    <th style={{padding:"4px 6px",textAlign:"right",color:DIM,fontWeight:600,fontSize:7}}>BALANCE</th>
+                    <th style={{padding:"4px 6px",textAlign:"right",color:DIM,fontWeight:600,fontSize:7}}>PMT</th>
+                    <th style={{padding:"4px 6px",textAlign:"left",color:DIM,fontWeight:600,fontSize:7}}>STATUS</th>
+                    <th style={{padding:"4px 6px",textAlign:"left",color:DIM,fontWeight:600,fontSize:7}}>TYPE</th>
+                    <th style={{padding:"4px 6px",textAlign:"left",color:DIM,fontWeight:600,fontSize:7}}>REMARKS</th>
+                    <th style={{padding:"4px 6px",textAlign:"center",color:DIM,fontWeight:600,fontSize:7}}>DEL</th>
+                  </tr></thead>
+                  <tbody>
+                    {tradelines.map((t,i)=>(<tr key={i} style={{borderBottom:`1px solid ${BORDER}22`,background:t.selected?`${GOLD}08`:"transparent"}}>
+                      <td style={{padding:"4px 6px"}}><input type="checkbox" checked={t.selected} onChange={()=>toggleTradelineSelect(i)} /></td>
+                      <td style={{padding:"4px 6px",color:BRIGHT,fontWeight:600}}>{t.creditor}</td>
+                      <td style={{padding:"4px 6px",color:DIM}}>{t.account_num||"--"}</td>
+                      <td style={{padding:"4px 6px",textAlign:"right",color:TXT}}>{t.balance||"--"}</td>
+                      <td style={{padding:"4px 6px",textAlign:"right",color:DIM}}>{t.payment||"--"}</td>
+                      <td style={{padding:"4px 6px"}}><span style={{fontSize:7,padding:"1px 5px",borderRadius:2,background:t.status.toLowerCase().includes("collect")||t.status.toLowerCase().includes("charge")?`${RED}18`:t.status.toLowerCase().includes("late")||t.status.toLowerCase().includes("derog")?`${YELLOW}18`:`${GREEN}18`,color:t.status.toLowerCase().includes("collect")||t.status.toLowerCase().includes("charge")?RED:t.status.toLowerCase().includes("late")||t.status.toLowerCase().includes("derog")?YELLOW:GREEN}}>{t.status}</span></td>
+                      <td style={{padding:"4px 6px",color:DIM,fontSize:8}}>{t.type}</td>
+                      <td style={{padding:"4px 6px",color:DIM,fontSize:8,maxWidth:120,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.remarks||"--"}</td>
+                      <td style={{padding:"4px 6px",textAlign:"center"}}><button onClick={()=>setTradelines(tradelines.filter((_,j)=>j!==i))} style={{background:"none",border:"none",color:RED,cursor:"pointer",fontSize:10,fontFamily:"inherit"}}>x</button></td>
+                    </tr>))}
+                  </tbody>
+                </table>
+              </div>
+            </div>)}
+          </>)}
+
+          {/* STEP 1: AI Strategy */}
+          {disputeStep===1 && (<div style={{...cardS}}>
+            <div style={sectionTitle("","#3b82f6")}>AI Dispute Strategy Assignment</div>
+            <div style={{fontSize:9,color:DIM,marginBottom:12}}>Auto-detected strategies below. Override any by changing the dropdown.</div>
+            {tradelines.filter(t=>t.selected).length===0 ? (
+              <div style={{color:DIM,fontSize:9,textAlign:"center",padding:20}}>No items selected. Go back to Step 1 and select tradelines.</div>
+            ) : (<>
+              {tradelines.map((t,i)=>{
+                if (!t.selected) return null;
+                const strat = disputeStrategies[i] || autoDetectStrategy(t);
+                const info = STRATEGY_TYPES[strat];
+                return (<div key={i} style={{display:"flex",gap:10,alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${BORDER}22`}}>
+                  <div style={{flex:2}}>
+                    <div style={{fontSize:9,color:BRIGHT,fontWeight:600}}>{t.creditor}</div>
+                    <div style={{fontSize:8,color:DIM}}>{t.account_num||"--"} | {t.balance||"$0"} | {t.status}</div>
+                  </div>
+                  <div style={{flex:2}}>
+                    <select style={{...inputS,fontSize:8}} value={disputeStrategies[i]||strat} onChange={e=>setDisputeStrategies({...disputeStrategies,[i]:e.target.value})}>
+                      {Object.entries(STRATEGY_TYPES).map(([k,v])=>(<option key={k} value={k}>{v.label}</option>))}
+                    </select>
+                  </div>
+                  <div style={{flex:2,fontSize:8,color:info?info.color:DIM}}>{info?info.desc:""}</div>
+                </div>);
+              })}
+              <div style={{display:"flex",gap:8,marginTop:12}}>
+                <button onClick={()=>setDisputeStep(0)} style={btnOutline}>Back</button>
+                <button onClick={()=>{
+                  const strats = {...disputeStrategies};
+                  tradelines.forEach((t,i)=>{ if(t.selected && !strats[i]) strats[i]=autoDetectStrategy(t); });
+                  setDisputeStrategies(strats);
+                  setDisputeStep(2);
+                }} style={btnGold}>Next: Review</button>
+              </div>
+            </>)}
+          </div>)}
+
+          {/* STEP 2: Review */}
+          {disputeStep===2 && (<div style={{...cardS}}>
+            <div style={sectionTitle("",GREEN)}>Review Before Generation</div>
+            <div style={{fontSize:9,color:BRIGHT,marginBottom:6}}>Client: <strong>{selectedClient.name}</strong></div>
+            <div style={{fontSize:8,color:DIM,marginBottom:12}}>SSN: XXX-XX-{selectedClient.ssn_last4||"XXXX"} | {selectedClient.email||"--"} | {selectedClient.phone||"--"}</div>
+            <table style={{width:"100%",borderCollapse:"collapse",fontSize:9,marginBottom:12}}>
+              <thead><tr style={{borderBottom:`1px solid ${BORDER}`}}>
+                <th style={{padding:"4px 6px",textAlign:"left",color:DIM,fontSize:7}}>CREDITOR</th>
+                <th style={{padding:"4px 6px",textAlign:"left",color:DIM,fontSize:7}}>STRATEGY</th>
+                <th style={{padding:"4px 6px",textAlign:"left",color:DIM,fontSize:7}}>SEND TO</th>
+              </tr></thead>
+              <tbody>
+                {tradelines.map((t,i)=>{
+                  if (!t.selected) return null;
+                  const strat = disputeStrategies[i] || "609";
+                  const info = STRATEGY_TYPES[strat];
+                  const target = strat==="623"||strat==="goodwill"||strat==="pfd"?"Creditor directly":strat==="fdcpa"?"Collection agency":"All 3 bureaus";
+                  return (<tr key={i} style={{borderBottom:`1px solid ${BORDER}22`}}>
+                    <td style={{padding:"4px 6px",color:BRIGHT,fontWeight:600}}>{t.creditor}</td>
+                    <td style={{padding:"4px 6px",color:info?info.color:DIM,fontSize:8}}>{info?info.label:strat}</td>
+                    <td style={{padding:"4px 6px",color:DIM,fontSize:8}}>{target}</td>
+                  </tr>);
+                })}
+              </tbody>
+            </table>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setDisputeStep(1)} style={btnOutline}>Back</button>
+              <button onClick={generateAllLetters} style={{...btnGold,background:GREEN,fontSize:10,padding:"8px 20px"}}>Generate All Letters</button>
+            </div>
+          </div>)}
+
+          {/* STEP 3: Generated Letters */}
+          {disputeStep===3 && (<>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div style={sectionTitle("",GREEN)}>Generated Letters ({generatedLetters.length})</div>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={downloadAllLetters} style={btnGold}>Download All ({generatedLetters.length})</button>
+                <button onClick={()=>{setDisputeStep(0);setGeneratedLetters([]);setDisputeStrategies({});setTradelines(t=>t.map(x=>({...x,selected:false})));}} style={btnOutline}>Start Over</button>
+              </div>
+            </div>
+            {generatedLetters.map((l,i)=>{
+              const info = STRATEGY_TYPES[l.strategy];
+              return (<div key={i} style={{...cardS,marginBottom:10,borderColor:(info?info.color:BORDER)+"44"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <div>
+                    <span style={{fontSize:9,fontWeight:700,color:info?info.color:BRIGHT}}>{info?info.label:l.strategy}</span>
+                    <span style={{fontSize:8,color:DIM,marginLeft:8}}>To: {l.bureau} | Re: {l.creditor}</span>
+                  </div>
+                  <div style={{display:"flex",gap:4}}>
+                    <button onClick={()=>copyLetter(l.letter)} style={btnOutline}>Copy</button>
+                    <button onClick={()=>downloadLetter(l.letter,`dispute_${l.strategy}_${l.bureau}_${l.creditor.replace(/\s/g,"_")}.txt`)} style={btnOutline}>Download</button>
+                  </div>
+                </div>
+                <textarea value={l.letter} onChange={e=>{const updated=[...generatedLetters];updated[i]={...updated[i],letter:e.target.value};setGeneratedLetters(updated);}} style={{...inputS,height:250,whiteSpace:"pre-wrap",lineHeight:1.6,fontSize:9}} />
+              </div>);
+            })}
+          </>)}
+        </>)}
+      </>)}
+
+      {/* ═══════════════════ SUB-TAB 2: ID THEFT CENTER ═══════════════════ */}
+      {subTab===2 && (<>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+          {/* FTC Report */}
+          <div style={cardS}>
+            <div style={sectionTitle("",RED)}>Step 1: FTC Identity Theft Report</div>
+            <div style={{fontSize:8,color:DIM,marginBottom:8}}>File at IdentityTheft.gov then record your info here.</div>
+            <div style={{marginBottom:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                <input type="checkbox" checked={idTheft.ftc_filed} onChange={e=>setIdTheft({...idTheft,ftc_filed:e.target.checked})} />
+                <span style={{fontSize:9,color:idTheft.ftc_filed?GREEN:DIM}}>FTC Report Filed</span>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                <div><div style={labelS}>FTC Report #</div><input style={inputS} value={idTheft.ftc_report_num} onChange={e=>setIdTheft({...idTheft,ftc_report_num:e.target.value})} /></div>
+                <div><div style={labelS}>Date Filed</div><input type="date" style={inputS} value={idTheft.ftc_date} onChange={e=>setIdTheft({...idTheft,ftc_date:e.target.value})} /></div>
+              </div>
+            </div>
+            <div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                <input type="checkbox" checked={idTheft.police_filed} onChange={e=>setIdTheft({...idTheft,police_filed:e.target.checked})} />
+                <span style={{fontSize:9,color:idTheft.police_filed?GREEN:DIM}}>Police Report Filed</span>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                <div><div style={labelS}>Police Report #</div><input style={inputS} value={idTheft.police_report_num} onChange={e=>setIdTheft({...idTheft,police_report_num:e.target.value})} /></div>
+                <div><div style={labelS}>Date Filed</div><input type="date" style={inputS} value={idTheft.police_date} onChange={e=>setIdTheft({...idTheft,police_date:e.target.value})} /></div>
+              </div>
+            </div>
+            <div style={{marginTop:10,padding:8,background:`${GREEN}08`,borderRadius:4,border:`1px solid ${GREEN}22`}}>
+              <div style={{fontSize:8,fontWeight:700,color:GREEN,marginBottom:4}}>Checklist</div>
+              {[["FTC report filed",idTheft.ftc_filed],["Police report filed",idTheft.police_filed],["Credit freezes placed",idTheft.freeze_tu&&idTheft.freeze_exp&&idTheft.freeze_eqf]].map(([label,done])=>(
+                <div key={label} style={{fontSize:8,color:done?GREEN:DIM,display:"flex",gap:4,alignItems:"center"}}><span>{done?"[done]":"[ ]"}</span>{label}</div>
+              ))}
+            </div>
+          </div>
+
+          {/* 605B Block Requests */}
+          <div style={cardS}>
+            <div style={sectionTitle("",ORANGE)}>Step 2: 605B Block Requests</div>
+            <div style={{fontSize:8,color:DIM,marginBottom:8}}>Generate block request letters for fraudulent accounts.</div>
+            <div style={{marginBottom:8}}>
+              <div style={{fontSize:9,fontWeight:600,color:BRIGHT,marginBottom:6}}>Fraudulent Accounts</div>
+              {idTheft.fraudulent_accounts.map((a,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"3px 0",borderBottom:`1px solid ${BORDER}22`,fontSize:8}}>
+                <span style={{color:TXT}}>{a.creditor} - {a.account_num||"--"} ({a.balance||"$0"})</span>
+                <button onClick={()=>setIdTheft({...idTheft,fraudulent_accounts:idTheft.fraudulent_accounts.filter((_,j)=>j!==i)})} style={{background:"none",border:"none",color:RED,cursor:"pointer",fontSize:9}}>x</button>
+              </div>))}
+              {idTheft.fraudulent_accounts.length===0&&<div style={{fontSize:8,color:DIM,padding:4}}>No accounts added yet.</div>}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
+              <div><div style={labelS}>Creditor</div><input style={inputS} value={newFraudAcct.creditor} onChange={e=>setNewFraudAcct({...newFraudAcct,creditor:e.target.value})} /></div>
+              <div><div style={labelS}>Account #</div><input style={inputS} value={newFraudAcct.account_num} onChange={e=>setNewFraudAcct({...newFraudAcct,account_num:e.target.value})} /></div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:8}}>
+              <div><div style={labelS}>Balance</div><input style={inputS} value={newFraudAcct.balance} onChange={e=>setNewFraudAcct({...newFraudAcct,balance:e.target.value})} /></div>
+              <div><div style={labelS}>Date Opened</div><input type="date" style={inputS} value={newFraudAcct.date_opened} onChange={e=>setNewFraudAcct({...newFraudAcct,date_opened:e.target.value})} /></div>
+            </div>
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={()=>{if(!newFraudAcct.creditor)return;setIdTheft({...idTheft,fraudulent_accounts:[...idTheft.fraudulent_accounts,{...newFraudAcct}]});setNewFraudAcct({creditor:"",account_num:"",balance:"",date_opened:""});}} style={btnGold}>+ Add Account</button>
+              {idTheft.fraudulent_accounts.length>0 && selectedClient && (
+                <button onClick={()=>{
+                  const letters605 = [];
+                  ["TransUnion","Experian","Equifax"].forEach(bureau=>{
+                    idTheft.fraudulent_accounts.forEach(acct=>{
+                      letters605.push(generate605bLetter(acct, selectedClient, bureau, _seed(acct.creditor+bureau)));
+                    });
+                  });
+                  letters605.forEach((lt,i)=>setTimeout(()=>downloadLetter(lt,`605b_block_${i+1}.txt`),i*200));
+                  if(showToast)showToast(`Downloaded ${letters605.length} block request letters`);
+                }} style={{...btnGold,background:RED}}>Generate 605B Letters</button>
+              )}
+            </div>
+            <div style={{marginTop:8,fontSize:8,color:DIM}}>Required attachments: Government ID, proof of address, FTC affidavit, police report</div>
+          </div>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          {/* Fraud Alerts */}
+          <div style={cardS}>
+            <div style={sectionTitle("",YELLOW)}>Step 3: Fraud Alerts</div>
+            <div style={{marginBottom:8}}>
+              <div style={labelS}>Alert Type</div>
+              <select style={inputS} value={idTheft.fraud_alert_type} onChange={e=>setIdTheft({...idTheft,fraud_alert_type:e.target.value})}>
+                <option value="">None Active</option>
+                <option value="initial">Initial Fraud Alert (1 Year)</option>
+                <option value="extended">Extended Fraud Alert (7 Years)</option>
+              </select>
+            </div>
+            {idTheft.fraud_alert_type && (<div>
+              <div style={labelS}>Expires</div>
+              <input type="date" style={inputS} value={idTheft.fraud_alert_expires} onChange={e=>setIdTheft({...idTheft,fraud_alert_expires:e.target.value})} />
+              {idTheft.fraud_alert_expires && (<div style={{fontSize:8,marginTop:4,color:new Date(idTheft.fraud_alert_expires)<new Date()?RED:GREEN}}>
+                {new Date(idTheft.fraud_alert_expires)<new Date()?"EXPIRED - Renew immediately":`Active until ${new Date(idTheft.fraud_alert_expires).toLocaleDateString()}`}
+              </div>)}
+            </div>)}
+            <div style={{marginTop:8,fontSize:8,color:DIM}}>
+              Initial alert: Only 1 bureau needed (they notify the others).{"\n"}
+              Extended alert: Requires FTC Identity Theft Report.
+            </div>
+          </div>
+
+          {/* Credit Freezes */}
+          <div style={cardS}>
+            <div style={sectionTitle("","#3b82f6")}>Step 4: Credit Freezes</div>
+            <div style={{fontSize:8,color:DIM,marginBottom:8}}>Track freeze status and PINs for all bureaus.</div>
+            {[["TransUnion","freeze_tu","pin_tu"],["Experian","freeze_exp","pin_exp"],["Equifax","freeze_eqf","pin_eqf"],["NCTUE","freeze_nctue","pin_nctue"],["ChexSystems","freeze_chex","pin_chex"]].map(([label,freezeKey,pinKey])=>(
+              <div key={label} style={{display:"flex",gap:8,alignItems:"center",padding:"4px 0",borderBottom:`1px solid ${BORDER}22`}}>
+                <input type="checkbox" checked={idTheft[freezeKey]} onChange={e=>setIdTheft({...idTheft,[freezeKey]:e.target.checked})} />
+                <span style={{fontSize:9,color:idTheft[freezeKey]?GREEN:DIM,flex:1,fontWeight:600}}>{label}</span>
+                <span style={{fontSize:7,color:idTheft[freezeKey]?GREEN:RED}}>{idTheft[freezeKey]?"FROZEN":"UNFROZEN"}</span>
+                <input style={{...inputS,width:100,fontSize:8}} placeholder="PIN" type="password" value={idTheft[pinKey]} onChange={e=>setIdTheft({...idTheft,[pinKey]:e.target.value})} />
+              </div>
+            ))}
+            <div style={{marginTop:8,fontSize:8,color:DIM}}>
+              Freezes are free by federal law. Store PINs securely.
+            </div>
+          </div>
+        </div>
+      </>)}
+
+      {/* ═══════════════════ SUB-TAB 3: ROUND TRACKER ═══════════════════ */}
+      {subTab===3 && (<>
+        {!selectedClient ? (
+          <div style={{...cardS,textAlign:"center",padding:30,color:DIM,fontSize:9}}>Select a client from the Clients tab to track dispute rounds.</div>
+        ) : (<>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div>
+              <div style={{fontSize:11,fontWeight:700,color:BRIGHT}}>Rounds for {selectedClient.name}</div>
+              <div style={{fontSize:8,color:DIM}}>TU:{selectedClient.score_tu} EXP:{selectedClient.score_exp} EQF:{selectedClient.score_eqf}</div>
+            </div>
+            <button onClick={addRound} style={btnGold}>+ New Round</button>
+          </div>
+
+          {/* Stats */}
+          {rounds.length>0 && (<div style={{display:"flex",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+            {[
+              {l:"Total Rounds",v:rounds.length,c:GOLD},
+              {l:"Items Disputed",v:rounds.reduce((s,r)=>s+(Array.isArray(r.items_disputed)?r.items_disputed.length:0),0),c:"#3b82f6"},
+              {l:"Items Removed",v:rounds.reduce((s,r)=>s+(r.items_removed||0),0),c:GREEN},
+              {l:"Success Rate",v:rounds.reduce((s,r)=>s+(Array.isArray(r.items_disputed)?r.items_disputed.length:0),0)>0?Math.round(rounds.reduce((s,r)=>s+(r.items_removed||0),0)/rounds.reduce((s,r)=>s+(Array.isArray(r.items_disputed)?r.items_disputed.length:0),0)*100)+"%":"--",c:GOLD}
+            ].map(s=>(
+              <div key={s.l} style={{...cardS,flex:1,minWidth:110,textAlign:"center"}}><div style={{fontSize:7,color:DIM,textTransform:"uppercase",letterSpacing:".06em"}}>{s.l}</div><div style={{fontSize:16,fontWeight:700,color:s.c,marginTop:4}}>{s.v}</div></div>
+            ))}
+          </div>)}
+
+          {/* Round cards */}
+          {rounds.map(r=>(<div key={r.id} style={{...cardS,marginBottom:10,borderColor:roundDetail===r.id?GOLD+"44":BORDER}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6,cursor:"pointer"}} onClick={()=>setRoundDetail(roundDetail===r.id?null:r.id)}>
+              <div style={{display:"flex",gap:10,alignItems:"center"}}>
+                <div style={{fontSize:12,fontWeight:700,color:GOLD}}>Round {r.round_number}</div>
+                <span style={{fontSize:7,padding:"2px 6px",borderRadius:3,background:`${r.status==="completed"?GREEN:r.status==="pending"?DIM:r.status==="sent"?"#3b82f6":YELLOW}18`,color:r.status==="completed"?GREEN:r.status==="pending"?DIM:r.status==="sent"?"#3b82f6":YELLOW}}>{r.status||"pending"}</span>
+              </div>
+              <span style={{fontSize:8,color:DIM}}>{roundDetail===r.id?"Collapse":"Expand"}</span>
+            </div>
+            <div style={{display:"flex",gap:16,fontSize:8,color:DIM}}>
+              <span>Items disputed: {Array.isArray(r.items_disputed)?r.items_disputed.length:0}</span>
+              <span>Removed: {r.items_removed||0}</span>
+              <span>Updated: {r.items_updated||0}</span>
+              <span>Verified: {r.items_verified||0}</span>
+              <span>Sent: {r.letters_sent_at?new Date(r.letters_sent_at).toLocaleDateString():"Not yet"}</span>
+            </div>
+            {(r.score_tu_after||r.score_exp_after||r.score_eqf_after)&&<div style={{display:"flex",gap:12,marginTop:4,fontSize:8}}>
+              <span style={{color:TXT}}>After: TU:<span style={{color:GREEN,fontWeight:700}}>{r.score_tu_after}</span></span>
+              <span style={{color:TXT}}>EXP:<span style={{color:GREEN,fontWeight:700}}>{r.score_exp_after}</span></span>
+              <span style={{color:TXT}}>EQF:<span style={{color:GREEN,fontWeight:700}}>{r.score_eqf_after}</span></span>
+            </div>}
+
+            {/* Expanded detail */}
+            {roundDetail===r.id && (<div style={{marginTop:10,paddingTop:10,borderTop:`1px solid ${BORDER}`}}>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                <div><div style={labelS}>Status</div><select style={inputS} value={r.status||"pending"} onChange={e=>updateRound(r.id,{status:e.target.value})}><option value="pending">Pending</option><option value="sent">Sent</option><option value="in_progress">In Progress</option><option value="completed">Completed</option></select></div>
+                <div><div style={labelS}>Letters Sent Date</div><input type="date" style={inputS} value={r.letters_sent_at?r.letters_sent_at.split("T")[0]:""} onChange={e=>updateRound(r.id,{letters_sent_at:e.target.value||null})} /></div>
+                <div><div style={labelS}>Items Removed</div><input type="number" style={inputS} value={r.items_removed||0} onChange={e=>updateRound(r.id,{items_removed:Number(e.target.value)})} /></div>
+                <div><div style={labelS}>Items Updated</div><input type="number" style={inputS} value={r.items_updated||0} onChange={e=>updateRound(r.id,{items_updated:Number(e.target.value)})} /></div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                <div><div style={labelS}>Items Verified (not removed)</div><input type="number" style={inputS} value={r.items_verified||0} onChange={e=>updateRound(r.id,{items_verified:Number(e.target.value)})} /></div>
+                <div><div style={labelS}>TU Score After</div><input type="number" style={inputS} value={r.score_tu_after||""} onChange={e=>updateRound(r.id,{score_tu_after:Number(e.target.value)||null})} /></div>
+                <div><div style={labelS}>EXP Score After</div><input type="number" style={inputS} value={r.score_exp_after||""} onChange={e=>updateRound(r.id,{score_exp_after:Number(e.target.value)||null})} /></div>
+                <div><div style={labelS}>EQF Score After</div><input type="number" style={inputS} value={r.score_eqf_after||""} onChange={e=>updateRound(r.id,{score_eqf_after:Number(e.target.value)||null})} /></div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:8}}>
+                <div><div style={labelS}>TransUnion Response</div><select style={inputS} value={(r.bureau_responses||{}).tu||""} onChange={e=>updateRound(r.id,{bureau_responses:{...(r.bureau_responses||{}),tu:e.target.value}})}><option value="">Awaiting</option><option value="deleted">Deleted</option><option value="updated">Updated</option><option value="verified">Verified (no change)</option><option value="no_response">No Response (30 days)</option></select></div>
+                <div><div style={labelS}>Experian Response</div><select style={inputS} value={(r.bureau_responses||{}).exp||""} onChange={e=>updateRound(r.id,{bureau_responses:{...(r.bureau_responses||{}),exp:e.target.value}})}><option value="">Awaiting</option><option value="deleted">Deleted</option><option value="updated">Updated</option><option value="verified">Verified (no change)</option><option value="no_response">No Response (30 days)</option></select></div>
+                <div><div style={labelS}>Equifax Response</div><select style={inputS} value={(r.bureau_responses||{}).eqf||""} onChange={e=>updateRound(r.id,{bureau_responses:{...(r.bureau_responses||{}),eqf:e.target.value}})}><option value="">Awaiting</option><option value="deleted">Deleted</option><option value="updated">Updated</option><option value="verified">Verified (no change)</option><option value="no_response">No Response (30 days)</option></select></div>
+              </div>
+              <div><div style={labelS}>Round Notes</div><textarea style={{...inputS,height:50}} value={r.notes||""} onChange={e=>updateRound(r.id,{notes:e.target.value})} /></div>
+            </div>)}
+          </div>))}
+          {rounds.length===0&&<div style={{...cardS,textAlign:"center",color:DIM,fontSize:9,padding:20}}>No rounds yet. Click "+ New Round" to start tracking disputes.</div>}
+        </>)}
+      </>)}
+
+      {/* ═══════════════════ SUB-TAB 4: LETTER TEMPLATES ═══════════════════ */}
+      {subTab===4 && (<>
+        <div style={{display:"grid",gridTemplateColumns:"200px 1fr",gap:12}}>
+          {/* Template sidebar */}
+          <div style={cardS}>
+            <div style={sectionTitle("",GOLD)}>Template Library</div>
+            {Object.entries(TEMPLATES).map(([key,tmpl])=>(
+              <div key={key} onClick={()=>{setTemplateCategory(key);setTemplateVariation(0);setEditableTemplate(tmpl.variations[0].text);}} style={{padding:"6px 8px",marginBottom:2,borderRadius:4,cursor:"pointer",fontSize:9,fontWeight:templateCategory===key?700:400,color:templateCategory===key?GOLD:DIM,background:templateCategory===key?`${GOLD}11`:"transparent",border:templateCategory===key?`1px solid ${GOLD}22`:"1px solid transparent"}}>
+                {tmpl.label}
+              </div>
+            ))}
+          </div>
+
+          {/* Template editor */}
+          <div style={cardS}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+              <div>
+                <div style={{fontSize:11,fontWeight:700,color:GOLD}}>{TEMPLATES[templateCategory]?.label||""}</div>
+                <div style={{fontSize:8,color:DIM,marginTop:2}}>{(TEMPLATES[templateCategory]?.variations||[]).length} variation(s) available</div>
+              </div>
+              <div style={{display:"flex",gap:4}}>
+                <button onClick={()=>{navigator.clipboard.writeText(editableTemplate);if(showToast)showToast("Template copied");}} style={btnOutline}>Copy</button>
+                <button onClick={()=>{
+                  const b=new Blob([editableTemplate],{type:"text/plain"});const u=URL.createObjectURL(b);const a=document.createElement("a");a.href=u;a.download=`template_${templateCategory}_v${templateVariation+1}.txt`;a.click();URL.revokeObjectURL(u);
+                }} style={btnOutline}>Download</button>
+              </div>
+            </div>
+
+            {/* Variation tabs */}
+            {(TEMPLATES[templateCategory]?.variations||[]).length>1 && (
+              <div style={{display:"flex",gap:0,borderBottom:`1px solid ${BORDER}`,marginBottom:10}}>
+                {(TEMPLATES[templateCategory]?.variations||[]).map((v,i)=>(
+                  <div key={i} onClick={()=>{setTemplateVariation(i);setEditableTemplate(v.text);}} style={{padding:"4px 10px",cursor:"pointer",fontSize:8,fontWeight:templateVariation===i?700:400,color:templateVariation===i?GOLD:DIM,borderBottom:templateVariation===i?`2px solid ${GOLD}`:"2px solid transparent"}}>{v.name}</div>
+                ))}
+              </div>
+            )}
+
+            <div style={{fontSize:8,color:DIM,marginBottom:6}}>Edit the template below. Replace [BRACKETS] with actual data before sending.</div>
+            <textarea value={editableTemplate} onChange={e=>setEditableTemplate(e.target.value)} style={{...inputS,height:400,whiteSpace:"pre-wrap",lineHeight:1.6,fontSize:9}} />
+          </div>
+        </div>
       </>)}
     </div>
   );
