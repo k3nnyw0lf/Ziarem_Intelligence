@@ -206,8 +206,8 @@ const BUSINESSES = [
 
 const DEFAULT_STAGES = ["Lead","Contacted","Proposal","In Progress","Review","Closing","Completed","Lost"];
 
-export default function MortgagePOSView({ user, contacts, showToast }) {
-  const [tab, setTab] = useState(0);
+export default function MortgagePOSView({ user, contacts, showToast, initialTab }) {
+  const [tab, setTab] = useState(initialTab || 0);
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState(null);
@@ -267,6 +267,9 @@ export default function MortgagePOSView({ user, contacts, showToast }) {
     { icon:"\uD83D\uDCC4", label:"New Deal" },
     { icon:"\uD83D\uDCC1", label:"Documents" },
     { icon:"\uD83D\uDCCA", label:"Analytics" },
+    { icon:"\uD83C\uDFE0", label:"Real Estate" },
+    { icon:"\uD83D\uDEE1", label:"Insurance" },
+    { icon:"\u26A1", label:"Credit Optimization" },
   ];
 
   return (
@@ -345,9 +348,9 @@ export default function MortgagePOSView({ user, contacts, showToast }) {
         {tab===1 && <PipelineTab loans={loans} allLoans={loans} loading={loading} reload={loadLoans} openNewApp={openNewApp} openLoanDetail={openLoanDetail} showToast={showToast} activeBiz={activeBiz} activeBizConfig={activeBizConfig} activeStages={activeStages} activeServices={activeServices} />}
         {tab===2 && <ApplicationTab prefill={appForm} user={user} showToast={showToast} reload={loadLoans} setTab={setTab} selectedLoan={selectedLoan} setSelectedLoan={setSelectedLoan} />}
         {tab===3 && <DocumentCenterTab loans={loans} loanDocs={loanDocs} loadDocs={loadDocs} showToast={showToast} />}
-        {tab===4 && <InsuranceTab loans={loans} showToast={showToast} />}
-        {tab===5 && <CreditRepairTab loans={loans} contacts={contacts} showToast={showToast} />}
-        {tab===6 && <RealtyTab loans={loans} contacts={contacts} showToast={showToast} />}
+        {tab===5 && <RealtyTab loans={loans} contacts={contacts} showToast={showToast} />}
+        {tab===6 && <InsuranceTab loans={loans} showToast={showToast} />}
+        {tab===7 && <CreditRepairTab loans={loans} contacts={contacts} showToast={showToast} />}
         {tab===7 && <AnalyticsTab loans={loans} />}
       </div>
 

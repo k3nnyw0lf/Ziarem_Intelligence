@@ -9262,6 +9262,9 @@ function EmailVault({ user, teamProfile, onSignOut }) {
     ]},
     { id:"sales", label:"SALES & CRM", items:[
       {id:"pricing",   icon:"🏦", label:"Mortgage POS", badge:0, admin:true},
+      {id:"realty",    icon:"🏡", label:"Real Estate", badge:0, admin:true},
+      {id:"insurance", icon:"🛡️", label:"Insurance", badge:0, admin:true},
+      {id:"creditopt", icon:"⚡", label:"Credit Optimization", badge:0, admin:true},
       {id:"leads",     icon:"🎯", label:"Leads",     badge:0, admin:true},
       {id:"crm",       icon:"👥", label:"Contacts",  badge:overdueTasks.length, admin:true},
       {id:"appointments",icon:"📅", label:"Booking", badge:todayAppts, admin:true},
@@ -9990,6 +9993,9 @@ function EmailVault({ user, teamProfile, onSignOut }) {
         {view==="esign"&&<ESignatureView user={user} contacts={contacts} businesses={businesses} showToast={showToast} />}
 
         {view==="pricing"&&<MortgagePOSView user={user} contacts={contacts} showToast={showToast} />}
+        {view==="realty"&&<MortgagePOSView user={user} contacts={contacts} showToast={showToast} initialTab={5} />}
+        {view==="insurance"&&<MortgagePOSView user={user} contacts={contacts} showToast={showToast} initialTab={6} />}
+        {view==="creditopt"&&<MortgagePOSView user={user} contacts={contacts} showToast={showToast} initialTab={7} />}
 
         {view==="social"&&<SocialAgentsView sb={sb} n8nPost={n8nPost} user={user} KEN_ID="b7a67688-73f1-4f4b-9745-f357e81affa3" />}
 
