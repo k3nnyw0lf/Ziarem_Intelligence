@@ -202,6 +202,10 @@ const BUSINESSES = [
   { id:"Laenan", label:"LAENAN GROUP", icon:"🏢", color:"#ec4899",
     services:["Business Consulting","Tax Planning","Entity Formation","Accounting","Payroll"],
     stages:["Lead","Discovery","Proposal","Active","Completed","On Hold"] },
+  { id:"Title", label:"Closed By Whom", icon:"📜", color:"#8b5cf6",
+    stages:["New Order","Title Search","Exam/Review","Commitment Issued","Clearing Exceptions","Pre-Closing","Closing Scheduled","Closing Complete","Post-Closing","Recorded"],
+    services:["Residential Purchase","Residential Refi","Commercial","Short Sale","REO/Foreclosure","Cash Deal","HELOC","Construction","1031 Exchange"],
+    settings:{ defaultStage:"New Order" } },
 ];
 
 const DEFAULT_STAGES = ["Lead","Contacted","Proposal","In Progress","Review","Closing","Completed","Lost"];
@@ -270,6 +274,7 @@ export default function MortgagePOSView({ user, contacts, showToast, initialTab 
     { icon:"\uD83C\uDFE0", label:"Real Estate" },
     { icon:"\uD83D\uDEE1", label:"Insurance" },
     { icon:"\u26A1", label:"Credit Optimization" },
+    { icon:"\uD83D\uDCDC", label:"Title" },
   ];
 
   return (
@@ -352,6 +357,7 @@ export default function MortgagePOSView({ user, contacts, showToast, initialTab 
         {tab===6 && <InsuranceTab loans={loans} showToast={showToast} />}
         {tab===7 && <CreditRepairTab loans={loans} contacts={contacts} showToast={showToast} />}
         {tab===7 && <AnalyticsTab loans={loans} />}
+        {tab===8 && <TitleTab showToast={showToast} />}
       </div>
 
       {/* ── QUICK ACTIONS FLOATING BAR ────────────────────────────────── */}
@@ -3599,6 +3605,688 @@ function RealtyTab({ loans, contacts, showToast }) {
   );
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TITLE TAB
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const TITLE_STAGES = ["New Order","Title Search","Exam/Review","Commitment Issued","Clearing Exceptions","Pre-Closing","Closing Scheduled","Closing Complete","Post-Closing","Recorded"];
+const TITLE_STAGE_COLORS = {"New Order":BLUE,"Title Search":ORANGE,"Exam/Review":YELLOW,"Commitment Issued":"#06b6d4","Clearing Exceptions":RED,"Pre-Closing":PURPLE,"Closing Scheduled":"#14b8a6","Closing Complete":GREEN,"Post-Closing":"#64748b","Recorded":GOLD};
+const TITLE_SEARCH_ITEMS = ["Ownership verified","Lien search complete","Judgment search","Tax search","HOA estoppel requested","Survey ordered","Municipal lien search"];
+
+function TitleTab({ showToast }) {
+  const [subTab, setSubTab] = useState(0);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selOrder, setSelOrder] = useState(null);
+  const [showNew, setShowNew] = useState(false);
+  const [newForm, setNewForm] = useState({});
+
+  // Filters
+  const [fStage, setFStage] = useState("all");
+  const [fCloser, setFCloser] = useState("all");
+  const [fDateFrom, setFDateFrom] = useState("");
+  const [fDateTo, setFDateTo] = useState("");
+
+  // Wire form
+  const [wireForm, setWireForm] = useState({ wire_type:"earnest money", amount:"", from_party:"", to_party:"", reference:"", status:"pending", date:"" });
+
+  // Closing calc
+  const [calc, setCalc] = useState({ purchase_price:"", loan_amount:"", seller_concessions:"", annual_taxes:"", hoa_annual:"", recording_fees:"200" });
+
+  const loadOrders = useCallback(async () => {
+    setLoading(true);
+    const data = await sbFetch("vault_title_orders","?order=created_at.desc&limit=200");
+    setOrders(data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { loadOrders(); }, [loadOrders]);
+
+  const saveOrder = async (id, patch) => {
+    const updated = await sbUpdate("vault_title_orders", id, { ...patch, updated_at: new Date().toISOString() });
+    if (updated) { setOrders(prev => prev.map(o => o.id === id ? { ...o, ...updated } : o)); if (selOrder && selOrder.id === id) setSelOrder({ ...selOrder, ...updated }); }
+    return updated;
+  };
+
+  const createOrder = async () => {
+    const body = { ...newForm, stage:"New Order", order_date: new Date().toISOString().slice(0,10) };
+    const created = await sbInsert("vault_title_orders", body);
+    if (created) { setOrders(prev => [created, ...prev]); setShowNew(false); setNewForm({}); if (showToast) showToast("Title order created"); }
+  };
+
+  // Filtered orders
+  const filtered = useMemo(() => {
+    let f = orders;
+    if (fStage !== "all") f = f.filter(o => o.stage === fStage);
+    if (fCloser !== "all") f = f.filter(o => o.assigned_closer === fCloser);
+    if (fDateFrom) f = f.filter(o => o.order_date >= fDateFrom);
+    if (fDateTo) f = f.filter(o => o.order_date <= fDateTo);
+    return f;
+  }, [orders, fStage, fCloser, fDateFrom, fDateTo]);
+
+  const closers = useMemo(() => [...new Set(orders.map(o => o.assigned_closer).filter(Boolean))], [orders]);
+
+  // Stats
+  const stats = useMemo(() => {
+    const now = new Date();
+    const weekEnd = new Date(now); weekEnd.setDate(now.getDate() + (7 - now.getDay()));
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const open = orders.filter(o => !["Closing Complete","Post-Closing","Recorded"].includes(o.stage)).length;
+    const closingThisWeek = orders.filter(o => { if (!o.closing_date) return false; const d = new Date(o.closing_date); return d >= now && d <= weekEnd; }).length;
+    const revenueThisMonth = orders.filter(o => { if (!o.closing_date) return false; const d = new Date(o.closing_date); return d >= monthStart && d <= now; }).reduce((s, o) => s + (Number(o.closing_fee) || 0) + (Number(o.title_premium) || 0), 0);
+    return { total: orders.length, open, closingThisWeek, revenueThisMonth };
+  }, [orders]);
+
+  const SUB_TABS = ["Order Tracker","Title Search","Closing Calculator","Wire Tracking","Closing Calendar"];
+
+  // ── FL Closing Calculator Logic ──
+  const calcResults = useMemo(() => {
+    const pp = Number(calc.purchase_price) || 0;
+    const la = Number(calc.loan_amount) || 0;
+    const sc = Number(calc.seller_concessions) || 0;
+    const annualTax = Number(calc.annual_taxes) || 0;
+    const hoaAnnual = Number(calc.hoa_annual) || 0;
+    const recFees = Number(calc.recording_fees) || 200;
+
+    // FL title insurance: $5.75 per $1000 up to $100K, $5.00 per $1000 above
+    const titleBase = pp <= 100000 ? pp * 5.75 / 1000 : (100000 * 5.75 / 1000) + ((pp - 100000) * 5.00 / 1000);
+    const ownerPolicy = titleBase;
+    const lenderPolicy = la <= 100000 ? la * 5.75 / 1000 : (100000 * 5.75 / 1000) + ((la - 100000) * 5.00 / 1000);
+    // Simultaneous issue: lender policy at reduced rate when issued with owner's
+    const lenderSimul = pp > 0 ? Math.max(0, lenderPolicy - ownerPolicy) + 25 : lenderPolicy;
+
+    const docStampsDeed = Math.ceil(pp / 100) * 0.70;
+    const docStampsMtg = Math.ceil(la / 100) * 0.35;
+    const intangibleTax = Math.ceil(la / 100) * 0.20;
+
+    const titleSearchFee = 200;
+    const closingFee = 595;
+    const wireFee = 50;
+    const dailyTax = annualTax / 365;
+    const dailyHoa = hoaAnnual / 365;
+
+    const buyerTotal = lenderSimul + docStampsMtg + intangibleTax + recFees + titleSearchFee + closingFee + wireFee;
+    const sellerTotal = ownerPolicy + docStampsDeed + sc;
+
+    return { ownerPolicy, lenderPolicy: lenderSimul, docStampsDeed, docStampsMtg, intangibleTax, titleSearchFee, closingFee, wireFee, recFees, dailyTax, dailyHoa, buyerTotal, sellerTotal, pp, la };
+  }, [calc]);
+
+  return (
+    <div>
+      {/* Sub-tab nav */}
+      <div style={{ display:"flex", gap:2, marginBottom:16, borderBottom:`1px solid ${BORDER}`, paddingBottom:8 }}>
+        {SUB_TABS.map((t, i) => (
+          <div key={i} onClick={() => setSubTab(i)} style={{
+            padding:"6px 14px", cursor:"pointer", fontSize:10, fontWeight:subTab === i ? 700 : 500,
+            color:subTab === i ? PURPLE : DIM, borderBottom:subTab === i ? `2px solid ${PURPLE}` : "2px solid transparent",
+            letterSpacing:".05em", textTransform:"uppercase", transition:"all .2s", userSelect:"none"
+          }}>{t}</div>
+        ))}
+      </div>
+
+      {/* ═══ SUB-TAB 0: ORDER TRACKER ═══ */}
+      {subTab === 0 && (
+        <div>
+          {/* Stats bar */}
+          <div style={{ display:"flex", gap:12, marginBottom:16, flexWrap:"wrap" }}>
+            {[
+              { label:"Total Orders", val:stats.total, color:PURPLE },
+              { label:"Open", val:stats.open, color:BLUE },
+              { label:"Closing This Week", val:stats.closingThisWeek, color:GREEN },
+              { label:"Revenue This Month", val:fmtMoney(stats.revenueThisMonth), color:GOLD },
+            ].map((s, i) => (
+              <div key={i} style={{ ...cardS, flex:"1 1 160px", minWidth:140 }}>
+                <div style={{ fontSize:8, color:DIM, textTransform:"uppercase", letterSpacing:".08em", marginBottom:4 }}>{s.label}</div>
+                <div style={{ fontSize:18, fontWeight:700, color:s.color }}>{s.val}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Filters */}
+          <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap", alignItems:"center" }}>
+            <select value={fStage} onChange={e => setFStage(e.target.value)} style={{ ...selectS, width:"auto", minWidth:140 }}>
+              <option value="all">All Stages</option>
+              {TITLE_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select value={fCloser} onChange={e => setFCloser(e.target.value)} style={{ ...selectS, width:"auto", minWidth:140 }}>
+              <option value="all">All Closers</option>
+              {closers.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <input type="date" value={fDateFrom} onChange={e => setFDateFrom(e.target.value)} style={{ ...inputS, width:"auto" }} placeholder="From" />
+            <input type="date" value={fDateTo} onChange={e => setFDateTo(e.target.value)} style={{ ...inputS, width:"auto" }} placeholder="To" />
+            <button onClick={() => { setFStage("all"); setFCloser("all"); setFDateFrom(""); setFDateTo(""); }} style={{ ...btnSmS, background:"transparent", border:`1px solid ${BORDER}`, color:DIM }}>Clear</button>
+            <div style={{ flex:1 }} />
+            <button onClick={() => setShowNew(true)} style={btnS}>+ New Order</button>
+          </div>
+
+          {loading && <div style={{ color:DIM, fontSize:10, padding:20, textAlign:"center" }}>Loading orders...</div>}
+
+          {/* Order cards */}
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {filtered.map(o => (
+              <div key={o.id} onClick={() => { setSelOrder(o); setSubTab(1); }} style={{ ...cardS, cursor:"pointer", display:"flex", gap:12, alignItems:"center", transition:"background .15s" }}
+                onMouseEnter={e => e.currentTarget.style.background = CARD_HOVER} onMouseLeave={e => e.currentTarget.style.background = CARD}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:11, fontWeight:600, color:BRIGHT, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.property_address || "No Address"}</div>
+                  <div style={{ fontSize:9, color:DIM }}>Buyer: {o.buyer_name || "—"} | Seller: {o.seller_name || "—"} | Lender: {o.lender || "—"}</div>
+                </div>
+                <div style={{ textAlign:"right", minWidth:100 }}>
+                  <div style={{ fontSize:10, fontWeight:600, color:TXT }}>{fmtMoney(o.loan_amount)}</div>
+                  <div style={{ fontSize:8, color:DIM }}>{o.order_date || "—"}</div>
+                </div>
+                <div style={{ textAlign:"right", minWidth:90 }}>
+                  <div style={{ fontSize:8, color:DIM }}>Close: {o.closing_date || "TBD"}</div>
+                  <div style={{ fontSize:8, color:DIM }}>{o.assigned_closer || "Unassigned"}</div>
+                </div>
+                <span style={badgeS(TITLE_STAGE_COLORS[o.stage] || PURPLE)}>{o.stage}</span>
+              </div>
+            ))}
+            {!loading && filtered.length === 0 && (
+              <div style={{ ...cardS, textAlign:"center", padding:32 }}>
+                <div style={{ fontSize:24, marginBottom:8 }}>📜</div>
+                <div style={{ fontSize:11, color:DIM }}>No title orders found. Click + New Order to create one.</div>
+              </div>
+            )}
+          </div>
+
+          {/* New Order Modal */}
+          <Modal open={showNew} onClose={() => setShowNew(false)} title="New Title Order" width={560}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              {[
+                ["property_address","Property Address"],["buyer_name","Buyer Name"],["seller_name","Seller Name"],
+                ["lender","Lender"],["loan_amount","Loan Amount"],["purchase_price","Purchase Price"],
+                ["assigned_closer","Assigned Closer"],["closing_date","Closing Date"],
+              ].map(([k, l]) => (
+                <div key={k} style={k === "property_address" ? { gridColumn:"1/-1" } : {}}>
+                  <label style={labelS}>{l}</label>
+                  <input type={k === "closing_date" ? "date" : (k === "loan_amount" || k === "purchase_price") ? "number" : "text"}
+                    value={newForm[k] || ""} onChange={e => setNewForm(p => ({ ...p, [k]: e.target.value }))}
+                    style={inputS} />
+                </div>
+              ))}
+              <div style={{ gridColumn:"1/-1" }}>
+                <label style={labelS}>Service Type</label>
+                <select value={newForm.service_type || ""} onChange={e => setNewForm(p => ({ ...p, service_type: e.target.value }))} style={selectS}>
+                  <option value="">Select...</option>
+                  {["Residential Purchase","Residential Refi","Commercial","Short Sale","REO/Foreclosure","Cash Deal","HELOC","Construction","1031 Exchange"].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div style={{ gridColumn:"1/-1" }}>
+                <label style={labelS}>Notes</label>
+                <textarea value={newForm.notes || ""} onChange={e => setNewForm(p => ({ ...p, notes: e.target.value }))} style={{ ...inputS, height:50, resize:"vertical" }} />
+              </div>
+            </div>
+            <div style={{ display:"flex", justifyContent:"flex-end", gap:8, marginTop:12 }}>
+              <button onClick={() => setShowNew(false)} style={btnOutS}>Cancel</button>
+              <button onClick={createOrder} style={btnS}>Create Order</button>
+            </div>
+          </Modal>
+        </div>
+      )}
+
+      {/* ═══ SUB-TAB 1: TITLE SEARCH ═══ */}
+      {subTab === 1 && (
+        <div>
+          {!selOrder ? (
+            <div>
+              <div style={{ fontSize:10, color:DIM, marginBottom:8 }}>Select an order to manage title search:</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {orders.map(o => (
+                  <div key={o.id} onClick={() => setSelOrder(o)} style={{ ...cardS, cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", transition:"background .15s" }}
+                    onMouseEnter={e => e.currentTarget.style.background = CARD_HOVER} onMouseLeave={e => e.currentTarget.style.background = CARD}>
+                    <div>
+                      <div style={{ fontSize:11, fontWeight:600, color:BRIGHT }}>{o.property_address || "No Address"}</div>
+                      <div style={{ fontSize:9, color:DIM }}>{o.buyer_name || "—"}</div>
+                    </div>
+                    <span style={badgeS(TITLE_STAGE_COLORS[o.stage] || PURPLE)}>{o.stage}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <TitleSearchSubTab order={selOrder} saveOrder={saveOrder} showToast={showToast} onBack={() => setSelOrder(null)} />
+          )}
+        </div>
+      )}
+
+      {/* ═══ SUB-TAB 2: CLOSING CALCULATOR ═══ */}
+      {subTab === 2 && (
+        <div>
+          <div style={{ fontSize:11, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase", marginBottom:12 }}>FL Closing Cost Calculator</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:16 }}>
+            {[
+              ["purchase_price","Purchase Price"],["loan_amount","Loan Amount"],["seller_concessions","Seller Concessions"],
+              ["annual_taxes","Annual Property Taxes"],["hoa_annual","Annual HOA"],["recording_fees","Recording Fees"],
+            ].map(([k, l]) => (
+              <div key={k}>
+                <label style={labelS}>{l}</label>
+                <input type="number" value={calc[k] || ""} onChange={e => setCalc(p => ({ ...p, [k]: e.target.value }))} style={inputS} placeholder="0" />
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+            {/* Buyer Side */}
+            <div style={cardS}>
+              <div style={{ fontSize:10, fontWeight:700, color:BLUE, textTransform:"uppercase", letterSpacing:".06em", marginBottom:10, borderBottom:`1px solid ${BORDER}`, paddingBottom:6 }}>Buyer Side</div>
+              {[
+                ["Lender's Title Policy", calcResults.lenderPolicy],
+                ["Doc Stamps on Mortgage", calcResults.docStampsMtg],
+                ["Intangible Tax", calcResults.intangibleTax],
+                ["Recording Fees", calcResults.recFees],
+                ["Title Search Fee", calcResults.titleSearchFee],
+                ["Closing Fee", calcResults.closingFee],
+                ["Wire Fee", calcResults.wireFee],
+              ].map(([label, val]) => (
+                <div key={label} style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:TXT, padding:"3px 0", borderBottom:`1px solid ${BORDER}11` }}>
+                  <span>{label}</span><span style={{ fontWeight:600 }}>{fmtMoney(val)}</span>
+                </div>
+              ))}
+              <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, fontWeight:700, color:BLUE, marginTop:8, paddingTop:6, borderTop:`1px solid ${BORDER}` }}>
+                <span>BUYER TOTAL</span><span>{fmtMoney(calcResults.buyerTotal)}</span>
+              </div>
+            </div>
+
+            {/* Seller Side */}
+            <div style={cardS}>
+              <div style={{ fontSize:10, fontWeight:700, color:ORANGE, textTransform:"uppercase", letterSpacing:".06em", marginBottom:10, borderBottom:`1px solid ${BORDER}`, paddingBottom:6 }}>Seller Side</div>
+              {[
+                ["Owner's Title Policy", calcResults.ownerPolicy],
+                ["Doc Stamps on Deed", calcResults.docStampsDeed],
+                ["Seller Concessions", Number(calc.seller_concessions) || 0],
+              ].map(([label, val]) => (
+                <div key={label} style={{ display:"flex", justifyContent:"space-between", fontSize:10, color:TXT, padding:"3px 0", borderBottom:`1px solid ${BORDER}11` }}>
+                  <span>{label}</span><span style={{ fontWeight:600 }}>{fmtMoney(val)}</span>
+                </div>
+              ))}
+              <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, fontWeight:700, color:ORANGE, marginTop:8, paddingTop:6, borderTop:`1px solid ${BORDER}` }}>
+                <span>SELLER TOTAL</span><span>{fmtMoney(calcResults.sellerTotal)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Proration info */}
+          <div style={{ ...cardS, marginTop:12 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:GOLD, textTransform:"uppercase", letterSpacing:".06em", marginBottom:8 }}>Daily Proration Rates</div>
+            <div style={{ display:"flex", gap:24, fontSize:10, color:TXT }}>
+              <span>Property Tax: <b style={{ color:BRIGHT }}>${calcResults.dailyTax.toFixed(2)}/day</b></span>
+              <span>HOA: <b style={{ color:BRIGHT }}>${calcResults.dailyHoa.toFixed(2)}/day</b></span>
+            </div>
+          </div>
+
+          <div style={{ display:"flex", gap:8, marginTop:12 }}>
+            <button onClick={() => {
+              const lines = [
+                "=== SETTLEMENT STATEMENT ESTIMATE ===",
+                `Purchase Price: ${fmtMoney(calcResults.pp)}`,
+                `Loan Amount: ${fmtMoney(calcResults.la)}`,
+                "",
+                "--- BUYER COSTS ---",
+                `Lender's Title Policy: ${fmtMoney(calcResults.lenderPolicy)}`,
+                `Doc Stamps on Mortgage: ${fmtMoney(calcResults.docStampsMtg)}`,
+                `Intangible Tax: ${fmtMoney(calcResults.intangibleTax)}`,
+                `Recording Fees: ${fmtMoney(calcResults.recFees)}`,
+                `Title Search Fee: ${fmtMoney(calcResults.titleSearchFee)}`,
+                `Closing Fee: ${fmtMoney(calcResults.closingFee)}`,
+                `Wire Fee: ${fmtMoney(calcResults.wireFee)}`,
+                `BUYER TOTAL: ${fmtMoney(calcResults.buyerTotal)}`,
+                "",
+                "--- SELLER COSTS ---",
+                `Owner's Title Policy: ${fmtMoney(calcResults.ownerPolicy)}`,
+                `Doc Stamps on Deed: ${fmtMoney(calcResults.docStampsDeed)}`,
+                `SELLER TOTAL: ${fmtMoney(calcResults.sellerTotal)}`,
+                "",
+                `Daily Tax Proration: $${calcResults.dailyTax.toFixed(2)}/day`,
+                `Daily HOA Proration: $${calcResults.dailyHoa.toFixed(2)}/day`,
+              ].join("\n");
+              navigator.clipboard.writeText(lines);
+              if (showToast) showToast("Settlement statement copied to clipboard");
+            }} style={btnS}>Generate Settlement Statement</button>
+            <button onClick={() => { if (showToast) showToast("Send to Client coming soon"); }} style={btnOutS}>Send to Client</button>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ SUB-TAB 3: WIRE TRACKING ═══ */}
+      {subTab === 3 && (
+        <div>
+          {!selOrder ? (
+            <div>
+              <div style={{ fontSize:10, color:DIM, marginBottom:8 }}>Select an order to track wires:</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {orders.map(o => (
+                  <div key={o.id} onClick={() => setSelOrder(o)} style={{ ...cardS, cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", transition:"background .15s" }}
+                    onMouseEnter={e => e.currentTarget.style.background = CARD_HOVER} onMouseLeave={e => e.currentTarget.style.background = CARD}>
+                    <div>
+                      <div style={{ fontSize:11, fontWeight:600, color:BRIGHT }}>{o.property_address || "No Address"}</div>
+                      <div style={{ fontSize:9, color:DIM }}>{o.buyer_name} | {fmtMoney(o.loan_amount)}</div>
+                    </div>
+                    <span style={badgeS(TITLE_STAGE_COLORS[o.stage] || PURPLE)}>{o.stage}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <WireTrackingSubTab order={selOrder} saveOrder={saveOrder} showToast={showToast} onBack={() => setSelOrder(null)} />
+          )}
+        </div>
+      )}
+
+      {/* ═══ SUB-TAB 4: CLOSING CALENDAR ═══ */}
+      {subTab === 4 && <ClosingCalendarSubTab orders={orders} onSelect={o => { setSelOrder(o); setSubTab(1); }} />}
+    </div>
+  );
+}
+
+// ── Title Search Sub-Tab Component ──
+function TitleSearchSubTab({ order, saveOrder, showToast, onBack }) {
+  const search = order.title_search || {};
+  const exceptions = Array.isArray(order.exceptions) ? order.exceptions : [];
+  const [newException, setNewException] = useState({ description:"", severity:"minor", resolution_plan:"" });
+
+  const toggleItem = async (item, field, value) => {
+    const updated = { ...search, [item]: { ...(search[item] || {}), [field]: value } };
+    await saveOrder(order.id, { title_search: updated });
+  };
+
+  const addException = async () => {
+    if (!newException.description) return;
+    const exc = [...exceptions, { ...newException, id: Date.now(), created_at: new Date().toISOString() }];
+    await saveOrder(order.id, { exceptions: exc });
+    setNewException({ description:"", severity:"minor", resolution_plan:"" });
+  };
+
+  const resolveException = async (excId) => {
+    const exc = exceptions.map(e => e.id === excId ? { ...e, resolved_date: new Date().toISOString().slice(0,10) } : e);
+    await saveOrder(order.id, { exceptions: exc });
+  };
+
+  const markAllClear = async () => {
+    const updated = {};
+    TITLE_SEARCH_ITEMS.forEach(item => { updated[item] = { checked: true, status: "clear", date: new Date().toISOString().slice(0,10) }; });
+    await saveOrder(order.id, { title_search: updated, stage: "Commitment Issued" });
+    if (showToast) showToast("All items cleared - moved to Commitment Issued");
+  };
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+        <button onClick={onBack} style={{ ...btnSmS, background:"transparent", border:`1px solid ${BORDER}`, color:DIM }}>← Back</button>
+        <div style={{ fontSize:11, fontWeight:700, color:BRIGHT }}>{order.property_address || "No Address"}</div>
+        <span style={badgeS(TITLE_STAGE_COLORS[order.stage] || PURPLE)}>{order.stage}</span>
+      </div>
+
+      {/* Checklist */}
+      <div style={{ ...cardS, marginBottom:12 }}>
+        <div style={{ fontSize:10, fontWeight:700, color:GOLD, textTransform:"uppercase", letterSpacing:".06em", marginBottom:10 }}>Title Search Checklist</div>
+        {TITLE_SEARCH_ITEMS.map(item => {
+          const s = search[item] || {};
+          return (
+            <div key={item} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 0", borderBottom:`1px solid ${BORDER}22` }}>
+              <input type="checkbox" checked={!!s.checked} onChange={e => toggleItem(item, "checked", e.target.checked)} style={{ accentColor:GOLD }} />
+              <div style={{ flex:1, fontSize:10, color:s.checked ? GREEN : TXT }}>{item}</div>
+              <select value={s.status || "pending"} onChange={e => toggleItem(item, "status", e.target.value)} style={{ ...selectS, width:90, fontSize:9, padding:"3px 6px" }}>
+                <option value="pending">Pending</option>
+                <option value="clear">Clear</option>
+                <option value="exception">Exception</option>
+              </select>
+              <input type="date" value={s.date || ""} onChange={e => toggleItem(item, "date", e.target.value)} style={{ ...inputS, width:120, fontSize:9, padding:"3px 6px" }} />
+              <input type="text" placeholder="Notes" value={s.notes || ""} onChange={e => toggleItem(item, "notes", e.target.value)} style={{ ...inputS, width:140, fontSize:9, padding:"3px 6px" }} />
+            </div>
+          );
+        })}
+        <div style={{ marginTop:10 }}>
+          <button onClick={markAllClear} style={btnS}>All Clear → Commitment Issued</button>
+        </div>
+      </div>
+
+      {/* Exception Log */}
+      <div style={cardS}>
+        <div style={{ fontSize:10, fontWeight:700, color:RED, textTransform:"uppercase", letterSpacing:".06em", marginBottom:10 }}>Exception Log</div>
+        {exceptions.length === 0 && <div style={{ fontSize:9, color:DIM, padding:8 }}>No exceptions found.</div>}
+        {exceptions.map(ex => (
+          <div key={ex.id} style={{ display:"flex", gap:8, alignItems:"center", padding:"6px 0", borderBottom:`1px solid ${BORDER}22` }}>
+            <span style={badgeS(ex.severity === "fatal" ? RED : ex.severity === "major" ? ORANGE : YELLOW)}>{ex.severity}</span>
+            <div style={{ flex:1, fontSize:10, color:TXT }}>{ex.description}</div>
+            <div style={{ fontSize:9, color:DIM, maxWidth:160 }}>{ex.resolution_plan}</div>
+            {ex.resolved_date ? (
+              <span style={badgeS(GREEN)}>Resolved {ex.resolved_date}</span>
+            ) : (
+              <button onClick={() => resolveException(ex.id)} style={{ ...btnSmS, fontSize:8 }}>Resolve</button>
+            )}
+          </div>
+        ))}
+        <div style={{ display:"flex", gap:6, marginTop:10, alignItems:"flex-end" }}>
+          <div style={{ flex:1 }}>
+            <label style={labelS}>Description</label>
+            <input value={newException.description} onChange={e => setNewException(p => ({ ...p, description: e.target.value }))} style={inputS} />
+          </div>
+          <div style={{ width:100 }}>
+            <label style={labelS}>Severity</label>
+            <select value={newException.severity} onChange={e => setNewException(p => ({ ...p, severity: e.target.value }))} style={selectS}>
+              <option value="minor">Minor</option>
+              <option value="major">Major</option>
+              <option value="fatal">Fatal</option>
+            </select>
+          </div>
+          <div style={{ flex:1 }}>
+            <label style={labelS}>Resolution Plan</label>
+            <input value={newException.resolution_plan} onChange={e => setNewException(p => ({ ...p, resolution_plan: e.target.value }))} style={inputS} />
+          </div>
+          <button onClick={addException} style={btnSmS}>+ Add</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Wire Tracking Sub-Tab Component ──
+function WireTrackingSubTab({ order, saveOrder, showToast, onBack }) {
+  const wires = Array.isArray(order.wire_tracking) ? order.wire_tracking : [];
+  const [wireForm, setWireForm] = useState({ wire_type:"earnest money", amount:"", from_party:"", to_party:"", reference:"", status:"pending", date:"" });
+
+  const addWire = async () => {
+    if (!wireForm.amount) return;
+    const updated = [...wires, { ...wireForm, id: Date.now(), amount: Number(wireForm.amount) }];
+    await saveOrder(order.id, { wire_tracking: updated });
+    setWireForm({ wire_type:"earnest money", amount:"", from_party:"", to_party:"", reference:"", status:"pending", date:"" });
+    if (showToast) showToast("Wire added");
+  };
+
+  const updateWireStatus = async (wireId, status) => {
+    const updated = wires.map(w => w.id === wireId ? { ...w, status } : w);
+    await saveOrder(order.id, { wire_tracking: updated });
+  };
+
+  const incoming = wires.filter(w => ["earnest money","closing funds"].includes(w.wire_type));
+  const outgoing = wires.filter(w => ["payoff","disbursement"].includes(w.wire_type));
+  const totalIn = incoming.reduce((s, w) => s + (Number(w.amount) || 0), 0);
+  const totalOut = outgoing.reduce((s, w) => s + (Number(w.amount) || 0), 0);
+  const escrowBalance = totalIn - totalOut;
+  const overdue = wires.filter(w => w.status === "pending" && w.date && new Date(w.date) < new Date());
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+        <button onClick={onBack} style={{ ...btnSmS, background:"transparent", border:`1px solid ${BORDER}`, color:DIM }}>← Back</button>
+        <div style={{ fontSize:11, fontWeight:700, color:BRIGHT }}>{order.property_address || "No Address"}</div>
+        <span style={badgeS(TITLE_STAGE_COLORS[order.stage] || PURPLE)}>{order.stage}</span>
+      </div>
+
+      {/* Escrow summary */}
+      <div style={{ display:"flex", gap:12, marginBottom:16, flexWrap:"wrap" }}>
+        <div style={{ ...cardS, flex:"1 1 140px" }}>
+          <div style={{ fontSize:8, color:DIM, textTransform:"uppercase", letterSpacing:".08em", marginBottom:4 }}>Total Incoming</div>
+          <div style={{ fontSize:16, fontWeight:700, color:GREEN }}>{fmtMoney(totalIn)}</div>
+        </div>
+        <div style={{ ...cardS, flex:"1 1 140px" }}>
+          <div style={{ fontSize:8, color:DIM, textTransform:"uppercase", letterSpacing:".08em", marginBottom:4 }}>Total Outgoing</div>
+          <div style={{ fontSize:16, fontWeight:700, color:RED }}>{fmtMoney(totalOut)}</div>
+        </div>
+        <div style={{ ...cardS, flex:"1 1 140px" }}>
+          <div style={{ fontSize:8, color:DIM, textTransform:"uppercase", letterSpacing:".08em", marginBottom:4 }}>Escrow Balance</div>
+          <div style={{ fontSize:16, fontWeight:700, color:escrowBalance >= 0 ? GREEN : RED }}>{fmtMoney(escrowBalance)}</div>
+        </div>
+      </div>
+
+      {escrowBalance < 0 && (
+        <div style={{ background:RED+"22", border:`1px solid ${RED}`, borderRadius:6, padding:10, marginBottom:12, fontSize:10, color:RED, fontWeight:600 }}>
+          ⚠ Warning: Outgoing funds exceed incoming. Escrow balance is negative.
+        </div>
+      )}
+
+      {overdue.length > 0 && (
+        <div style={{ background:ORANGE+"22", border:`1px solid ${ORANGE}`, borderRadius:6, padding:10, marginBottom:12, fontSize:10, color:ORANGE, fontWeight:600 }}>
+          ⚠ {overdue.length} overdue wire(s) — expected but not received.
+        </div>
+      )}
+
+      {/* Wire list */}
+      <div style={{ ...cardS, marginBottom:12 }}>
+        <div style={{ fontSize:10, fontWeight:700, color:GOLD, textTransform:"uppercase", letterSpacing:".06em", marginBottom:10 }}>Wire Log</div>
+        {wires.length === 0 && <div style={{ fontSize:9, color:DIM, padding:8 }}>No wires logged.</div>}
+        {wires.map(w => (
+          <div key={w.id} style={{ display:"flex", gap:8, alignItems:"center", padding:"6px 0", borderBottom:`1px solid ${BORDER}22` }}>
+            <span style={badgeS(["earnest money","closing funds"].includes(w.wire_type) ? GREEN : RED)}>{w.wire_type}</span>
+            <div style={{ fontSize:10, fontWeight:600, color:BRIGHT, minWidth:80 }}>{fmtMoney(w.amount)}</div>
+            <div style={{ flex:1, fontSize:9, color:DIM }}>{w.from_party} → {w.to_party}</div>
+            <div style={{ fontSize:9, color:DIM }}>{w.reference || "—"}</div>
+            <div style={{ fontSize:9, color:DIM }}>{w.date || "—"}</div>
+            <select value={w.status} onChange={e => updateWireStatus(w.id, e.target.value)} style={{ ...selectS, width:90, fontSize:9, padding:"3px 6px" }}>
+              <option value="pending">Pending</option>
+              <option value="received">Received</option>
+              <option value="sent">Sent</option>
+              <option value="confirmed">Confirmed</option>
+            </select>
+          </div>
+        ))}
+      </div>
+
+      {/* Add wire */}
+      <div style={cardS}>
+        <div style={{ fontSize:10, fontWeight:700, color:GOLD, textTransform:"uppercase", letterSpacing:".06em", marginBottom:10 }}>Add Wire</div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+          <div>
+            <label style={labelS}>Type</label>
+            <select value={wireForm.wire_type} onChange={e => setWireForm(p => ({ ...p, wire_type: e.target.value }))} style={selectS}>
+              <option value="earnest money">Earnest Money</option>
+              <option value="closing funds">Closing Funds</option>
+              <option value="payoff">Payoff</option>
+              <option value="disbursement">Disbursement</option>
+            </select>
+          </div>
+          <div>
+            <label style={labelS}>Amount</label>
+            <input type="number" value={wireForm.amount} onChange={e => setWireForm(p => ({ ...p, amount: e.target.value }))} style={inputS} />
+          </div>
+          <div>
+            <label style={labelS}>Date</label>
+            <input type="date" value={wireForm.date} onChange={e => setWireForm(p => ({ ...p, date: e.target.value }))} style={inputS} />
+          </div>
+          <div>
+            <label style={labelS}>From</label>
+            <input value={wireForm.from_party} onChange={e => setWireForm(p => ({ ...p, from_party: e.target.value }))} style={inputS} />
+          </div>
+          <div>
+            <label style={labelS}>To</label>
+            <input value={wireForm.to_party} onChange={e => setWireForm(p => ({ ...p, to_party: e.target.value }))} style={inputS} />
+          </div>
+          <div>
+            <label style={labelS}>Reference #</label>
+            <input value={wireForm.reference} onChange={e => setWireForm(p => ({ ...p, reference: e.target.value }))} style={inputS} />
+          </div>
+        </div>
+        <div style={{ marginTop:10 }}>
+          <button onClick={addWire} style={btnS}>+ Add Wire</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Closing Calendar Sub-Tab Component ──
+function ClosingCalendarSubTab({ orders, onSelect }) {
+  const [viewDate, setViewDate] = useState(new Date());
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0,10);
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const monthLabel = viewDate.toLocaleDateString("en-US", { month:"long", year:"numeric" });
+
+  // Get current week bounds (Sun-Sat)
+  const curWeekStart = new Date(today); curWeekStart.setDate(today.getDate() - today.getDay());
+  const curWeekEnd = new Date(curWeekStart); curWeekEnd.setDate(curWeekStart.getDate() + 6);
+
+  const closings = useMemo(() => {
+    const map = {};
+    orders.forEach(o => {
+      if (!o.closing_date) return;
+      const d = o.closing_date.slice(0,10);
+      if (!map[d]) map[d] = [];
+      map[d].push(o);
+    });
+    return map;
+  }, [orders]);
+
+  const cells = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+        <button onClick={prevMonth} style={{ ...btnSmS, background:"transparent", border:`1px solid ${BORDER}`, color:DIM }}>←</button>
+        <div style={{ fontSize:13, fontWeight:700, color:BRIGHT, minWidth:160, textAlign:"center" }}>{monthLabel}</div>
+        <button onClick={nextMonth} style={{ ...btnSmS, background:"transparent", border:`1px solid ${BORDER}`, color:DIM }}>→</button>
+        <button onClick={() => setViewDate(new Date())} style={{ ...btnSmS, background:"transparent", border:`1px solid ${GOLD}`, color:GOLD }}>Today</button>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:2 }}>
+        {["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(d => (
+          <div key={d} style={{ fontSize:9, color:DIM, textAlign:"center", padding:"6px 0", fontWeight:600, textTransform:"uppercase", letterSpacing:".06em" }}>{d}</div>
+        ))}
+        {cells.map((day, i) => {
+          if (day === null) return <div key={`e${i}`} style={{ background:CARD, border:`1px solid ${BORDER}22`, borderRadius:4, minHeight:80 }} />;
+          const dateStr = `${year}-${String(month + 1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+          const dayClosings = closings[dateStr] || [];
+          const isToday = dateStr === todayStr;
+          const cellDate = new Date(year, month, day);
+          const isCurrentWeek = cellDate >= curWeekStart && cellDate <= curWeekEnd;
+
+          return (
+            <div key={day} style={{
+              background:isToday ? PURPLE + "22" : isCurrentWeek ? CARD_HOVER : CARD,
+              border:`1px solid ${isToday ? PURPLE : BORDER}`,
+              borderRadius:4, minHeight:80, padding:4, position:"relative"
+            }}>
+              <div style={{ fontSize:9, fontWeight:isToday ? 700 : 500, color:isToday ? PURPLE : DIM, marginBottom:2 }}>{day}</div>
+              {dayClosings.map(o => {
+                const status = o.stage === "Closing Complete" || o.stage === "Recorded" ? "confirmed" : o.stage === "Closing Scheduled" ? "confirmed" : "tentative";
+                const color = status === "confirmed" ? GREEN : status === "tentative" ? YELLOW : RED;
+                return (
+                  <div key={o.id} onClick={() => onSelect(o)} style={{
+                    background:color + "22", border:`1px solid ${color}44`, borderRadius:3,
+                    padding:"2px 4px", marginBottom:2, cursor:"pointer", fontSize:8, color, lineHeight:1.3
+                  }}>
+                    <div style={{ fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.buyer_name || "—"}</div>
+                    <div style={{ opacity:.8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{o.property_address || ""}</div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TAB 8: ANALYTICS
