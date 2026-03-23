@@ -9155,40 +9155,27 @@ function EmailVault({ user, teamProfile, onSignOut }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarSection, setSidebarSection] = useState(null);
   const navGroups = [
-    { id:"mortgage", label:"MORTGAGE", items:[
+    { id:"main", label:"", items:[
       {id:"dashboard", icon:"⬡", label:"Dashboard", badge:0, admin:true},
-      {id:"pricing",   icon:"🏦", label:"Pricing Engine", badge:0, admin:true},
-      {id:"leads",     icon:"🎯", label:"Pipeline",     badge:0, admin:true},
-      {id:"crm",       icon:"👥", label:"Borrowers",    badge:overdueTasks.length, admin:true},
-      {id:"docs",      icon:"📁", label:"Documents",    badge:0, admin:true},
-      {id:"esign",     icon:"✍", label:"E-Sign",        badge:0, admin:true},
-      {id:"compliance",icon:"📋", label:"Compliance",   badge:expiringItems, admin:true},
-    ]},
-    { id:"comms", label:"COMMUNICATIONS", items:[
+      {id:"pricing",   icon:"🏦", label:"Deals", badge:0, admin:true},
+      {id:"crm",       icon:"👥", label:"Contacts",    badge:overdueTasks.length, admin:true},
       {id:"inbox",     icon:"✉", label:"Inbox",       badge:emails.filter(e=>!e.is_read).length, admin:true},
-      {id:"callcenter",icon:"☎", label:"Calls",       badge:unreadNotifs, admin:false},
       {id:"messages",  icon:"💬", label:"Messages",    badge:unreadMsgs, admin:false},
-    ]},
-    { id:"business", label:"BUSINESS", items:[
+      {id:"callcenter",icon:"☎", label:"Calls",       badge:unreadNotifs, admin:false},
       {id:"appointments",icon:"📅", label:"Booking",    badge:todayAppts, admin:true},
-      {id:"invoices",  icon:"💰", label:"Invoicing",    badge:overdueInvs, admin:true},
-      {id:"vendors",   icon:"🔨", label:"Vendors",      badge:0, admin:true},
-    ]},
-    { id:"marketing", label:"MARKETING & AI", items:[
-      {id:"marketing", icon:"📣", label:"Campaigns",    badge:0, admin:true},
-      {id:"social",    icon:"📱", label:"Social",       badge:0, admin:true},
-      {id:"market",    icon:"📡", label:"Market Intel",  badge:0, admin:true},
-      {id:"intel",     icon:"🧠", label:"Intelligence",  badge:0, admin:true},
+      {id:"marketing", icon:"📣", label:"Marketing",    badge:0, admin:true},
       {id:"analytics", icon:"📊", label:"Analytics",     badge:0, admin:true},
     ]},
-    { id:"admin", label:"ADMIN", items:[
+    { id:"more", label:"MORE", items:[
+      {id:"invoices",  icon:"💰", label:"Invoicing",    badge:overdueInvs, admin:true},
+      {id:"docs",      icon:"📁", label:"Documents",    badge:0, admin:true},
+      {id:"esign",     icon:"✍", label:"E-Sign",        badge:0, admin:true},
+      {id:"social",    icon:"📱", label:"Social",       badge:0, admin:true},
       {id:"automations",icon:"⚡", label:"Automations",  badge:0, admin:true},
-      {id:"biz",       icon:"🏢", label:"Business",      badge:0, admin:true},
-      {id:"toolbox",   icon:"🧰", label:"Tools",         badge:0, admin:true},
       {id:"settings",  icon:"⚙", label:"Settings",       badge:0, admin:true},
     ]},
     { id:"apps", label:"APPS", items:[
-      {id:"_wolfsurety", icon:"🐺", label:"Wolf Surety", badge:0, admin:true, external:"https://app.wolfsurety.com"},
+      {id:"_wolfsurety", icon:"🐺", label:"Wolf Insurance", badge:0, admin:true, external:"https://app.wolfsurety.com"},
       {id:"_dosmortgage", icon:"🏠", label:"DOS Mortgage", badge:0, admin:true, external:"https://dosmortgage.pages.dev"},
     ]},
   ];
