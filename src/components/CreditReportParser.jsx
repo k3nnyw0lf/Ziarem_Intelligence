@@ -29,154 +29,122 @@ function vantageToMortgageFICO(vantage) {
   return vantage - 45; // Low scores: bigger delta
 }
 
-// ─── HTML PARSER ────────────────────────────────────────────────────────────
+// ─── HTML PARSER (MyScoreIQ Angular-rendered format) ────────────────────────
 function parseMyScoreIQHTML(html) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, "text/html");
-  const text = doc.body?.innerText || doc.body?.textContent || "";
-  const result = { scores: {}, liabilities: [], inquiries: [], collections: [], summary: {} };
+  const result = { scores: {}, liabilities: [], inquiries: [], collections: [], summary: {}, personal: {} };
+  const parseMoney = s => { const m = (s||"").replace(/[,$\s]/g,"").match(/[\d.]+/); return m ? parseFloat(m[0]) : 0; };
 
-  // ── Extract Scores ──
-  // MyScoreIQ shows scores like "TransUnion: 720", "Equifax: 715", "Experian: 730"
-  const scorePatterns = [
-    { bureau: "TransUnion", patterns: [/TransUnion[:\s]*(\d{3})/i, /TU[:\s]*(\d{3})/i] },
-    { bureau: "Equifax", patterns: [/Equifax[:\s]*(\d{3})/i, /EQ[:\s]*(\d{3})/i] },
-    { bureau: "Experian", patterns: [/Experian[:\s]*(\d{3})/i, /EX[:\s]*(\d{3})/i] },
-  ];
+  // ── Extract Personal Info ──
+  const allText = html;
+  // Name: rendered in ng-scope as FIRST LAST
+  const nameMatches = allText.match(/class="[^"]*ng-binding[^"]*"[^>]*>\s*([A-Z]+)&nbsp;\s*</g) || [];
+  const lastNames = allText.match(/last_name[^>]*>([^<]+)</g) || [];
+  const renderedFirsts = nameMatches.map(m => m.match(/>([A-Z]+)/)?.[1]).filter(Boolean);
+  const renderedLasts = [...allText.matchAll(/class="[^"]*ng-binding[^"]*"[^>]*>\s*([A-Z]{2,})\s*</g)].map(m=>m[1]).filter(n=>n!=="FICO"&&n!=="REVOLVING"&&n!=="INSTALLMENT"&&n!=="PO");
+  if (renderedFirsts[0]) result.personal.firstName = renderedFirsts[0];
+  // Find last name - look for MENDEZ pattern
+  const lastMatch = allText.match(/last_name[\s\S]{0,100}?class="[^"]*ng-binding[^"]*"[^>]*>\s*([A-Z]{2,})\s*</);
+  if (lastMatch) result.personal.lastName = lastMatch[1];
+  // Address
+  const addrMatch = allText.match(/class="info[^"]*"[^>]*>\s*(\d+[A-Z0-9 ]+(?:ST|AVE|RD|DR|LN|BLVD|CT|PL|WAY|LNDG|CIR|TER|PKWY)[A-Z0-9 ]*)\s*</i);
+  if (addrMatch) result.personal.address = addrMatch[1].trim();
+  const cityStateZip = allText.match(/([A-Z]{2,}),\s*&nbsp;\s*([A-Z]{2})\s*[\s\S]{0,50}?(\d{5})/);
+  if (cityStateZip) { result.personal.city = cityStateZip[1]; result.personal.state = cityStateZip[2]; result.personal.zip = cityStateZip[3]; }
 
-  for (const { bureau, patterns } of scorePatterns) {
-    for (const pat of patterns) {
-      const m = text.match(pat);
-      if (m) {
-        const vs = parseInt(m[1]);
-        result.scores[bureau] = { vantage: vs, mortgageFICO: vantageToMortgageFICO(vs) };
-        break;
-      }
-    }
-  }
-
-  // Also try to find scores from HTML elements (score circles, score displays)
-  const scoreElements = doc.querySelectorAll('[class*="score"], [class*="Score"], [id*="score"]');
-  scoreElements.forEach(el => {
-    const t = (el.textContent || "").trim();
-    const m = t.match(/(\d{3})/);
-    if (m && parseInt(m[1]) >= 300 && parseInt(m[1]) <= 850) {
-      // Try to determine which bureau
-      const parent = el.parentElement?.textContent || "";
-      if (/transunion/i.test(parent) && !result.scores.TransUnion) {
-        const vs = parseInt(m[1]);
-        result.scores.TransUnion = { vantage: vs, mortgageFICO: vantageToMortgageFICO(vs) };
-      } else if (/equifax/i.test(parent) && !result.scores.Equifax) {
-        const vs = parseInt(m[1]);
-        result.scores.Equifax = { vantage: vs, mortgageFICO: vantageToMortgageFICO(vs) };
-      } else if (/experian/i.test(parent) && !result.scores.Experian) {
-        const vs = parseInt(m[1]);
-        result.scores.Experian = { vantage: vs, mortgageFICO: vantageToMortgageFICO(vs) };
-      }
-    }
+  // ── Extract Scores (ng-binding 3-digit numbers 300-850) ──
+  const scoreNums = [...allText.matchAll(/class="[^"]*ng-binding[^"]*"[^>]*>\s*(\d{3})\s*</g)]
+    .map(m => parseInt(m[1])).filter(n => n >= 300 && n <= 850);
+  // First 3 unique scores = TU, EXP, EQF (order in the HTML)
+  const uniqueScores = [...new Set(scoreNums)].slice(0, 3);
+  const bureauOrder = ["TransUnion", "Experian", "Equifax"];
+  uniqueScores.forEach((vs, i) => {
+    result.scores[bureauOrder[i]] = { vantage: vs, mortgageFICO: vantageToMortgageFICO(vs) };
   });
 
-  // Fallback: find any 3-digit numbers near bureau names
-  if (Object.keys(result.scores).length === 0) {
-    const allScores = [];
-    const scoreRegex = /(?:score|rating)[:\s]*(\d{3})/gi;
-    let sm;
-    while ((sm = scoreRegex.exec(text)) !== null) {
-      const v = parseInt(sm[1]);
-      if (v >= 300 && v <= 850) allScores.push(v);
-    }
-    // Also look for standalone 3-digit numbers between 300-850 near "credit"
-    const creditScoreRegex = /\b(\d{3})\b/g;
-    const nearCredit = text.match(/(?:credit|score|vantage|fico)[\s\S]{0,50}?(\d{3})/gi) || [];
-    nearCredit.forEach(match => {
-      const n = match.match(/(\d{3})/);
-      if (n) {
-        const v = parseInt(n[1]);
-        if (v >= 300 && v <= 850) allScores.push(v);
-      }
+  // ── Extract Tradelines/Liabilities from ng-binding dollar values ──
+  // MyScoreIQ renders dollar amounts in ng-binding spans as $XX,XXX.XX
+  // Each tradeline has fields in 3-bureau triplets (TU, EXP, EQF)
+  const dollarVals = [...allText.matchAll(/class="[^"]*ng-binding[^"]*"[^>]*>\s*\$([\d,.]+)\s*</g)].map(m => parseMoney(m[1]));
+
+  // Extract creditor names from info class spans
+  const creditorNames = [...allText.matchAll(/class="info[^"]*"[^>]*>\s*([A-Z][A-Z0-9 /&'.\-]{3,})\s*</g)]
+    .map(m => m[1].trim()).filter(n => !/^PO BOX|DISPUTE|CREDIT BUREAU/.test(n) && n.length > 3);
+
+  // Extract account statuses
+  const statusVals = [...allText.matchAll(/class="[^"]*ng-binding[^"]*"[^>]*>\s*(Open|Closed|Paid|Collection|Delinquent)\s*</gi)].map(m => m[1]);
+
+  // Extract account types
+  const typeVals = [...allText.matchAll(/class="[^"]*ng-binding[^"]*"[^>]*>\s*(Revolving|Installment|Mortgage|Open|Collection|REVOLVING|INSTALLMENT)\s*</gi)].map(m => m[1]);
+
+  // The detail tradeline section has structured data per account
+  // Each tradeline shows: Monthly Payment(x3), Date Opened, Balance(x3), High Credit(x3), Credit Limit(x3)
+  // That's 4 triplets = 12 dollar values per tradeline
+  // But some fields may be missing. Use the creditor names as anchors.
+
+  // Deduplicate creditors (same account appears in summary + detail)
+  const seen = new Set();
+  const uniqueCreditors = creditorNames.filter(c => { if (seen.has(c)) return false; seen.add(c); return true; });
+
+  // Build tradelines from the structured data
+  // The dollar values come in groups per tradeline
+  // Each tradeline contributes: monthly_payment(3) + balance(3) + high_credit(3) + credit_limit(3) = 12 vals
+  // But some have fewer. Let's use a simpler approach: assign dollar triplets to tradelines sequentially
+
+  const triplets = [];
+  for (let i = 0; i < dollarVals.length - 2; i += 3) {
+    triplets.push({ tu: dollarVals[i], exp: dollarVals[i+1], eqf: dollarVals[i+2] });
+  }
+
+  // The first tradeline's data starts at triplet 0
+  // Each tradeline has ~4 triplets: balance, high_credit, credit_limit, monthly_payment (order may vary)
+  // Let's use 4 triplets per tradeline
+  const FIELDS_PER_TRADELINE = 4;
+  const numTradelines = Math.min(uniqueCreditors.length, Math.floor(triplets.length / FIELDS_PER_TRADELINE));
+
+  for (let t = 0; t < numTradelines; t++) {
+    const base = t * FIELDS_PER_TRADELINE;
+    const creditor = uniqueCreditors[t] || `Account ${t+1}`;
+    // Take the max of the 3 bureaus for each field (most accurate/recent)
+    const maxOf = tri => Math.max(tri.tu || 0, tri.exp || 0, tri.eqf || 0);
+    const balance = maxOf(triplets[base] || {});
+    const highCredit = maxOf(triplets[base+1] || {});
+    const creditLimit = maxOf(triplets[base+2] || {});
+    const payment = maxOf(triplets[base+3] || {});
+    // Get status and type from sequential lists (3 per tradeline for 3 bureaus)
+    const statusIdx = t * 3;
+    const typeIdx = t * 3;
+    const status = statusVals[statusIdx] || "Open";
+    const acctType = typeVals[typeIdx] || guessAccountType(creditor);
+
+    result.liabilities.push({
+      creditor,
+      accountType: acctType.charAt(0).toUpperCase() + acctType.slice(1).toLowerCase(),
+      balance,
+      monthlyPayment: payment,
+      highCredit,
+      creditLimit,
+      status: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase(),
     });
-    if (allScores.length >= 3) {
-      const sorted = [...new Set(allScores)].sort((a,b) => b-a);
-      const bureaus = ["Experian", "TransUnion", "Equifax"];
-      sorted.slice(0, 3).forEach((s, i) => {
-        if (!result.scores[bureaus[i]]) {
-          result.scores[bureaus[i]] = { vantage: s, mortgageFICO: vantageToMortgageFICO(s) };
-        }
-      });
-    }
   }
 
-  // ── Extract Liabilities ──
-  // Look for tables with account data
-  const tables = doc.querySelectorAll("table");
-  tables.forEach(table => {
-    const rows = table.querySelectorAll("tr");
-    const headers = [];
-    const firstRow = rows[0];
-    if (firstRow) {
-      firstRow.querySelectorAll("th, td").forEach(cell => {
-        headers.push((cell.textContent || "").trim().toLowerCase());
-      });
-    }
-
-    // Check if this looks like an accounts/tradelines table
-    const isAccountTable = headers.some(h =>
-      /creditor|account|lender|company|name/i.test(h)
-    ) && headers.some(h =>
-      /balance|amount|payment|monthly/i.test(h)
-    );
-
-    if (isAccountTable) {
-      const nameIdx = headers.findIndex(h => /creditor|account|lender|company|name/i.test(h));
-      const typeIdx = headers.findIndex(h => /type|kind|category/i.test(h));
-      const balIdx = headers.findIndex(h => /balance|amount|owed/i.test(h));
-      const pmtIdx = headers.findIndex(h => /payment|monthly|min/i.test(h));
-      const statusIdx = headers.findIndex(h => /status|condition|standing/i.test(h));
-      const limitIdx = headers.findIndex(h => /limit|credit.?limit|high/i.test(h));
-
-      for (let i = 1; i < rows.length; i++) {
-        const cells = rows[i].querySelectorAll("td");
-        if (cells.length < 2) continue;
-        const getCell = idx => idx >= 0 && idx < cells.length ? (cells[idx].textContent || "").trim() : "";
-        const parseMoney = s => {
-          const m = (s || "").replace(/[,$\s]/g, "").match(/[\d.]+/);
-          return m ? parseFloat(m[0]) : 0;
-        };
-
-        const name = getCell(nameIdx);
-        if (!name || name.length < 2) continue;
-
-        result.liabilities.push({
-          creditor: name,
-          accountType: getCell(typeIdx) || guessAccountType(name),
-          balance: parseMoney(getCell(balIdx)),
-          monthlyPayment: parseMoney(getCell(pmtIdx)),
-          status: getCell(statusIdx) || "Open",
-          creditLimit: parseMoney(getCell(limitIdx)),
-        });
-      }
-    }
-  });
-
-  // Fallback: parse liabilities from text patterns
+  // If structured parsing found nothing, try text-based fallback
   if (result.liabilities.length === 0) {
-    // Look for patterns like "CHASE VISA  Balance: $5,432  Payment: $125"
-    const accountBlocks = text.split(/\n{2,}|\r\n{2,}/);
+    const text = doc.body?.innerText || "";
+    const accountBlocks = text.split(/\n{2,}/);
     accountBlocks.forEach(block => {
       const balMatch = block.match(/balance[:\s$]*\$?([\d,]+\.?\d*)/i);
       const pmtMatch = block.match(/(?:monthly\s*)?payment[:\s$]*\$?([\d,]+\.?\d*)/i);
       const nameMatch = block.match(/^([A-Z][A-Z\s&'.-]+)/m);
-
       if (balMatch && nameMatch) {
         const name = nameMatch[1].trim();
         if (name.length > 2 && name.length < 60) {
           result.liabilities.push({
-            creditor: name,
-            accountType: guessAccountType(name + " " + block),
+            creditor: name, accountType: guessAccountType(name + " " + block),
             balance: parseFloat(balMatch[1].replace(/,/g, "")),
             monthlyPayment: pmtMatch ? parseFloat(pmtMatch[1].replace(/,/g, "")) : 0,
-            status: /closed|paid|settled/i.test(block) ? "Closed" : "Open",
-            creditLimit: 0,
+            status: /closed|paid|settled/i.test(block) ? "Closed" : "Open", creditLimit: 0,
           });
         }
       }
@@ -184,13 +152,8 @@ function parseMyScoreIQHTML(html) {
   }
 
   // ── Extract Collections ──
-  const collectionsRegex = /collection[s]?[\s\S]{0,200}?\$?([\d,]+\.?\d*)/gi;
-  let cm;
-  while ((cm = collectionsRegex.exec(text)) !== null) {
-    if (!result.collections.some(c => c.amount === parseFloat(cm[1].replace(/,/g, "")))) {
-      result.collections.push({ amount: parseFloat(cm[1].replace(/,/g, "")) });
-    }
-  }
+  result.liabilities.filter(l => /collection/i.test(l.status) || /collection/i.test(l.accountType))
+    .forEach(l => result.collections.push({ creditor: l.creditor, amount: l.balance }));
 
   // ── Summary Stats ──
   const allFICOs = Object.values(result.scores).map(s => s.mortgageFICO).filter(Boolean);
