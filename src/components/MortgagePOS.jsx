@@ -2988,8 +2988,36 @@ function RealtyTab({ loans, contacts, showToast }) {
   };
   const isFav = (id) => favorites.some(f=>f.id===id);
 
-  const runSearch = () => {
+  const MLS_API = SB_URL + '/functions/v1/mls-bridge';
+  const [mlsLoading, setMlsLoading] = useState(false);
+
+  const runSearch = async () => {
     const f = searchFilters;
+    setMlsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if(f.city) params.set('city', f.city);
+      if(f.state) params.set('state', f.state);
+      if(f.zip) params.set('zip', f.zip);
+      if(f.minPrice) params.set('min_price', f.minPrice);
+      if(f.maxPrice) params.set('max_price', f.maxPrice);
+      if(f.beds) params.set('beds', f.beds);
+      if(f.baths) params.set('baths', f.baths);
+      if(f.type) params.set('type', f.type);
+      if(f.status) params.set('status', f.status || 'Active');
+      params.set('limit', '25');
+      const res = await fetch(MLS_API + '/listings?' + params.toString());
+      const data = await res.json();
+      if (data.listings && data.listings.length > 0) {
+        setSearchResults(data.listings);
+        setHasSearched(true);
+        setMlsLoading(false);
+        if(showToast) showToast(data.listings.length + ' live MLS listings found');
+        return;
+      }
+    } catch(e) { console.log('MLS API fallback to local:', e); }
+    // Fallback to local mock if MLS API fails
+    setMlsLoading(false);
     let results = [...MOCK_LISTINGS];
     if(f.city) results = results.filter(r=>r.city.toLowerCase().includes(f.city.toLowerCase()));
     if(f.state) results = results.filter(r=>r.state.toLowerCase()===f.state.toLowerCase());
