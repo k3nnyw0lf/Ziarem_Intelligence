@@ -1905,17 +1905,41 @@ function InsuranceTab({ loans, showToast }) {
       {/* All Policies */}
       <div style={{ ...cardS, marginTop:12 }}>
         <div style={{ fontSize:10, fontWeight:700, color:GOLD, marginBottom:10, textTransform:"uppercase", letterSpacing:".06em" }}>All Policies ({policies.length})</div>
-        <div style={{ maxHeight:300, overflowY:"auto" }}>
-          {loading && <div style={{ fontSize:9, color:DIM, textAlign:"center", padding:20 }}>Loading...</div>}
-          {!loading && policies.map(p => (
-            <div key={p.id} style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:`1px solid ${BORDER}`, fontSize:9 }}>
-              <span style={{ color:BRIGHT }}>{p.client_name}</span>
-              <span style={{ color:DIM }}>{p.carrier}</span>
-              <span style={{ color:DIM }}>{p.line_of_business}</span>
-              <span style={{ color:GOLD }}>{fmtMoney(p.premium)}</span>
-              <span style={{ color: p.status==="active"?GREEN:DIM }}>{p.status}</span>
-            </div>
-          ))}
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:9 }}>
+            <thead>
+              <tr style={{ borderBottom:`2px solid ${BORDER}` }}>
+                <th style={{ textAlign:"left", padding:"6px 8px", color:DIM, fontWeight:600, fontSize:8, textTransform:"uppercase", letterSpacing:".05em" }}>Client</th>
+                <th style={{ textAlign:"left", padding:"6px 8px", color:DIM, fontWeight:600, fontSize:8, textTransform:"uppercase", letterSpacing:".05em" }}>Carrier</th>
+                <th style={{ textAlign:"left", padding:"6px 8px", color:DIM, fontWeight:600, fontSize:8, textTransform:"uppercase", letterSpacing:".05em" }}>Type</th>
+                <th style={{ textAlign:"left", padding:"6px 8px", color:DIM, fontWeight:600, fontSize:8, textTransform:"uppercase", letterSpacing:".05em" }}>Policy #</th>
+                <th style={{ textAlign:"right", padding:"6px 8px", color:DIM, fontWeight:600, fontSize:8, textTransform:"uppercase", letterSpacing:".05em" }}>Premium</th>
+                <th style={{ textAlign:"center", padding:"6px 8px", color:DIM, fontWeight:600, fontSize:8, textTransform:"uppercase", letterSpacing:".05em" }}>Effective</th>
+                <th style={{ textAlign:"center", padding:"6px 8px", color:DIM, fontWeight:600, fontSize:8, textTransform:"uppercase", letterSpacing:".05em" }}>Expires</th>
+                <th style={{ textAlign:"center", padding:"6px 8px", color:DIM, fontWeight:600, fontSize:8, textTransform:"uppercase", letterSpacing:".05em" }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && <tr><td colSpan={8} style={{ padding:20, textAlign:"center", color:DIM, fontSize:9 }}>Loading...</td></tr>}
+              {!loading && policies.map(p => {
+                const statusColor = p.status==="active"?GREEN:p.status==="expired"?RED:p.status==="cancelled"?"#f59e0b":DIM;
+                return (
+                  <tr key={p.id} style={{ borderBottom:`1px solid ${BORDER}`, transition:"background .15s", cursor:"pointer" }}
+                    onMouseEnter={e=>e.currentTarget.style.background="rgba(212,175,55,.05)"}
+                    onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                    <td style={{ padding:"8px", color:BRIGHT, fontWeight:600 }}>{p.client_name}</td>
+                    <td style={{ padding:"8px", color:TXT }}>{p.carrier_name||p.carrier||"—"}</td>
+                    <td style={{ padding:"8px" }}><span style={{ background:"rgba(212,175,55,.12)", color:GOLD, padding:"2px 6px", borderRadius:3, fontSize:8, fontWeight:600 }}>{(p.line_of_business||p.policy_type||"—").replace(/_/g," ")}</span></td>
+                    <td style={{ padding:"8px", color:DIM, fontFamily:"monospace", fontSize:8 }}>{p.policy_number||"—"}</td>
+                    <td style={{ padding:"8px", textAlign:"right", color:GOLD, fontWeight:700 }}>{fmtMoney(p.premium)}</td>
+                    <td style={{ padding:"8px", textAlign:"center", color:DIM, fontSize:8 }}>{p.effective_date?new Date(p.effective_date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"}):"—"}</td>
+                    <td style={{ padding:"8px", textAlign:"center", color:DIM, fontSize:8 }}>{p.expiration_date?new Date(p.expiration_date).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"2-digit"}):"—"}</td>
+                    <td style={{ padding:"8px", textAlign:"center" }}><span style={{ background:statusColor+"22", color:statusColor, padding:"2px 8px", borderRadius:10, fontSize:8, fontWeight:600, textTransform:"capitalize" }}>{p.status||"—"}</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
