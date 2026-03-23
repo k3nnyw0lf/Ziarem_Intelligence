@@ -109,8 +109,8 @@ const defaultScenario = {
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
 const S = {
-  root:{ display:"flex", height:"100%", background:BG, color:TXT, fontFamily:"'Inter','Segoe UI',sans-serif", fontSize:10, letterSpacing:".05em", position:"relative", overflow:"hidden" },
-  leftPanel:{ width:"40%", minWidth:340, maxWidth:520, borderRight:`1px solid ${CARD_BORDER}`, overflowY:"auto", padding:"12px 14px", flexShrink:0 },
+  root:{ display:"flex", height:"calc(100vh - 90px)", background:BG, color:TXT, fontFamily:"'Inter','Segoe UI',sans-serif", fontSize:10, letterSpacing:".05em", position:"relative", overflow:"hidden" },
+  leftPanel:{ width:"40%", minWidth:340, maxWidth:520, borderRight:`1px solid ${CARD_BORDER}`, overflowY:"auto", padding:"12px 14px", flexShrink:0, maxHeight:"calc(100vh - 90px)" },
   rightPanel:{ flex:1, overflowY:"auto", padding:"12px 16px" },
   sectionTitle:{ fontSize:9, fontWeight:700, textTransform:"uppercase", letterSpacing:".1em", color:GOLD, marginBottom:8, marginTop:14, display:"flex", alignItems:"center", gap:6 },
   card:{ background:CARD_BG, border:`1px solid ${CARD_BORDER}`, borderRadius:6, padding:"10px 12px", marginBottom:8 },
