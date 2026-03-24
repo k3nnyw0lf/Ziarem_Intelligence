@@ -3763,6 +3763,199 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
   );
 }
 
+// ── TOOLS HUB VIEW ──────────────────────────────────────────────────────────
+function ToolsHubView({ showToast, contacts }) {
+  const [csvStatus, setCsvStatus] = useState(null);
+  const [importedCount, setImportedCount] = useState(0);
+  const [showCampaignModal, setShowCampaignModal] = useState(false);
+  const [campaignType, setCampaignType] = useState("cold_call");
+  const fileRef = useRef(null);
+
+  const mlsTools = [
+    { name:"Remine", url:"https://remine.com", icon:"\uD83D\uDD0D", desc:"Property intel, owner data, equity, prospect lists" },
+    { name:"RPR (Realtors Property Resource)", url:"https://narrpr.com", icon:"\uD83D\uDCCA", desc:"Property reports, valuations, market data" },
+    { name:"Forewarn", url:"https://app.forewarn.com", icon:"\uD83D\uDEE1\uFE0F", desc:"Background checks, identity verification" },
+    { name:"Form Simplicity", url:"https://formsimplicity.com", icon:"\uD83D\uDCDD", desc:"Florida RE contracts & e-signatures" },
+    { name:"RentSpree", url:"https://app.rentspree.com", icon:"\uD83C\uDFE0", desc:"Tenant screening & rental applications" },
+    { name:"Cloud CMA", url:"https://cloudcma.com", icon:"\uD83D\uDCC8", desc:"Comparative market analysis reports" },
+    { name:"SunStats", url:"https://sunstats.floridarealtors.org", icon:"\uD83D\uDCC9", desc:"Florida market statistics" },
+    { name:"Matrix (Miami MLS)", url:"https://matrix.miamire.com", icon:"\uD83C\uDFE2", desc:"MLS listing search" },
+    { name:"Stellar Central", url:"https://stellarmls.com", icon:"\u2B50", desc:"Stellar MLS portal" },
+    { name:"MLS-Touch", url:"https://mls-touch.com", icon:"\uD83D\uDCF1", desc:"Mobile MLS search" },
+    { name:"Homesnap", url:"https://homesnap.com", icon:"\uD83D\uDCF8", desc:"Mobile MLS + agent messaging" },
+    { name:"AgentNet (First American)", url:"https://login.firstam.com", icon:"\uD83D\uDCDC", desc:"Title search & document retrieval" },
+    { name:"Loansifter", url:"https://loansifternow.optimalblue.com", icon:"\uD83C\uDFE6", desc:"Mortgage pricing engine" },
+    { name:"NMLS", url:"https://nmlsconsumeraccess.org", icon:"\uD83D\uDD11", desc:"NMLS licensing portal" },
+  ];
+
+  const ziaremTools = [
+    { name:"Market Pulse TV", url:"https://sfelhasepvaoianyuvxe.supabase.co/functions/v1/market-pulse", icon:"\uD83D\uDCFA", desc:"Live office dashboard" },
+    { name:"Digital Business Card", url:"https://sfelhasepvaoianyuvxe.supabase.co/functions/v1/digital-card", icon:"\uD83D\uDCB3", desc:"Shareable digital card" },
+    { name:"Booking Page", url:"https://sfelhasepvaoianyuvxe.supabase.co/functions/v1/booking-engine", icon:"\uD83D\uDCC5", desc:"Client appointment booking" },
+    { name:"Client Portal", url:"https://sfelhasepvaoianyuvxe.supabase.co/functions/v1/client-portal", icon:"\uD83C\uDF10", desc:"Borrower application portal" },
+    { name:"Mortgage Calculator", url:"https://sfelhasepvaoianyuvxe.supabase.co/functions/v1/mortgage-widget", icon:"\uD83E\uDDEE", desc:"Embeddable mortgage calc" },
+    { name:"Support Center", url:"https://sfelhasepvaoianyuvxe.supabase.co/functions/v1/support-center", icon:"\uD83C\uDFA7", desc:"Customer service portal" },
+    { name:"Ziarem Homepage", url:"https://sfelhasepvaoianyuvxe.supabase.co/functions/v1/ziarem-home", icon:"\uD83C\uDFE0", desc:"Public homepage & marketplace" },
+    { name:"NMLS Reports", url:"https://sfelhasepvaoianyuvxe.supabase.co/functions/v1/nmls-reports", icon:"\uD83D\uDCCB", desc:"MCR, LAR, production reports" },
+  ];
+
+  const handleCsvUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvStatus("importing");
+    setImportedCount(0);
+    const text = await file.text();
+    const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+    if (lines.length < 2) { setCsvStatus("error"); showToast("CSV has no data rows"); return; }
+    const headers = lines[0].split(",").map(h => h.trim().toLowerCase().replace(/"/g,""));
+    const nameIdx = headers.findIndex(h => h.includes("name"));
+    const emailIdx = headers.findIndex(h => h.includes("email"));
+    const phoneIdx = headers.findIndex(h => h.includes("phone"));
+    const addrIdx = headers.findIndex(h => h.includes("address"));
+    let count = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(",").map(c => c.trim().replace(/"/g,""));
+      const name = nameIdx >= 0 ? cols[nameIdx] : "";
+      const email = emailIdx >= 0 ? cols[emailIdx] : "";
+      const phone = phoneIdx >= 0 ? cols[phoneIdx] : "";
+      const address = addrIdx >= 0 ? cols[addrIdx] : "";
+      if (!name && !email) continue;
+      const result = await sb("vault_contacts", "POST", {
+        name: name || "Unknown",
+        email: email || null,
+        phone: phone || null,
+        address: address || null,
+        source: "csv_import",
+        status: "new",
+      });
+      if (result) count++;
+    }
+    setImportedCount(count);
+    setCsvStatus("done");
+    showToast(`Imported ${count} contacts`);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const handleSendToPaola = () => {
+    setShowCampaignModal(true);
+  };
+
+  const launchCampaign = async () => {
+    showToast(`Launching ${campaignType.replace("_"," ")} campaign for ${importedCount} contacts`);
+    setShowCampaignModal(false);
+  };
+
+  const cardStyle = {
+    background: "#12121e",
+    borderLeft: "3px solid #d4af37",
+    borderRadius: 8,
+    padding: 16,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+    transition: "transform .2s, box-shadow .2s",
+    cursor: "default",
+    position: "relative",
+  };
+
+  const gridStyle = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+    gap: 14,
+  };
+
+  const sectionHeader = { fontSize: 13, fontWeight: 700, color: "#d4af37", letterSpacing: ".08em", textTransform: "uppercase", margin: "24px 0 12px", borderBottom: "1px solid #1a1a2e", paddingBottom: 6 };
+
+  return (
+    <div style={{ padding: 24, maxWidth: 1200, margin: "0 auto" }}>
+      <div style={{ fontSize: 22, fontWeight: 700, color: "#e0dcd0", marginBottom: 4 }}>Tools Hub</div>
+      <div style={{ fontSize: 12, color: "#666", marginBottom: 20 }}>Quick access to all MLS, partner, and Ziarem platform tools</div>
+
+      <div style={sectionHeader}>MLS & Partner Tools</div>
+      <div style={gridStyle}>
+        {mlsTools.map(t => (
+          <div key={t.name} style={cardStyle}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(212,175,55,.15)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
+            <div style={{ fontSize: 22 }}>{t.icon}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#e0dcd0" }}>{t.name}</div>
+            <div style={{ fontSize: 10, color: "#666", lineHeight: 1.4, flex: 1 }}>{t.desc}</div>
+            <button onClick={() => window.open(t.url, "_blank")}
+              style={{ background: "none", border: "1px solid rgba(212,175,55,.4)", color: "#d4af37", fontFamily: "inherit", fontSize: 10, padding: "5px 12px", borderRadius: 4, cursor: "pointer", alignSelf: "flex-start", letterSpacing: ".05em" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(212,175,55,.12)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "none"; }}>
+              Open &rarr;
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div style={sectionHeader}>Ziarem Platform Tools</div>
+      <div style={gridStyle}>
+        {ziaremTools.map(t => (
+          <div key={t.name} style={cardStyle}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 4px 20px rgba(212,175,55,.15)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
+            <div style={{ fontSize: 22 }}>{t.icon}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#e0dcd0" }}>{t.name}</div>
+            <div style={{ fontSize: 10, color: "#666", lineHeight: 1.4, flex: 1 }}>{t.desc}</div>
+            <button onClick={() => window.open(t.url, "_blank")}
+              style={{ background: "none", border: "1px solid rgba(212,175,55,.4)", color: "#d4af37", fontFamily: "inherit", fontSize: 10, padding: "5px 12px", borderRadius: 4, cursor: "pointer", alignSelf: "flex-start", letterSpacing: ".05em" }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(212,175,55,.12)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "none"; }}>
+              Open &rarr;
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div style={sectionHeader}>Import Leads</div>
+      <div style={{ ...cardStyle, maxWidth: 420 }}>
+        <div style={{ fontSize: 22 }}>{"\uD83D\uDCC2"}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#e0dcd0" }}>CSV Lead Import</div>
+        <div style={{ fontSize: 10, color: "#666", lineHeight: 1.4 }}>Upload a .csv file with name, email, phone, address columns</div>
+        <input ref={fileRef} type="file" accept=".csv" onChange={handleCsvUpload}
+          style={{ fontSize: 10, color: "#888", marginTop: 4 }} />
+        {csvStatus === "importing" && <div style={{ fontSize: 11, color: "#d4af37" }}>Importing...</div>}
+        {csvStatus === "done" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
+            <span style={{ fontSize: 11, color: "#4ade80" }}>Imported {importedCount} contacts</span>
+            <button onClick={handleSendToPaola}
+              style={{ background: "rgba(212,175,55,.15)", border: "1px solid rgba(212,175,55,.4)", color: "#d4af37", fontFamily: "inherit", fontSize: 10, padding: "4px 12px", borderRadius: 4, cursor: "pointer" }}>
+              Send to Paola
+            </button>
+          </div>
+        )}
+        {csvStatus === "error" && <div style={{ fontSize: 11, color: "#f87171" }}>Import failed</div>}
+      </div>
+
+      {showCampaignModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999 }}
+          onClick={() => setShowCampaignModal(false)}>
+          <div style={{ background: "#12121e", border: "1px solid #1a1a2e", borderRadius: 10, padding: 28, minWidth: 320 }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#e0dcd0", marginBottom: 14 }}>Launch Campaign</div>
+            <div style={{ fontSize: 10, color: "#666", marginBottom: 8 }}>Campaign type for {importedCount} imported contacts</div>
+            <select value={campaignType} onChange={e => setCampaignType(e.target.value)}
+              style={{ width: "100%", padding: "8px 10px", background: "#0a0a14", border: "1px solid #1a1a2e", color: "#e0dcd0", borderRadius: 4, fontFamily: "inherit", fontSize: 12, marginBottom: 16 }}>
+              <option value="cold_call">Cold Call</option>
+              <option value="email_drip">Email Drip</option>
+              <option value="sms_blast">SMS Blast</option>
+              <option value="whatsapp">WhatsApp Outreach</option>
+            </select>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setShowCampaignModal(false)}
+                style={{ background: "none", border: "1px solid #1a1a2e", color: "#666", fontFamily: "inherit", fontSize: 11, padding: "6px 16px", borderRadius: 4, cursor: "pointer" }}>Cancel</button>
+              <button onClick={launchCampaign}
+                style={{ background: "rgba(212,175,55,.15)", border: "1px solid rgba(212,175,55,.5)", color: "#d4af37", fontFamily: "inherit", fontSize: 11, padding: "6px 16px", borderRadius: 4, cursor: "pointer", fontWeight: 600 }}>Launch</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── TOOLBOX VIEW ────────────────────────────────────────────────────────────
 function ToolboxView({ showToast, contacts }) {
   const [activeTool, setActiveTool] = useState("weather");
@@ -9661,6 +9854,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
       {id:"inbox",     icon:"✉️", label:"Inbox",     badge:emails.filter(e=>!e.is_read).length, admin:true},
       {id:"callcenter",icon:"📞", label:"Calls",     badge:unreadNotifs, admin:false},
       {id:"messages",  icon:"💬", label:"Messages",  badge:unreadMsgs, admin:false},
+      {id:"toolshub",  icon:"\uD83D\uDD27", label:"Tools",    badge:0, admin:true},
     ]},
     { id:"sales", label:"SALES & CRM", items:[
       {id:"pricing",   icon:"🏦", label:"Mortgage POS", badge:0, admin:true},
@@ -10405,6 +10599,8 @@ function EmailVault({ user, teamProfile, onSignOut }) {
         {view==="social"&&<SocialAgentsView sb={sb} n8nPost={n8nPost} user={user} KEN_ID="b7a67688-73f1-4f4b-9745-f357e81affa3" />}
 
         {view==="toolbox"&&<ToolboxView showToast={showToast} contacts={contacts} />}
+
+        {view==="toolshub"&&<ToolsHubView showToast={showToast} contacts={contacts} />}
 
         {view==="settings"&&<SettingsView user={user} teamProfile={teamProfile} isAdmin={isAdmin} spend={spend} showToast={showToast} />}
         </div>{/* end main content */}
