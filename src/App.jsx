@@ -6169,9 +6169,9 @@ export default function EmailVaultApp() {
   };
 
   if (checking) return <div style={{minHeight:"100vh",background:"#06060e",display:"flex",alignItems:"center",justifyContent:"center",color:"#333",fontSize:12,fontFamily:"'Inter',sans-serif"}}>Loading…</div>;
-  if (session) return <ErrorBoundary><EmailVault user={session.user} teamProfile={teamProfile} onSignOut={handleLogout} /></ErrorBoundary>;
-  if (page==="login") return <LoginScreen onLogin={handleLogin} onBack={()=>setPage("landing")} />;
-  return <LandingPage onGoLogin={()=>setPage("login")} />;
+  if (page==="app" && session) return <ErrorBoundary><EmailVault user={session.user} teamProfile={teamProfile} onSignOut={handleLogout} /></ErrorBoundary>;
+  if (page==="login") return <LoginScreen onLogin={(sess)=>{handleLogin(sess);setPage("app");}} onBack={()=>setPage("landing")} />;
+  return <LandingPage onGoLogin={()=>{ if(session){setPage("app");} else {setPage("login");} }} />;
 }
 
 // ─── SETTINGS VIEW (Team + Email Config + Status) ────────────────────────────

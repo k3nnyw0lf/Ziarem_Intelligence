@@ -104,21 +104,27 @@ async function sbDelete(table, id) {
 
 // ─── STYLE CONSTANTS ──────────────────────────────────────────────────────────
 const GOLD = "#d4af37";
+const GOLD_HOVER = "#e5c348";
 const BG = "#0a0a12";
-const CARD = "#111118";
-const BORDER = "#1a1a24";
-const INPUT_BG = "#08080f";
-const INPUT_BD = "#1e1e28";
-const TXT = "#ccc";
-const DIM = "#777";
-const BRIGHT = "#eee";
-const GREEN = "#22c55e";
+const CARD = "#12121e";
+const BORDER = "rgba(212,175,55,0.08)";
+const BORDER_HOVER = "rgba(212,175,55,0.2)";
+const INPUT_BG = "#0a0a12";
+const INPUT_BD = "rgba(255,255,255,0.08)";
+const TXT = "#f0ece4";
+const DIM = "#8a8578";
+const BRIGHT = "#ffffff";
+const GREEN = "#10b981";
+const SUCCESS = "#10b981";
 const RED = "#ef4444";
-const BLUE = "#6366f1";
-const YELLOW = "#eab308";
+const DANGER = "#ef4444";
+const BLUE = "#3b82f6";
+const INFO = "#3b82f6";
+const YELLOW = "#f59e0b";
+const WARNING = "#f59e0b";
 const ORANGE = "#f97316";
 const PURPLE = "#8b5cf6";
-const CARD_HOVER = "#161620";
+const CARD_HOVER = "#1a1a2e";
 
 const STAGES = ["Lead","Pre-Qual","Application","Processing","Underwriting","Clear to Close","Closing","Funded","Denied"];
 
@@ -145,14 +151,14 @@ const HOUSING_TYPES = ["Own","Rent","Living Rent Free"];
 const MARITAL_STATUSES = ["Single","Married","Separated","Divorced","Widowed"];
 
 // ─── STYLE HELPERS ────────────────────────────────────────────────────────────
-const inputS = { background:INPUT_BG, border:`1px solid ${INPUT_BD}`, color:TXT, padding:"6px 10px", fontSize:10, borderRadius:4, outline:"none", width:"100%", boxSizing:"border-box", letterSpacing:".05em" };
+const inputS = { background:INPUT_BG, border:`1px solid ${INPUT_BD}`, color:TXT, padding:"10px 14px", fontSize:12, borderRadius:8, outline:"none", width:"100%", boxSizing:"border-box", letterSpacing:".02em", transition:"all 0.15s ease", lineHeight:1.5 };
 const selectS = { ...inputS, appearance:"none", cursor:"pointer" };
-const labelS = { fontSize:8, color:DIM, letterSpacing:".08em", textTransform:"uppercase", marginBottom:2, display:"block" };
-const cardS = { background:CARD, border:`1px solid ${BORDER}`, borderRadius:6, padding:12 };
-const btnS = { background:GOLD, color:"#000", border:"none", borderRadius:4, padding:"6px 14px", fontSize:10, fontWeight:600, cursor:"pointer", letterSpacing:".05em" };
-const btnOutS = { ...btnS, background:"transparent", border:`1px solid ${GOLD}`, color:GOLD };
-const btnSmS = { ...btnS, padding:"4px 10px", fontSize:9 };
-const badgeS = (bg) => ({ background:bg+"22", color:bg, padding:"2px 6px", borderRadius:3, fontSize:8, fontWeight:600, letterSpacing:".04em" });
+const labelS = { fontSize:11, color:GOLD, letterSpacing:".1em", textTransform:"uppercase", marginBottom:6, display:"block", fontWeight:600 };
+const cardS = { background:CARD, border:`1px solid ${BORDER}`, borderRadius:12, padding:20, boxShadow:"0 4px 24px rgba(0,0,0,0.3)", transition:"all 0.2s ease" };
+const btnS = { background:GOLD, color:"#0a0a12", border:"none", borderRadius:8, padding:"10px 20px", fontSize:12, fontWeight:600, cursor:"pointer", letterSpacing:".03em", transition:"all 0.2s ease" };
+const btnOutS = { ...btnS, background:"transparent", border:`1px solid rgba(212,175,55,0.3)`, color:GOLD };
+const btnSmS = { ...btnS, padding:"6px 14px", fontSize:11 };
+const badgeS = (bg) => ({ background:bg+"22", color:bg, padding:"3px 10px", borderRadius:20, fontSize:10, fontWeight:600, letterSpacing:".04em" });
 
 // ─── EDGE FUNCTION HELPER ────────────────────────────────────────────────────
 const EDGE_URL = SB_URL + "/functions/v1";
@@ -280,66 +286,66 @@ export default function MortgagePOSView({ user, contacts, showToast, initialTab 
   return (
     <div style={{ background:BG, minHeight:"100vh", color:TXT, fontFamily:"'Inter','Segoe UI',system-ui,sans-serif" }}>
       {/* ── BUSINESS SELECTOR BAR ────────────────────────────────────────── */}
-      <div style={{ display:"flex", gap:4, background:"#0a0a0f", padding:"8px 16px", borderBottom:`1px solid ${BORDER}`, overflowX:"auto" }}>
+      <div style={{ display:"flex", gap:8, background:"rgba(10,10,18,0.95)", padding:"12px 24px", borderBottom:`1px solid ${BORDER}`, overflowX:"auto", backdropFilter:"blur(12px)" }}>
         {BUSINESSES.map(b=>(
           <div key={b.id} onClick={()=>{ setActiveBiz(b.id); }} style={{
-            padding:"6px 14px", cursor:"pointer", fontSize:11, fontWeight:activeBiz===b.id?700:500,
-            color:activeBiz===b.id?"#fff":DIM, background:activeBiz===b.id?b.color+"22":"transparent",
-            border:`1px solid ${activeBiz===b.id?b.color:BORDER}`, borderRadius:20,
-            display:"flex", alignItems:"center", gap:6, whiteSpace:"nowrap", transition:"all .2s",
-            userSelect:"none"
+            padding:"8px 18px", cursor:"pointer", fontSize:12, fontWeight:activeBiz===b.id?700:500,
+            color:activeBiz===b.id?BRIGHT:DIM, background:activeBiz===b.id?b.color+"18":"transparent",
+            border:`1px solid ${activeBiz===b.id?b.color+"55":BORDER}`, borderRadius:24,
+            display:"flex", alignItems:"center", gap:8, whiteSpace:"nowrap", transition:"all .2s",
+            userSelect:"none", letterSpacing:".03em"
           }}>
-            <span style={{ fontSize:13 }}>{b.icon}</span>
+            <span style={{ fontSize:14 }}>{b.icon}</span>
             <span>{b.label}</span>
-            {bizStats[b.id]>0 && <span style={{ background:b.color+"33", color:b.color, fontSize:10, padding:"1px 6px", borderRadius:8, fontWeight:700 }}>{bizStats[b.id]}</span>}
+            {bizStats[b.id]>0 && <span style={{ background:b.color+"22", color:b.color, fontSize:11, padding:"2px 8px", borderRadius:12, fontWeight:700 }}>{bizStats[b.id]}</span>}
           </div>
         ))}
       </div>
       {/* ── TAB NAV ─────────────────────────────────────────────────────── */}
-      <div style={{ display:"flex", gap:0, borderBottom:`1px solid ${BORDER}`, background:CARD, padding:"0 16px", position:"sticky", top:0, zIndex:50, alignItems:"center" }}>
-        <div style={{ display:"flex", flex:1 }}>
+      <div style={{ display:"flex", gap:0, borderBottom:`1px solid ${BORDER}`, background:CARD, padding:"0 24px", position:"sticky", top:0, zIndex:50, alignItems:"center", boxShadow:"0 2px 12px rgba(0,0,0,0.2)" }}>
+        <div style={{ display:"flex", flex:1, gap:24 }}>
           {TABS.map((t,i)=>(
             <div key={i} onClick={()=>setTab(i)} style={{
-              padding:"10px 18px", cursor:"pointer", fontSize:10, fontWeight:tab===i?700:500,
+              padding:"14px 4px", cursor:"pointer", fontSize:11, fontWeight:tab===i?600:500,
               color:tab===i?(activeBizConfig.color||GOLD):DIM, borderBottom:tab===i?`2px solid ${activeBizConfig.color||GOLD}`:"2px solid transparent",
-              letterSpacing:".06em", transition:"all .2s", display:"flex", alignItems:"center", gap:6,
-              userSelect:"none"
+              letterSpacing:".08em", transition:"all .2s", display:"flex", alignItems:"center", gap:8,
+              userSelect:"none", textTransform:"uppercase"
             }}>
-              <span style={{ fontSize:13 }}>{t.icon}</span>
-              <span style={{ textTransform:"uppercase" }}>{t.label}</span>
+              <span style={{ fontSize:14 }}>{t.icon}</span>
+              <span>{t.label}</span>
             </div>
           ))}
         </div>
         {/* Notification Bell */}
         <div style={{ position:"relative" }}>
           <div onClick={()=>setShowNotifications(!showNotifications)} style={{
-            cursor:"pointer", fontSize:16, padding:"6px 10px", borderRadius:6, transition:"all .2s",
-            background:showNotifications?GOLD+"22":"transparent", position:"relative"
+            cursor:"pointer", fontSize:18, padding:"8px 12px", borderRadius:8, transition:"all .2s",
+            background:showNotifications?GOLD+"18":"transparent", position:"relative"
           }}>
             {"\uD83D\uDD14"}
             {notifications.length>0 && (
-              <span style={{ position:"absolute", top:2, right:4, background:RED, color:"#fff", fontSize:7, fontWeight:700,
-                width:14, height:14, borderRadius:7, display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <span style={{ position:"absolute", top:4, right:6, background:RED, color:"#fff", fontSize:9, fontWeight:700,
+                width:18, height:18, borderRadius:9, display:"flex", alignItems:"center", justifyContent:"center" }}>
                 {notifications.length > 9 ? "9+" : notifications.length}
               </span>
             )}
           </div>
           {showNotifications && (
-            <div style={{ position:"absolute", right:0, top:"100%", marginTop:4, width:320, maxHeight:360, overflowY:"auto",
-              background:CARD, border:`1px solid ${BORDER}`, borderRadius:8, padding:8, zIndex:100,
-              boxShadow:"0 8px 32px rgba(0,0,0,.6)" }}>
-              <div style={{ fontSize:9, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase", marginBottom:8, padding:"4px 4px 6px", borderBottom:`1px solid ${BORDER}` }}>
+            <div style={{ position:"absolute", right:0, top:"100%", marginTop:8, width:360, maxHeight:400, overflowY:"auto",
+              background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:12, zIndex:100,
+              boxShadow:"0 16px 48px rgba(0,0,0,.6)", backdropFilter:"blur(8px)" }}>
+              <div style={{ fontSize:11, fontWeight:600, color:GOLD, letterSpacing:".1em", textTransform:"uppercase", marginBottom:12, padding:"6px 8px 10px", borderBottom:`1px solid ${BORDER}` }}>
                 Notifications ({notifications.length})
               </div>
-              {notifications.length===0 && <div style={{ fontSize:9, color:DIM, padding:12, textAlign:"center" }}>All caught up!</div>}
+              {notifications.length===0 && <div style={{ fontSize:12, color:DIM, padding:20, textAlign:"center" }}>All caught up!</div>}
               {notifications.map((n,i)=>(
                 <div key={i} onClick={()=>{const loan=loans.find(l=>l.id===n.loanId);if(loan){openLoanDetail(loan);setShowNotifications(false);}}}
-                  style={{ display:"flex", gap:8, alignItems:"center", padding:"6px 4px", borderBottom:`1px solid ${BORDER}22`, cursor:"pointer",
-                    borderRadius:4, transition:"background .15s" }}
-                  onMouseEnter={e=>e.currentTarget.style.background=BORDER+"44"}
+                  style={{ display:"flex", gap:10, alignItems:"center", padding:"10px 8px", borderBottom:`1px solid ${BORDER}`, cursor:"pointer",
+                    borderRadius:8, transition:"background .15s" }}
+                  onMouseEnter={e=>e.currentTarget.style.background=CARD_HOVER}
                   onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                  <span style={{ fontSize:12 }}>{n.icon}</span>
-                  <span style={{ fontSize:9, color:n.color, flex:1 }}>{n.msg}</span>
+                  <span style={{ fontSize:14 }}>{n.icon}</span>
+                  <span style={{ fontSize:12, color:n.color, flex:1, lineHeight:1.4 }}>{n.msg}</span>
                 </div>
               ))}
             </div>
@@ -348,7 +354,7 @@ export default function MortgagePOSView({ user, contacts, showToast, initialTab 
       </div>
 
       {/* ── TAB CONTENT ─────────────────────────────────────────────────── */}
-      <div style={{ padding:16 }}>
+      <div style={{ padding:24 }}>
         {tab===0 && <LoanPricingView user={user} contacts={contacts} showToast={showToast} />}
         {tab===1 && <PipelineTab loans={loans} allLoans={loans} loading={loading} reload={loadLoans} openNewApp={openNewApp} openLoanDetail={openLoanDetail} showToast={showToast} activeBiz={activeBiz} activeBizConfig={activeBizConfig} activeStages={activeStages} activeServices={activeServices} />}
         {tab===2 && <ApplicationTab prefill={appForm} user={user} showToast={showToast} reload={loadLoans} setTab={setTab} selectedLoan={selectedLoan} setSelectedLoan={setSelectedLoan} />}
@@ -361,20 +367,20 @@ export default function MortgagePOSView({ user, contacts, showToast, initialTab 
       </div>
 
       {/* ── QUICK ACTIONS FLOATING BAR ────────────────────────────────── */}
-      <div style={{ position:"fixed", bottom:20, right:20, display:"flex", gap:8, zIndex:80 }}>
-        <button onClick={()=>openNewApp(null)} style={{ ...btnS, borderRadius:24, padding:"10px 18px", fontSize:10, boxShadow:"0 4px 20px rgba(212,175,55,.35)", display:"flex", alignItems:"center", gap:6, transition:"transform .15s, box-shadow .15s" }}
-          onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 6px 28px rgba(212,175,55,.5)";}}
-          onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 4px 20px rgba(212,175,55,.35)";}}>
+      <div style={{ position:"fixed", bottom:24, right:24, display:"flex", gap:10, zIndex:80 }}>
+        <button onClick={()=>openNewApp(null)} style={{ ...btnS, borderRadius:28, padding:"12px 24px", fontSize:12, boxShadow:"0 8px 32px rgba(212,175,55,.35)", display:"flex", alignItems:"center", gap:8, transition:"transform .2s, box-shadow .2s" }}
+          onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 12px 40px rgba(212,175,55,.5)";}}
+          onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 8px 32px rgba(212,175,55,.35)";}}>
           + New Deal
         </button>
-        <button onClick={()=>setTab(0)} style={{ ...btnOutS, borderRadius:24, padding:"10px 14px", fontSize:10, boxShadow:"0 4px 16px rgba(0,0,0,.4)", background:"#111118", display:"flex", alignItems:"center", gap:6 }}
+        <button onClick={()=>setTab(0)} style={{ ...btnOutS, borderRadius:28, padding:"12px 20px", fontSize:12, boxShadow:"0 8px 24px rgba(0,0,0,.4)", background:CARD, display:"flex", alignItems:"center", gap:8 }}
           onMouseEnter={e=>e.currentTarget.style.background=CARD_HOVER}
-          onMouseLeave={e=>e.currentTarget.style.background="#111118"}>
+          onMouseLeave={e=>e.currentTarget.style.background=CARD}>
           {"\u26A1"} Quick Quote
         </button>
-        <button onClick={()=>exportLoansCSV(loans)} style={{ ...btnOutS, borderRadius:24, padding:"10px 14px", fontSize:10, boxShadow:"0 4px 16px rgba(0,0,0,.4)", background:"#111118", display:"flex", alignItems:"center", gap:6 }}
+        <button onClick={()=>exportLoansCSV(loans)} style={{ ...btnOutS, borderRadius:28, padding:"12px 20px", fontSize:12, boxShadow:"0 8px 24px rgba(0,0,0,.4)", background:CARD, display:"flex", alignItems:"center", gap:8 }}
           onMouseEnter={e=>e.currentTarget.style.background=CARD_HOVER}
-          onMouseLeave={e=>e.currentTarget.style.background="#111118"}>
+          onMouseLeave={e=>e.currentTarget.style.background=CARD}>
           {"\uD83D\uDCE5"} Export CSV
         </button>
       </div>
@@ -384,16 +390,19 @@ export default function MortgagePOSView({ user, contacts, showToast, initialTab 
 
 
 // ─── MODAL OVERLAY ────────────────────────────────────────────────────────────
-function Modal({ open, onClose, title, children, width=520 }) {
+function Modal({ open, onClose, title, children, width=600 }) {
   if (!open) return null;
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.7)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.7)", backdropFilter:"blur(8px)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}
       onClick={onClose}>
-      <div style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:8, width, maxWidth:"95vw", maxHeight:"85vh", overflow:"auto", padding:20 }}
+      <div style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, width, maxWidth:"95vw", maxHeight:"85vh", overflow:"auto", padding:32, boxShadow:"0 24px 48px rgba(0,0,0,0.5)" }}
         onClick={e=>e.stopPropagation()}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-          <div style={{ fontSize:11, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase" }}>{title}</div>
-          <div onClick={onClose} style={{ cursor:"pointer", fontSize:14, color:DIM, lineHeight:1 }}>✕</div>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
+          <div style={{ fontSize:18, fontWeight:600, color:BRIGHT }}>{title}</div>
+          <div onClick={onClose} style={{ cursor:"pointer", fontSize:18, color:DIM, lineHeight:1, width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:8, transition:"all .15s" }}
+            onMouseEnter={e=>{e.currentTarget.style.background=CARD_HOVER;e.currentTarget.style.color=BRIGHT;}}
+            onMouseLeave={e=>{e.currentTarget.style.background="transparent";e.currentTarget.style.color=DIM;}}>
+            ✕</div>
         </div>
         {children}
       </div>
@@ -405,15 +414,15 @@ function Modal({ open, onClose, title, children, width=520 }) {
 function ConfirmDialog({ open, onClose, onConfirm, title, message }) {
   if (!open) return null;
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.7)", zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,.7)", backdropFilter:"blur(8px)", zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}
       onClick={onClose}>
-      <div style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:8, width:360, padding:20 }}
+      <div style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, width:420, padding:32, boxShadow:"0 24px 48px rgba(0,0,0,0.5)" }}
         onClick={e=>e.stopPropagation()}>
-        <div style={{ fontSize:11, fontWeight:700, color:RED, marginBottom:8, letterSpacing:".06em" }}>{title||"Confirm"}</div>
-        <div style={{ fontSize:10, color:TXT, marginBottom:16 }}>{message}</div>
-        <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+        <div style={{ fontSize:16, fontWeight:600, color:RED, marginBottom:12 }}>{title||"Confirm"}</div>
+        <div style={{ fontSize:13, color:TXT, marginBottom:24, lineHeight:1.5 }}>{message}</div>
+        <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
           <button onClick={onClose} style={btnOutS}>Cancel</button>
-          <button onClick={onConfirm} style={{ ...btnS, background:RED }}>Confirm</button>
+          <button onClick={onConfirm} style={{ ...btnS, background:RED, color:BRIGHT }}>Confirm</button>
         </div>
       </div>
     </div>
@@ -432,7 +441,7 @@ function LoanQuickView({ loan, open, onClose, onEdit, onStageChange, showToast }
   return (
     <Modal open={open} onClose={onClose} title={`${loan.first_name||""} ${loan.last_name||""}`} width={600}>
       {/* Quick stats row */}
-      <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
         <span style={badgeS(loan.stage==="Funded"?GREEN:loan.stage==="Denied"?RED:BLUE)}>{loan.stage}</span>
         <span style={badgeS(GOLD)}>{fmtMoney(loan.loan_amount)}</span>
         {loan.fico && <span style={badgeS(loan.fico>=740?GREEN:loan.fico>=680?YELLOW:RED)}>FICO {loan.fico}</span>}
@@ -441,35 +450,35 @@ function LoanQuickView({ loan, open, onClose, onEdit, onStageChange, showToast }
       </div>
 
       {/* Info grid */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6, marginBottom:12 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16 }}>
         {[
-          ["Property", loan.property_address||"—"],
-          ["Lender", loan.lender||"—"],
-          ["Program", loan.loan_program||"—"],
-          ["Purpose", loan.loan_purpose||"—"],
-          ["Rate", loan.rate ? loan.rate+"%" : "—"],
-          ["LO", loan.loan_officer||"—"],
-          ["Phone", loan.phone||"—"],
-          ["Email", loan.email||"—"],
+          ["Property", loan.property_address||"\u2014"],
+          ["Lender", loan.lender||"\u2014"],
+          ["Program", loan.loan_program||"\u2014"],
+          ["Purpose", loan.loan_purpose||"\u2014"],
+          ["Rate", loan.rate ? loan.rate+"%" : "\u2014"],
+          ["LO", loan.loan_officer||"\u2014"],
+          ["Phone", loan.phone||"\u2014"],
+          ["Email", loan.email||"\u2014"],
           ["Monthly Income", fmtMoney(totalIncome)],
           ["Docs Complete", (loan.doc_completion_pct||0)+"%"],
-          ["Created", loan.created_at ? new Date(loan.created_at).toLocaleDateString() : "—"],
+          ["Created", loan.created_at ? new Date(loan.created_at).toLocaleDateString() : "\u2014"],
           ["Purchase Price", fmtMoney(loan.purchase_price)],
         ].map(([k,v],i) => (
-          <div key={i} style={{ fontSize:9 }}>
+          <div key={i} style={{ fontSize:12, lineHeight:1.5 }}>
             <span style={{ color:DIM }}>{k}: </span>
-            <span style={{ color:BRIGHT }}>{v}</span>
+            <span style={{ color:BRIGHT, fontWeight:500 }}>{v}</span>
           </div>
         ))}
       </div>
 
       {/* Stage quick-change */}
-      <div style={{ marginBottom:12 }}>
+      <div style={{ marginBottom:16 }}>
         <label style={labelS}>Move to Stage</label>
-        <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:4 }}>
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginTop:6 }}>
           {(loanBizStages || STAGES).map(s => (
             <button key={s} onClick={()=>onStageChange(loan.id,s)}
-              style={{ ...btnSmS, fontSize:7, background:loan.stage===s?GOLD+"44":"transparent", border:`1px solid ${loan.stage===s?GOLD:BORDER}`, color:loan.stage===s?GOLD:DIM, padding:"3px 8px" }}>
+              style={{ ...btnSmS, fontSize:10, background:loan.stage===s?GOLD+"22":"transparent", border:`1px solid ${loan.stage===s?GOLD:BORDER}`, color:loan.stage===s?GOLD:DIM, padding:"6px 12px", borderRadius:20 }}>
               {s}
             </button>
           ))}
@@ -754,36 +763,36 @@ function PipelineTab({ loans, allLoans, loading, reload, openNewApp, openLoanDet
       </Modal>
 
       {/* Quick Stats Dashboard */}
-      <div style={{ display:"flex", gap:10, marginBottom:14, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", gap:14, marginBottom:20, flexWrap:"wrap" }}>
         {[
           { label:"Total Active Deals", val:activeLoans.length, sub:fmtMoney(totalVolume)+" volume", color:bizColor, icon:"\uD83D\uDCCA" },
           { label:"This Month Revenue", val:fmtMoney(thisMonthRevenue), sub:fundedThisMonth.length+" deals funded", color:GREEN, icon:"\uD83D\uDCB0" },
           { label:"Avg Days to Close", val:avgDays+"d", sub:fundedLoans.length+" funded total", color:BLUE, icon:"\u23F1\uFE0F" },
           { label:"Conversion Rate", val:conversionRate+"%", sub:fundedLoans.length+"/"+appAndBeyond.length+" converted", color:conversionRate>=50?GREEN:conversionRate>=30?YELLOW:RED, icon:"\uD83C\uDFAF" },
         ].map((s,i)=>(
-          <div key={i} style={{ ...cardS, flex:"1 1 200px", minWidth:170, borderLeft:`3px solid ${s.color}`, transition:"transform .2s, box-shadow .2s", cursor:"default" }}
-            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 4px 16px ${s.color}22`;}}
-            onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="none";}}>
+          <div key={i} style={{ ...cardS, flex:"1 1 220px", minWidth:200, borderLeft:`3px solid ${s.color}`, transition:"transform .2s, box-shadow .2s", cursor:"default" }}
+            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 32px ${s.color}22`;e.currentTarget.style.borderColor=`${BORDER_HOVER}`;}}
+            onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 4px 24px rgba(0,0,0,0.3)";e.currentTarget.style.borderColor=BORDER;}}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
               <div>
-                <div style={{ fontSize:8, color:DIM, letterSpacing:".08em", textTransform:"uppercase" }}>{s.label}</div>
-                <div style={{ fontSize:22, fontWeight:700, color:s.color, marginTop:4 }}>{s.val}</div>
-                <div style={{ fontSize:8, color:DIM, marginTop:2 }}>{s.sub}</div>
+                <div style={{ fontSize:10, color:DIM, letterSpacing:".08em", textTransform:"uppercase" }}>{s.label}</div>
+                <div style={{ fontSize:28, fontWeight:700, color:s.color, marginTop:6 }}>{s.val}</div>
+                <div style={{ fontSize:11, color:DIM, marginTop:4 }}>{s.sub}</div>
               </div>
-              <span style={{ fontSize:18, opacity:.6 }}>{s.icon}</span>
+              <span style={{ fontSize:24, opacity:.4 }}>{s.icon}</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Search & Filter Bar */}
-      <div style={{ ...cardS, marginBottom:12, padding:10 }}>
-        <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
-          <button onClick={()=>openNewApp(null)} style={{ ...btnS, display:"flex", alignItems:"center", gap:4 }}>+ New Deal</button>
-          <button onClick={()=>setReferralModal(true)} style={{ ...btnOutS, display:"flex", alignItems:"center", gap:4, padding:"4px 10px", fontSize:9 }}>{"\uD83E\uDD1D"} Log Referral</button>
-          <div style={{ display:"flex", gap:0, borderRadius:4, overflow:"hidden", border:`1px solid ${BORDER}` }}>
-            <button onClick={()=>setViewMode("kanban")} style={{ ...btnSmS, background:viewMode==="kanban"?bizColor+"33":"transparent", color:viewMode==="kanban"?bizColor:DIM, border:"none" }}>Kanban</button>
-            <button onClick={()=>setViewMode("table")} style={{ ...btnSmS, background:viewMode==="table"?bizColor+"33":"transparent", color:viewMode==="table"?bizColor:DIM, border:"none" }}>Table</button>
+      <div style={{ ...cardS, marginBottom:16, padding:16 }}>
+        <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
+          <button onClick={()=>openNewApp(null)} style={{ ...btnS, display:"flex", alignItems:"center", gap:6 }}>+ New Deal</button>
+          <button onClick={()=>setReferralModal(true)} style={{ ...btnOutS, display:"flex", alignItems:"center", gap:6, padding:"8px 16px", fontSize:11 }}>{"\uD83E\uDD1D"} Log Referral</button>
+          <div style={{ display:"flex", gap:0, borderRadius:8, overflow:"hidden", border:`1px solid ${BORDER}` }}>
+            <button onClick={()=>setViewMode("kanban")} style={{ ...btnSmS, background:viewMode==="kanban"?bizColor+"22":"transparent", color:viewMode==="kanban"?bizColor:DIM, border:"none", borderRadius:0 }}>Kanban</button>
+            <button onClick={()=>setViewMode("table")} style={{ ...btnSmS, background:viewMode==="table"?bizColor+"22":"transparent", color:viewMode==="table"?bizColor:DIM, border:"none", borderRadius:0 }}>Table</button>
           </div>
           <div style={{ position:"relative", flex:"1 1 200px", maxWidth:260 }}>
             <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder={"\uD83D\uDD0D Search name, email, phone..."} style={{ ...inputS }} />
@@ -806,15 +815,15 @@ function PipelineTab({ loans, allLoans, loading, reload, openNewApp, openLoanDet
           )}
           <input value={amountMin} onChange={e=>setAmountMin(e.target.value)} placeholder="Min $" type="number" style={{ ...inputS, width:80 }} />
           <input value={amountMax} onChange={e=>setAmountMax(e.target.value)} placeholder="Max $" type="number" style={{ ...inputS, width:80 }} />
-          <button onClick={reload} style={{ ...btnOutS, padding:"4px 10px", fontSize:9 }}>{"\u21BB"} Refresh</button>
-          {loading && <span style={{ fontSize:9, color:DIM }}>Loading...</span>}
-          <span style={{ fontSize:8, color:DIM, marginLeft:"auto" }}>{filtered.length} deal{filtered.length!==1?"s":""}</span>
+          <button onClick={reload} style={{ ...btnOutS, padding:"8px 14px", fontSize:11 }}>{"\u21BB"} Refresh</button>
+          {loading && <span style={{ fontSize:11, color:DIM }}>Loading...</span>}
+          <span style={{ fontSize:11, color:DIM, marginLeft:"auto" }}>{filtered.length} deal{filtered.length!==1?"s":""}</span>
         </div>
       </div>
 
       {/* Kanban View */}
       {viewMode==="kanban" && (
-        <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:12 }}>
+        <div style={{ display:"flex", gap:12, overflowX:"auto", paddingBottom:16 }}>
           {stagesForPipeline.map(stage => {
             const isDragOver = dragOverStage === stage;
             const terminalGreen = ["Funded","Closed","Completed","Graduated","Bound","Active"].includes(stage);
@@ -826,16 +835,16 @@ function PipelineTab({ loans, allLoans, loading, reload, openNewApp, openLoanDet
                 onDragLeave={()=>setDragOverStage(null)}
                 onDrop={()=>handleDrop(stage)}
                 style={{
-                  minWidth:200, maxWidth:220, flex:"0 0 210px", background:isDragOver?bizColor+"11":CARD,
-                  border:`1px solid ${isDragOver?bizColor:BORDER}`, borderRadius:6, padding:8,
-                  transition:"border-color .2s, background .2s", boxShadow:isDragOver?`0 0 12px ${bizColor}22`:"none"
+                  minWidth:220, maxWidth:240, flex:"0 0 230px", background:isDragOver?bizColor+"08":CARD,
+                  border:`1px solid ${isDragOver?bizColor+"44":BORDER}`, borderRadius:12, padding:12,
+                  transition:"border-color .2s, background .2s", boxShadow:isDragOver?`0 0 20px ${bizColor}18`:"0 4px 24px rgba(0,0,0,0.3)"
                 }}
               >
-                <div style={{ fontSize:9, fontWeight:700, color:stageColor, letterSpacing:".06em", textTransform:"uppercase", marginBottom:8, display:"flex", justifyContent:"space-between" }}>
+                <div style={{ fontSize:11, fontWeight:600, color:stageColor, letterSpacing:".08em", textTransform:"uppercase", marginBottom:12, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <span>{stage}</span>
-                  <span style={{ ...badgeS(bizColor), fontSize:8 }}>{byStage[stage]?.length||0}</span>
+                  <span style={{ ...badgeS(bizColor), fontSize:10 }}>{byStage[stage]?.length||0}</span>
                 </div>
-                <div style={{ display:"flex", flexDirection:"column", gap:6, maxHeight:"60vh", overflowY:"auto" }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:8, maxHeight:"60vh", overflowY:"auto" }}>
                   {(byStage[stage]||[]).map(loan => (
                     <LoanCard key={loan.id} loan={loan} allLoans={allLoans||loans} bizColor={bizColor}
                       onDragStart={()=>setDragLoan(loan)} onClick={()=>setQuickViewLoan(loan)} onDoubleClick={()=>openLoanDetail(loan)}
@@ -844,7 +853,7 @@ function PipelineTab({ loans, allLoans, loading, reload, openNewApp, openLoanDet
                       onStartFollowUp={()=>handleStartFollowUp(loan)}
                       followUpLoading={followUpLoading} />
                   ))}
-                  {(byStage[stage]||[]).length===0 && <div style={{ fontSize:8, color:DIM, textAlign:"center", padding:16, border:`1px dashed ${BORDER}`, borderRadius:4 }}>Drop here</div>}
+                  {(byStage[stage]||[]).length===0 && <div style={{ fontSize:11, color:DIM, textAlign:"center", padding:24, border:`1px dashed ${BORDER}`, borderRadius:8 }}>Drop here</div>}
                 </div>
               </div>
             );
@@ -854,12 +863,12 @@ function PipelineTab({ loans, allLoans, loading, reload, openNewApp, openLoanDet
 
       {/* Table View */}
       {viewMode==="table" && (
-        <div style={{ overflowX:"auto" }}>
-          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:10, color:TXT }}>
+        <div style={{ overflowX:"auto", borderRadius:12, border:`1px solid ${BORDER}`, background:CARD }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12, color:TXT }}>
             <thead>
               <tr style={{ borderBottom:`1px solid ${BORDER}` }}>
                 {["Borrower","Amount","Program","Stage","Lender","LO","Days","Docs %","Actions"].map(h=>(
-                  <th key={h} style={{ padding:"8px 6px", textAlign:"left", fontSize:8, color:DIM, letterSpacing:".08em", textTransform:"uppercase", fontWeight:600 }}>{h}</th>
+                  <th key={h} style={{ padding:"12px 16px", textAlign:"left", fontSize:11, color:GOLD, letterSpacing:".1em", textTransform:"uppercase", fontWeight:600 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -868,30 +877,33 @@ function PipelineTab({ loans, allLoans, loading, reload, openNewApp, openLoanDet
                 const days = daysBetween(l.stage_entered_at || l.created_at);
                 const dayColor = days<3?GREEN:days<7?YELLOW:RED;
                 return (
-                  <tr key={l.id} style={{ borderBottom:`1px solid ${BORDER}11`, cursor:"pointer" }} onClick={()=>openLoanDetail(l)}>
-                    <td style={{ padding:"6px" }}>{l.first_name} {l.last_name}</td>
-                    <td style={{ padding:"6px", color:GOLD }}>{fmtMoney(l.loan_amount)}</td>
-                    <td style={{ padding:"6px" }}>{l.loan_program||"—"}</td>
-                    <td style={{ padding:"6px" }}><span style={badgeS(l.stage==="Funded"?GREEN:l.stage==="Denied"?RED:BLUE)}>{l.stage}</span></td>
-                    <td style={{ padding:"6px" }}>{l.lender||"—"}</td>
-                    <td style={{ padding:"6px" }}>{l.loan_officer||"—"}</td>
-                    <td style={{ padding:"6px" }}><span style={{ color:dayColor, fontWeight:600 }}>{days}d</span></td>
-                    <td style={{ padding:"6px" }}>
-                      <div style={{ background:BORDER, borderRadius:3, height:6, width:60 }}>
-                        <div style={{ background:GREEN, height:6, borderRadius:3, width:`${l.doc_completion_pct||0}%` }} />
+                  <tr key={l.id} style={{ borderBottom:`1px solid ${BORDER}`, cursor:"pointer", transition:"background .15s" }}
+                    onClick={()=>openLoanDetail(l)}
+                    onMouseEnter={e=>e.currentTarget.style.background=CARD_HOVER}
+                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <td style={{ padding:"12px 16px", fontWeight:500 }}>{l.first_name} {l.last_name}</td>
+                    <td style={{ padding:"12px 16px", color:GOLD, fontWeight:600 }}>{fmtMoney(l.loan_amount)}</td>
+                    <td style={{ padding:"12px 16px" }}>{l.loan_program||"\u2014"}</td>
+                    <td style={{ padding:"12px 16px" }}><span style={badgeS(l.stage==="Funded"?GREEN:l.stage==="Denied"?RED:BLUE)}>{l.stage}</span></td>
+                    <td style={{ padding:"12px 16px" }}>{l.lender||"\u2014"}</td>
+                    <td style={{ padding:"12px 16px" }}>{l.loan_officer||"\u2014"}</td>
+                    <td style={{ padding:"12px 16px" }}><span style={{ color:dayColor, fontWeight:600 }}>{days}d</span></td>
+                    <td style={{ padding:"12px 16px" }}>
+                      <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:4, height:6, width:80 }}>
+                        <div style={{ background:GREEN, height:6, borderRadius:4, width:`${l.doc_completion_pct||0}%` }} />
                       </div>
-                      <span style={{ fontSize:8, color:DIM }}>{l.doc_completion_pct||0}%</span>
+                      <span style={{ fontSize:10, color:DIM, marginTop:2, display:"block" }}>{l.doc_completion_pct||0}%</span>
                     </td>
-                    <td style={{ padding:"6px", display:"flex", gap:4 }}>
-                      <button onClick={e=>{e.stopPropagation();setQuickViewLoan(l);}} style={{ ...btnSmS, fontSize:8 }}>View</button>
-                      <button onClick={e=>{e.stopPropagation();openLoanDetail(l);}} style={{ ...btnSmS, fontSize:8, background:"transparent", border:`1px solid ${BORDER}`, color:DIM }}>Edit</button>
-                      <button onClick={e=>{e.stopPropagation();setDeleteConfirm(l);}} style={{ ...btnSmS, fontSize:8, background:RED+"22", color:RED, border:"none" }}>✕</button>
+                    <td style={{ padding:"12px 16px", display:"flex", gap:6 }}>
+                      <button onClick={e=>{e.stopPropagation();setQuickViewLoan(l);}} style={{ ...btnSmS, fontSize:10 }}>View</button>
+                      <button onClick={e=>{e.stopPropagation();openLoanDetail(l);}} style={{ ...btnSmS, fontSize:10, background:"transparent", border:`1px solid ${BORDER}`, color:DIM }}>Edit</button>
+                      <button onClick={e=>{e.stopPropagation();setDeleteConfirm(l);}} style={{ ...btnSmS, fontSize:10, background:RED+"18", color:RED, border:"none" }}>x</button>
                     </td>
                   </tr>
                 );
               })}
               {filtered.length===0 && (
-                <tr><td colSpan={9} style={{ padding:24, textAlign:"center", color:DIM, fontSize:10 }}>No loans found. Click "+ New Loan" to create one.</td></tr>
+                <tr><td colSpan={9} style={{ padding:40, textAlign:"center", color:DIM, fontSize:13 }}>No loans found. Click "+ New Deal" to create one.</td></tr>
               )}
             </tbody>
           </table>
@@ -929,51 +941,51 @@ function LoanCard({ loan, allLoans, bizColor, onDragStart, onClick, onDoubleClic
     <div draggable onDragStart={onDragStart} onClick={onClick} onDoubleClick={e=>{e.stopPropagation();if(onDoubleClick)onDoubleClick();}}
       onMouseEnter={()=>setHovered(true)} onMouseLeave={()=>setHovered(false)}
       style={{
-        background:hovered ? CARD_HOVER : BG, border:`1px solid ${hovered ? bc : BORDER}`, borderRadius:6, padding:10,
+        background:hovered ? CARD_HOVER : BG, border:`1px solid ${hovered ? bc+"44" : BORDER}`, borderRadius:12, padding:14,
         cursor:"grab", transition:"all .2s ease", borderLeft:`3px solid ${pColor}`,
-        boxShadow:hovered ? `0 4px 16px rgba(0,0,0,.4)` : "none",
-        transform:hovered ? "translateY(-1px)" : "none"
+        boxShadow:hovered ? `0 8px 24px rgba(0,0,0,.5)` : "0 2px 8px rgba(0,0,0,.2)",
+        transform:hovered ? "translateY(-2px)" : "none"
       }}
     >
       {/* Header: Name + Priority */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-        <div style={{ fontSize:10, fontWeight:600, color:BRIGHT, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+        <div style={{ fontSize:14, fontWeight:600, color:BRIGHT, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>
           {loan.first_name||"\u2014"} {loan.last_name||""}
         </div>
-        <span title={priority} style={{ fontSize:11, cursor:"default" }}>{pIcon}</span>
+        <span title={priority} style={{ fontSize:13, cursor:"default" }}>{pIcon}</span>
       </div>
 
       {/* Loan amount */}
-      <div style={{ fontSize:12, color:bc, fontWeight:700, marginBottom:4 }}>
+      <div style={{ fontSize:16, color:bc, fontWeight:700, marginBottom:6 }}>
         {fmtMoney(loan.loan_amount)}
       </div>
 
       {/* Service type badge */}
       {loan.service_type && (
-        <div style={{ marginBottom:4 }}>
-          <span style={{ fontSize:7, padding:"2px 6px", borderRadius:3, background:serviceColor+"18", color:serviceColor, border:`1px solid ${serviceColor}33`, fontWeight:600, letterSpacing:".04em" }}>
+        <div style={{ marginBottom:6 }}>
+          <span style={{ fontSize:9, padding:"3px 10px", borderRadius:20, background:serviceColor+"14", color:serviceColor, border:`1px solid ${serviceColor}22`, fontWeight:600, letterSpacing:".04em" }}>
             {loan.service_type}
           </span>
         </div>
       )}
 
-      {loan.property_address && <div style={{ fontSize:8, color:DIM, marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{loan.property_address}</div>}
-      {loan.lender && <div style={{ fontSize:8, color:DIM, marginBottom:4 }}>{loan.lender} {loan.loan_program ? `\u00B7 ${loan.loan_program}`:""}</div>}
+      {loan.property_address && <div style={{ fontSize:11, color:DIM, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{loan.property_address}</div>}
+      {loan.lender && <div style={{ fontSize:11, color:DIM, marginBottom:6 }}>{loan.lender} {loan.loan_program ? `\u00B7 ${loan.loan_program}`:""}</div>}
 
       {/* Badges row */}
-      <div style={{ display:"flex", gap:3, flexWrap:"wrap", marginBottom:4 }}>
-        <span style={{ ...badgeS(dayColor), display:"flex", alignItems:"center", gap:2 }}>{days}d in stage</span>
-        {loan.fico && <span style={badgeS(loan.fico>=740?GREEN:loan.fico>=680?YELLOW:RED)}>FICO {loan.fico}</span>}
-        {loan.ltv && <span style={badgeS(BLUE)}>LTV {fmtPct(loan.ltv)}</span>}
+      <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:6 }}>
+        <span style={{ ...badgeS(dayColor), display:"flex", alignItems:"center", gap:3, fontSize:9 }}>{days}d in stage</span>
+        {loan.fico && <span style={{ ...badgeS(loan.fico>=740?GREEN:loan.fico>=680?YELLOW:RED), fontSize:9 }}>FICO {loan.fico}</span>}
+        {loan.ltv && <span style={{ ...badgeS(BLUE), fontSize:9 }}>LTV {fmtPct(loan.ltv)}</span>}
       </div>
 
       {/* Doc completion bar */}
-      <div style={{ background:BORDER, borderRadius:3, height:4, width:"100%", marginBottom:2 }}>
-        <div style={{ background:GREEN, height:4, borderRadius:3, width:`${loan.doc_completion_pct||0}%`, transition:"width .3s" }} />
+      <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:4, height:4, width:"100%", marginBottom:4 }}>
+        <div style={{ background:GREEN, height:4, borderRadius:4, width:`${loan.doc_completion_pct||0}%`, transition:"width .3s" }} />
       </div>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <span style={{ fontSize:7, color:DIM }}>Docs: {loan.doc_completion_pct||0}%</span>
-        <span style={{ fontSize:7, color:DIM }}>{timeAgo(loan.updated_at||loan.created_at)}</span>
+        <span style={{ fontSize:10, color:DIM }}>Docs: {loan.doc_completion_pct||0}%</span>
+        <span style={{ fontSize:10, color:DIM }}>{timeAgo(loan.updated_at||loan.created_at)}</span>
       </div>
 
       {/* Cross-sell indicators */}
@@ -1229,19 +1241,24 @@ function ApplicationTab({ prefill, user, showToast, reload, setTab, selectedLoan
         </div>
       )}
 
-      {/* Progress bar */}
-      <div style={{ display:"flex", gap:0, marginBottom:16 }}>
+      {/* Step Indicator */}
+      <div style={{ display:"flex", alignItems:"flex-start", marginBottom:24, padding:"0 16px" }}>
         {STEPS.map((s,i)=>(
-          <div key={i} onClick={()=>setStep(i)} style={{
-            flex:1, textAlign:"center", padding:"8px 4px", cursor:"pointer",
-            background:i===step?GOLD+"22":i<step?GREEN+"11":"transparent",
-            borderBottom:i===step?`2px solid ${GOLD}`:i<step?`2px solid ${GREEN}33`:`2px solid ${BORDER}`,
-            transition:"all .2s"
-          }}>
-            <div style={{ fontSize:8, fontWeight:i===step?700:500, color:i===step?GOLD:i<step?GREEN:DIM, letterSpacing:".06em" }}>
-              STEP {i+1}
+          <div key={i} onClick={()=>setStep(i)} style={{ flex:1, cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", position:"relative" }}>
+            {/* Connector line */}
+            {i > 0 && <div style={{ position:"absolute", top:14, right:"50%", width:"100%", height:2, background:i<=step?GOLD:BORDER, zIndex:0 }} />}
+            {/* Circle */}
+            <div style={{
+              width:28, height:28, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center",
+              background:i<step?GOLD:i===step?GOLD+"22":"transparent",
+              border:`2px solid ${i<=step?GOLD:BORDER}`,
+              color:i<step?"#0a0a12":i===step?GOLD:DIM,
+              fontSize:i<step?14:12, fontWeight:600, zIndex:1, position:"relative", transition:"all .2s"
+            }}>
+              {i<step ? "\u2713" : i+1}
             </div>
-            <div style={{ fontSize:9, color:i===step?BRIGHT:DIM, marginTop:2 }}>{s}</div>
+            {/* Label */}
+            <div style={{ fontSize:10, color:i===step?GOLD:i<step?GREEN:DIM, marginTop:6, textAlign:"center", lineHeight:1.3, letterSpacing:".03em" }}>{s}</div>
           </div>
         ))}
       </div>
@@ -1250,7 +1267,7 @@ function ApplicationTab({ prefill, user, showToast, reload, setTab, selectedLoan
       <div style={cardS}>
         {step===0 && (
           <div>
-            <div style={{ fontSize:11, fontWeight:700, color:GOLD, marginBottom:10, letterSpacing:".06em" }}>BORROWER INFORMATION</div>
+            <div style={{ fontSize:11, fontWeight:600, color:GOLD, marginBottom:16, letterSpacing:".1em", textTransform:"uppercase" }}>BORROWER INFORMATION</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               <Field label="First Name" field="first_name" w="24%" />
               <Field label="Middle" field="middle_name" w="14%" />
@@ -1290,7 +1307,7 @@ function ApplicationTab({ prefill, user, showToast, reload, setTab, selectedLoan
 
         {step===1 && (
           <div>
-            <div style={{ fontSize:11, fontWeight:700, color:GOLD, marginBottom:10, letterSpacing:".06em" }}>EMPLOYMENT & INCOME</div>
+            <div style={{ fontSize:11, fontWeight:600, color:GOLD, marginBottom:16, letterSpacing:".1em", textTransform:"uppercase" }}>EMPLOYMENT & INCOME</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               <Field label="Employer Name" field="employer_name" w="30%" />
               <Field label="Employer Address" field="employer_address" w="30%" />
@@ -1333,7 +1350,7 @@ function ApplicationTab({ prefill, user, showToast, reload, setTab, selectedLoan
 
         {step===3 && (
           <div>
-            <div style={{ fontSize:11, fontWeight:700, color:GOLD, marginBottom:10, letterSpacing:".06em" }}>PROPERTY & LOAN DETAILS</div>
+            <div style={{ fontSize:11, fontWeight:600, color:GOLD, marginBottom:16, letterSpacing:".1em", textTransform:"uppercase" }}>PROPERTY & LOAN DETAILS</div>
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               <Field label="Property Address" field="property_address" w="40%" />
               <Field label="City" field="property_city" w="20%" />
@@ -1363,7 +1380,7 @@ function ApplicationTab({ prefill, user, showToast, reload, setTab, selectedLoan
 
         {step===4 && (
           <div>
-            <div style={{ fontSize:11, fontWeight:700, color:GOLD, marginBottom:10, letterSpacing:".06em" }}>DECLARATIONS</div>
+            <div style={{ fontSize:11, fontWeight:600, color:GOLD, marginBottom:16, letterSpacing:".1em", textTransform:"uppercase" }}>DECLARATIONS</div>
             <div style={{ fontSize:9, color:DIM, marginBottom:10 }}>Answer the following questions. Toggle ON (red) for YES, OFF (green) for NO.</div>
             <DeclToggle label="Are there any outstanding judgments against you?" field="outstanding_judgments" />
             <DeclToggle label="Have you been declared bankrupt within the past 7 years?" field="bankrupt_7yr" />
@@ -1380,7 +1397,7 @@ function ApplicationTab({ prefill, user, showToast, reload, setTab, selectedLoan
 
         {step===5 && (
           <div>
-            <div style={{ fontSize:11, fontWeight:700, color:GOLD, marginBottom:10, letterSpacing:".06em" }}>REVIEW & SUBMIT</div>
+            <div style={{ fontSize:11, fontWeight:600, color:GOLD, marginBottom:16, letterSpacing:".1em", textTransform:"uppercase" }}>REVIEW & SUBMIT</div>
             <ReviewSummary form={form} />
 
             {/* Notes */}
@@ -1430,12 +1447,12 @@ function ApplicationTab({ prefill, user, showToast, reload, setTab, selectedLoan
               );
             })()}
 
-            <div style={{ display:"flex", gap:10, marginTop:16 }}>
-              <button onClick={submitApp} disabled={saving} style={{ ...btnS, fontSize:11, padding:"8px 24px" }}>
+            <div style={{ display:"flex", gap:12, marginTop:24 }}>
+              <button onClick={submitApp} disabled={saving} style={{ ...btnS, fontSize:13, padding:"12px 32px" }}>
                 {saving?"Submitting...": isEdit ? "Update Loan" : "Submit Application"}
               </button>
               {isEdit && (
-                <button onClick={saveDraft} disabled={saving} style={{ ...btnOutS, fontSize:11, padding:"8px 24px" }}>
+                <button onClick={saveDraft} disabled={saving} style={{ ...btnOutS, fontSize:13, padding:"12px 32px" }}>
                   {saving?"Saving...":"Save Changes"}
                 </button>
               )}
@@ -1445,10 +1462,10 @@ function ApplicationTab({ prefill, user, showToast, reload, setTab, selectedLoan
       </div>
 
       {/* Bottom nav */}
-      <div style={{ display:"flex", justifyContent:"space-between", marginTop:12 }}>
-        <button onClick={()=>setStep(Math.max(0,step-1))} disabled={step===0} style={{ ...btnOutS, opacity:step===0?.4:1 }}>← Previous</button>
-        <button onClick={saveDraft} disabled={saving} style={btnOutS}>{saving?"Saving...":"💾 Save Draft"}</button>
-        <button onClick={()=>setStep(Math.min(STEPS.length-1,step+1))} disabled={step===STEPS.length-1} style={{ ...btnOutS, opacity:step===STEPS.length-1?.4:1 }}>Next →</button>
+      <div style={{ display:"flex", justifyContent:"space-between", marginTop:20 }}>
+        <button onClick={()=>setStep(Math.max(0,step-1))} disabled={step===0} style={{ ...btnOutS, opacity:step===0?.4:1, fontSize:12 }}>Previous</button>
+        <button onClick={saveDraft} disabled={saving} style={{ ...btnOutS, fontSize:12 }}>{saving?"Saving...":"Save Draft"}</button>
+        <button onClick={()=>setStep(Math.min(STEPS.length-1,step+1))} disabled={step===STEPS.length-1} style={{ ...btnS, opacity:step===STEPS.length-1?.4:1, fontSize:12 }}>Next</button>
       </div>
     </div>
   );
@@ -1474,7 +1491,7 @@ function AssetsStep({ form, setForm, upd }) {
 
   return (
     <div>
-      <div style={{ fontSize:11, fontWeight:700, color:GOLD, marginBottom:10, letterSpacing:".06em" }}>ASSETS & LIABILITIES</div>
+      <div style={{ fontSize:11, fontWeight:600, color:GOLD, marginBottom:16, letterSpacing:".1em", textTransform:"uppercase" }}>ASSETS & LIABILITIES</div>
 
       {/* Bank Accounts */}
       <div style={{ fontSize:10, fontWeight:600, color:BRIGHT, marginBottom:6, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -1692,34 +1709,34 @@ function DocumentCenterTab({ loans, loanDocs, loadDocs, showToast }) {
       </div>
 
       {!selLoanId && (
-        <div style={{ ...cardS, textAlign:"center", padding:40 }}>
-          <div style={{ fontSize:24, marginBottom:8 }}>📁</div>
-          <div style={{ fontSize:11, color:DIM }}>Select a loan above to view and manage documents.</div>
+        <div style={{ ...cardS, textAlign:"center", padding:60 }}>
+          <div style={{ fontSize:48, marginBottom:12, opacity:.3, color:GOLD }}>&#128193;</div>
+          <div style={{ fontSize:14, color:DIM }}>Select a loan above to view and manage documents.</div>
         </div>
       )}
 
       {selLoanId && (
         <>
           {/* Stats */}
-          <div style={{ display:"flex", gap:10, marginBottom:14, flexWrap:"wrap" }}>
-            <div style={{ ...cardS, flex:"1 1 180px" }}>
-              <div style={{ fontSize:8, color:DIM, letterSpacing:".08em", textTransform:"uppercase" }}>Documents Collected</div>
-              <div style={{ fontSize:16, fontWeight:700, color:GOLD, marginTop:4 }}>{receivedDocs} / {totalDocs}</div>
-              <div style={{ background:BORDER, borderRadius:3, height:6, marginTop:6 }}>
-                <div style={{ background:GREEN, height:6, borderRadius:3, width:`${pct}%`, transition:"width .3s" }} />
+          <div style={{ display:"flex", gap:14, marginBottom:20, flexWrap:"wrap" }}>
+            <div style={{ ...cardS, flex:"1 1 200px", borderLeft:`3px solid ${GOLD}` }}>
+              <div style={{ fontSize:10, color:DIM, letterSpacing:".08em", textTransform:"uppercase" }}>Documents Collected</div>
+              <div style={{ fontSize:28, fontWeight:700, color:GOLD, marginTop:6 }}>{receivedDocs} / {totalDocs}</div>
+              <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:4, height:6, marginTop:8 }}>
+                <div style={{ background:GREEN, height:6, borderRadius:4, width:`${pct}%`, transition:"width .3s" }} />
               </div>
             </div>
-            <div style={{ ...cardS, flex:"1 1 120px" }}>
-              <div style={{ fontSize:8, color:DIM, letterSpacing:".08em", textTransform:"uppercase" }}>Missing</div>
-              <div style={{ fontSize:16, fontWeight:700, color:RED, marginTop:4 }}>{missingDocs}</div>
+            <div style={{ ...cardS, flex:"1 1 140px", borderLeft:`3px solid ${RED}` }}>
+              <div style={{ fontSize:10, color:DIM, letterSpacing:".08em", textTransform:"uppercase" }}>Missing</div>
+              <div style={{ fontSize:28, fontWeight:700, color:RED, marginTop:6 }}>{missingDocs}</div>
             </div>
-            <div style={{ ...cardS, flex:"1 1 120px" }}>
-              <div style={{ fontSize:8, color:DIM, letterSpacing:".08em", textTransform:"uppercase" }}>Completion</div>
-              <div style={{ fontSize:16, fontWeight:700, color:pct>=80?GREEN:pct>=50?YELLOW:RED, marginTop:4 }}>{pct}%</div>
+            <div style={{ ...cardS, flex:"1 1 140px", borderLeft:`3px solid ${pct>=80?GREEN:pct>=50?YELLOW:RED}` }}>
+              <div style={{ fontSize:10, color:DIM, letterSpacing:".08em", textTransform:"uppercase" }}>Completion</div>
+              <div style={{ fontSize:28, fontWeight:700, color:pct>=80?GREEN:pct>=50?YELLOW:RED, marginTop:6 }}>{pct}%</div>
             </div>
-            <div style={{ ...cardS, flex:"1 1 180px" }}>
-              <div style={{ fontSize:8, color:DIM, letterSpacing:".08em", textTransform:"uppercase" }}>Last Upload</div>
-              <div style={{ fontSize:11, fontWeight:600, color:BRIGHT, marginTop:4 }}>
+            <div style={{ ...cardS, flex:"1 1 200px", borderLeft:`3px solid ${BLUE}` }}>
+              <div style={{ fontSize:10, color:DIM, letterSpacing:".08em", textTransform:"uppercase" }}>Last Upload</div>
+              <div style={{ fontSize:13, fontWeight:600, color:BRIGHT, marginTop:6 }}>
                 {(() => {
                   const received = docs.filter(d=>d.received_at).sort((a,b)=>new Date(b.received_at)-new Date(a.received_at));
                   if (received.length===0) return "None";
@@ -1812,7 +1829,7 @@ function DocumentCenterTab({ loans, loanDocs, loadDocs, showToast }) {
 function InsuranceTab({ loans, showToast }) {
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const cardS = { background:CARD, border:`1px solid ${BORDER}`, borderRadius:6, padding:14 };
+  const cardS = { background:CARD, border:`1px solid ${BORDER}`, borderRadius:12, padding:20, boxShadow:"0 4px 24px rgba(0,0,0,0.3)", transition:"all 0.2s ease" };
 
   useEffect(() => {
     (async () => {
@@ -1860,9 +1877,9 @@ function InsuranceTab({ loans, showToast }) {
           { label:"Expiring 90d", val:expiring90.length, color:expiring90.length ? YELLOW : GREEN },
           { label:"Loans w/o Insurance", val:loansWithoutInsurance.length, color:loansWithoutInsurance.length ? RED : GREEN },
         ].map(s => (
-          <div key={s.label} style={{ ...cardS, flex:1, minWidth:140, textAlign:"center" }}>
-            <div style={{ fontSize:7, color:DIM, textTransform:"uppercase", letterSpacing:".06em" }}>{s.label}</div>
-            <div style={{ fontSize:18, fontWeight:700, color:s.color, marginTop:4 }}>{s.val}</div>
+          <div key={s.label} style={{ ...cardS, flex:1, minWidth:160, textAlign:"center", borderLeft:`3px solid ${s.color}` }}>
+            <div style={{ fontSize:10, color:DIM, textTransform:"uppercase", letterSpacing:".08em" }}>{s.label}</div>
+            <div style={{ fontSize:28, fontWeight:700, color:s.color, marginTop:6 }}>{s.val}</div>
           </div>
         ))}
       </div>
@@ -1991,13 +2008,13 @@ function CreditRepairTab({ loans, contacts, showToast }) {
   const [editableTemplate, setEditableTemplate] = useState("");
 
   // ─── STYLES ───────────────────────────────────────────────────────────────────
-  const cardS = { background:CARD, border:`1px solid ${BORDER}`, borderRadius:6, padding:14 };
-  const inputS = { background:BG, border:`1px solid ${BORDER}`, color:TXT, padding:"6px 10px", fontSize:10, borderRadius:4, width:"100%", fontFamily:"inherit", boxSizing:"border-box" };
-  const btnGold = { background:GOLD, border:"none", color:"#000", fontSize:9, fontWeight:700, padding:"6px 14px", borderRadius:4, cursor:"pointer", fontFamily:"inherit" };
-  const btnOutline = { background:"none", border:`1px solid ${BORDER}`, color:TXT, fontSize:8, padding:"4px 10px", borderRadius:3, cursor:"pointer", fontFamily:"inherit" };
-  const btnDanger = { background:"rgba(239,68,68,.12)", border:`1px solid rgba(239,68,68,.3)`, color:RED, fontSize:8, fontWeight:600, padding:"4px 10px", borderRadius:3, cursor:"pointer", fontFamily:"inherit" };
-  const labelS = { fontSize:8, color:DIM, marginBottom:2 };
-  const sectionTitle = (txt,col) => ({ fontSize:10, fontWeight:700, color:col||GOLD, marginBottom:8 });
+  const cardS = { background:CARD, border:`1px solid ${BORDER}`, borderRadius:12, padding:20, boxShadow:"0 4px 24px rgba(0,0,0,0.3)", transition:"all 0.2s ease" };
+  const inputS = { background:INPUT_BG, border:`1px solid ${INPUT_BD}`, color:TXT, padding:"10px 14px", fontSize:12, borderRadius:8, width:"100%", fontFamily:"inherit", boxSizing:"border-box", transition:"all 0.15s ease", lineHeight:1.5 };
+  const btnGold = { background:GOLD, border:"none", color:"#0a0a12", fontSize:12, fontWeight:600, padding:"10px 20px", borderRadius:8, cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s ease" };
+  const btnOutline = { background:"none", border:`1px solid rgba(212,175,55,0.3)`, color:TXT, fontSize:11, padding:"8px 16px", borderRadius:8, cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s ease" };
+  const btnDanger = { background:"rgba(239,68,68,.12)", border:`1px solid rgba(239,68,68,.3)`, color:RED, fontSize:11, fontWeight:600, padding:"8px 16px", borderRadius:8, cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s ease" };
+  const labelS = { fontSize:11, color:GOLD, letterSpacing:".1em", textTransform:"uppercase", marginBottom:6, fontWeight:600 };
+  const sectionTitle = (txt,col) => ({ fontSize:13, fontWeight:600, color:col||GOLD, marginBottom:12, letterSpacing:".05em" });
   const lowFicoLoans = loans.filter(l => l.fico && l.fico < 680);
   const statusColors = { active:GREEN, enrolled:"#6366f1", graduated:GOLD, cancelled:RED, pending:DIM };
 
@@ -2415,7 +2432,7 @@ function CreditRepairTab({ loans, contacts, showToast }) {
 
       {/* Sub-tab bar */}
       <div style={{ display:"flex", gap:0, borderBottom:`1px solid ${BORDER}`, marginBottom:12 }}>
-        {SUBTABS.map((t,i)=>(<div key={t} onClick={()=>setSubTab(i)} style={{ padding:"6px 14px", cursor:"pointer", fontSize:9, fontWeight:subTab===i?700:400, color:subTab===i?GOLD:DIM, borderBottom:subTab===i?`2px solid ${GOLD}`:"2px solid transparent", transition:"all .15s" }}>{t}</div>))}
+        {SUBTABS.map((t,i)=>(<div key={t} onClick={()=>setSubTab(i)} style={{ padding:"10px 4px", cursor:"pointer", fontSize:11, fontWeight:subTab===i?600:500, color:subTab===i?GOLD:DIM, borderBottom:subTab===i?`2px solid ${GOLD}`:"2px solid transparent", transition:"all .15s", textTransform:"uppercase", letterSpacing:".08em" }}>{t}</div>))}
       </div>
 
       {/* ═══════════════════ SUB-TAB 0: CLIENTS ═══════════════════ */}
@@ -2980,11 +2997,11 @@ function RealtyTab({ loans, contacts, showToast }) {
   const [editingMls, setEditingMls] = useState(null);
 
   // ─── HELPERS ────────────────────────────────────────────────────────────────
-  const rCardS = { background:CARD, border:`1px solid ${BORDER}`, borderRadius:6, padding:14 };
-  const rInputS = { background:INPUT_BG, border:`1px solid ${INPUT_BD}`, color:TXT, padding:"6px 10px", fontSize:10, borderRadius:4, width:"100%", fontFamily:"inherit", boxSizing:"border-box", letterSpacing:".05em", outline:"none" };
+  const rCardS = { background:CARD, border:`1px solid ${BORDER}`, borderRadius:12, padding:20, boxShadow:"0 4px 24px rgba(0,0,0,0.3)", transition:"all 0.2s ease" };
+  const rInputS = { background:INPUT_BG, border:`1px solid ${INPUT_BD}`, color:TXT, padding:"10px 14px", fontSize:12, borderRadius:8, width:"100%", fontFamily:"inherit", boxSizing:"border-box", letterSpacing:".02em", outline:"none", transition:"all 0.15s ease", lineHeight:1.5 };
   const rSelectS = { ...rInputS, appearance:"none", cursor:"pointer" };
-  const rBtnS = { background:GOLD, color:"#000", border:"none", borderRadius:4, padding:"6px 14px", fontSize:10, fontWeight:600, cursor:"pointer", letterSpacing:".05em", fontFamily:"inherit" };
-  const rBtnOutS = { ...rBtnS, background:"transparent", border:`1px solid ${GOLD}`, color:GOLD };
+  const rBtnS = { background:GOLD, color:"#0a0a12", border:"none", borderRadius:8, padding:"10px 20px", fontSize:12, fontWeight:600, cursor:"pointer", letterSpacing:".03em", fontFamily:"inherit", transition:"all 0.2s ease" };
+  const rBtnOutS = { ...rBtnS, background:"transparent", border:`1px solid rgba(212,175,55,0.3)`, color:GOLD };
   const statusColors = { Active:GREEN, Pending:YELLOW, "Under Contract":GOLD, Sold:PURPLE, Withdrawn:DIM, Expired:RED };
 
   const persistFavorites = (f) => { setFavorites(f); localStorage.setItem("re4lty_favorites", JSON.stringify(f)); };
@@ -3292,14 +3309,14 @@ function RealtyTab({ loans, contacts, showToast }) {
       </div>
 
       {/* Sub-tab navigation */}
-      <div style={{ display:"flex", gap:0, marginBottom:16, borderBottom:`1px solid ${BORDER}` }}>
+      <div style={{ display:"flex", gap:24, marginBottom:24, borderBottom:`1px solid ${BORDER}` }}>
         {SUB_TABS.map((st,i)=>(
           <div key={i} onClick={()=>setSubTab(i)} style={{
-            padding:"8px 16px", cursor:"pointer", fontSize:9, fontWeight:subTab===i?700:500,
+            padding:"14px 4px", cursor:"pointer", fontSize:11, fontWeight:subTab===i?600:500,
             color:subTab===i?PURPLE:DIM, borderBottom:subTab===i?`2px solid ${PURPLE}`:"2px solid transparent",
-            letterSpacing:".05em", transition:"all .2s", display:"flex", alignItems:"center", gap:5, userSelect:"none"
+            letterSpacing:".08em", transition:"all .2s", display:"flex", alignItems:"center", gap:8, userSelect:"none"
           }}>
-            <span style={{ fontSize:12 }}>{st.icon}</span>
+            <span style={{ fontSize:14 }}>{st.icon}</span>
             <span style={{ textTransform:"uppercase" }}>{st.label}</span>
           </div>
         ))}
@@ -3510,7 +3527,7 @@ function RealtyTab({ loans, contacts, showToast }) {
                   { label:"Comps Found", val:compResults.length, color:GOLD },
                 ].map(s=>(
                   <div key={s.label} style={{ ...rCardS, textAlign:"center" }}>
-                    <div style={{ fontSize:7, color:DIM, textTransform:"uppercase", letterSpacing:".06em" }}>{s.label}</div>
+                    <div style={{ fontSize:10, color:DIM, textTransform:"uppercase", letterSpacing:".08em" }}>{s.label}</div>
                     <div style={{ fontSize:13, fontWeight:700, color:s.color, marginTop:4 }}>{s.val}</div>
                   </div>
                 ))}
@@ -3718,9 +3735,9 @@ function TitleTab({ showToast }) {
       <div style={{ display:"flex", gap:2, marginBottom:16, borderBottom:`1px solid ${BORDER}`, paddingBottom:8 }}>
         {SUB_TABS.map((t, i) => (
           <div key={i} onClick={() => setSubTab(i)} style={{
-            padding:"6px 14px", cursor:"pointer", fontSize:10, fontWeight:subTab === i ? 700 : 500,
+            padding:"14px 4px", cursor:"pointer", fontSize:11, fontWeight:subTab === i ? 600 : 500,
             color:subTab === i ? PURPLE : DIM, borderBottom:subTab === i ? `2px solid ${PURPLE}` : "2px solid transparent",
-            letterSpacing:".05em", textTransform:"uppercase", transition:"all .2s", userSelect:"none"
+            letterSpacing:".08em", textTransform:"uppercase", transition:"all .2s", userSelect:"none"
           }}>{t}</div>
         ))}
       </div>
@@ -4401,43 +4418,43 @@ function AnalyticsTab({ loans }) {
           { label:"Total Funded", val:funded.length, color:GREEN },
           { label:"Total Volume", val:fmtMoney(loans.reduce((s,l)=>s+(l.loan_amount||0),0)), color:GOLD },
         ].map((s,i) => (
-          <div key={i} style={{ ...cardS, flex:"1 1 150px", minWidth:130 }}>
-            <div style={{ fontSize:8, color:DIM, letterSpacing:".08em", textTransform:"uppercase" }}>{s.label}</div>
-            <div style={{ fontSize:18, fontWeight:700, color:s.color, marginTop:4 }}>{s.val}</div>
+          <div key={i} style={{ ...cardS, flex:"1 1 170px", minWidth:150, borderLeft:`3px solid ${s.color}` }}>
+            <div style={{ fontSize:10, color:DIM, letterSpacing:".08em", textTransform:"uppercase" }}>{s.label}</div>
+            <div style={{ fontSize:28, fontWeight:700, color:s.color, marginTop:6 }}>{s.val}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
         {/* Loans by Stage */}
         <div style={cardS}>
-          <div style={{ fontSize:10, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase", marginBottom:10 }}>Loans by Stage</div>
+          <div style={{ fontSize:11, fontWeight:600, color:GOLD, letterSpacing:".1em", textTransform:"uppercase", marginBottom:16 }}>Loans by Stage</div>
           <BarChart_ data={byStage} labelKey="stage" valueKey="count" maxVal={maxStageCount} color={BLUE} />
         </div>
 
         {/* Monthly Volume */}
         <div style={cardS}>
-          <div style={{ fontSize:10, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase", marginBottom:10 }}>Monthly Volume</div>
+          <div style={{ fontSize:11, fontWeight:600, color:GOLD, letterSpacing:".1em", textTransform:"uppercase", marginBottom:16 }}>Monthly Volume</div>
           <BarChart_ data={monthlyVolume} labelKey="label" valueKey="volume" maxVal={maxVol} color={GREEN} formatVal={fmtMoney} />
         </div>
 
         {/* Top Lenders */}
         <div style={cardS}>
-          <div style={{ fontSize:10, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase", marginBottom:10 }}>Top Lenders</div>
+          <div style={{ fontSize:11, fontWeight:600, color:GOLD, letterSpacing:".1em", textTransform:"uppercase", marginBottom:16 }}>Top Lenders</div>
           {topLenders.length===0 && <div style={{ fontSize:9, color:DIM }}>No lender data yet.</div>}
           <BarChart_ data={topLenders} labelKey="name" valueKey="volume" maxVal={maxLenderVol} color={GOLD} formatVal={fmtMoney} />
         </div>
 
         {/* Monthly Revenue */}
         <div style={cardS}>
-          <div style={{ fontSize:10, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase", marginBottom:10 }}>Monthly Revenue (Commissions)</div>
+          <div style={{ fontSize:11, fontWeight:600, color:GOLD, letterSpacing:".1em", textTransform:"uppercase", marginBottom:16 }}>Monthly Revenue (Commissions)</div>
           <BarChart_ data={monthlyRevenue} labelKey="label" valueKey="rev" maxVal={maxRev} color={GOLD} formatVal={fmtMoney} />
         </div>
       </div>
 
       {/* Pipeline Funnel */}
       <div style={{ ...cardS, marginTop:12 }}>
-        <div style={{ fontSize:10, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase", marginBottom:10 }}>Pipeline Funnel</div>
+        <div style={{ fontSize:11, fontWeight:600, color:GOLD, letterSpacing:".1em", textTransform:"uppercase", marginBottom:16 }}>Pipeline Funnel</div>
         <div style={{ display:"flex", alignItems:"flex-end", gap:2, height:120 }}>
           {STAGES.filter(s=>s!=="Denied").map((stage,i) => {
             const count = byStage.find(b=>b.stage===stage)?.count||0;
@@ -4457,7 +4474,7 @@ function AnalyticsTab({ loans }) {
 
       {/* Recent Activity */}
       <div style={{ ...cardS, marginTop:12 }}>
-        <div style={{ fontSize:10, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase", marginBottom:10 }}>Recent Activity</div>
+        <div style={{ fontSize:11, fontWeight:600, color:GOLD, letterSpacing:".1em", textTransform:"uppercase", marginBottom:16 }}>Recent Activity</div>
         {loans.slice(0,10).map((l,i) => (
           <div key={i} style={{ display:"flex", gap:8, alignItems:"center", padding:"5px 0", borderBottom:`1px solid ${BORDER}11` }}>
             <div style={{ width:6, height:6, borderRadius:3, background:l.stage==="Funded"?GREEN:l.stage==="Denied"?RED:BLUE, flexShrink:0 }} />
@@ -4487,7 +4504,7 @@ function AnalyticsTab({ loans }) {
         const maxLoVol = Math.max(1,...loData.map(l=>l.volume));
         return (
           <div style={{ ...cardS, marginTop:12 }}>
-            <div style={{ fontSize:10, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase", marginBottom:10 }}>Loan Officer Performance</div>
+            <div style={{ fontSize:11, fontWeight:600, color:GOLD, letterSpacing:".1em", textTransform:"uppercase", marginBottom:16 }}>Loan Officer Performance</div>
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:9 }}>
               <thead>
                 <tr style={{ borderBottom:`1px solid ${BORDER}` }}>
@@ -4514,7 +4531,7 @@ function AnalyticsTab({ loans }) {
 
       {/* ─── Referral Leaderboard ─────────────────────────────────────── */}
       <div style={{ ...cardS, marginTop:12 }}>
-        <div style={{ fontSize:10, fontWeight:700, color:GOLD, letterSpacing:".06em", textTransform:"uppercase", marginBottom:10, display:"flex", alignItems:"center", gap:6 }}>
+        <div style={{ fontSize:11, fontWeight:600, color:GOLD, letterSpacing:".1em", textTransform:"uppercase", marginBottom:16, display:"flex", alignItems:"center", gap:6 }}>
           {"\uD83C\uDFC6"} Referral Leaderboard
           {leaderboardLoading && <span style={{ fontSize:8, color:DIM, fontWeight:400 }}>Loading...</span>}
         </div>
