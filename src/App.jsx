@@ -9848,15 +9848,11 @@ function EmailVault({ user, teamProfile, onSignOut }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarSection, setSidebarSection] = useState(null);
   const navGroups = [
-    { id:"core", label:"CORE", items:[
+    { id:"command", label:"COMMAND", items:[
       {id:"commandcenter", icon:"🎯", label:"Command Center", badge:0, admin:true},
       {id:"dashboard", icon:"📊", label:"Dashboard", badge:0, admin:true},
-      {id:"inbox",     icon:"✉️", label:"Inbox",     badge:emails.filter(e=>!e.is_read).length, admin:true},
-      {id:"callcenter",icon:"📞", label:"Calls",     badge:unreadNotifs, admin:false},
-      {id:"messages",  icon:"💬", label:"Messages",  badge:unreadMsgs, admin:false},
-      {id:"toolshub",  icon:"\uD83D\uDD27", label:"Tools",    badge:0, admin:true},
     ]},
-    { id:"sales", label:"SALES & CRM", items:[
+    { id:"deals", label:"DEALS", items:[
       {id:"pricing",   icon:"🏦", label:"Mortgage POS", badge:0, admin:true},
       {id:"realty",    icon:"🏡", label:"Real Estate", badge:0, admin:true},
       {id:"insurance", icon:"🛡️", label:"Insurance", badge:0, admin:true},
@@ -9865,29 +9861,29 @@ function EmailVault({ user, teamProfile, onSignOut }) {
       {id:"crm",       icon:"👥", label:"Contacts",  badge:overdueTasks.length, admin:true},
       {id:"appointments",icon:"📅", label:"Booking", badge:todayAppts, admin:true},
     ]},
-    { id:"marketing", label:"MARKETING", items:[
+    { id:"comms", label:"COMMS", items:[
+      {id:"inbox",     icon:"✉️", label:"Inbox",     badge:emails.filter(e=>!e.is_read).length, admin:true},
+      {id:"messages",  icon:"💬", label:"Messages",  badge:unreadMsgs, admin:false},
+      {id:"callcenter",icon:"📞", label:"Calls",     badge:unreadNotifs, admin:false},
       {id:"marketing", icon:"📣", label:"Campaigns",  badge:0, admin:true},
       {id:"social",    icon:"📱", label:"Social",     badge:0, admin:true},
-      {id:"market",    icon:"📡", label:"Market Intel",badge:0, admin:true},
     ]},
-    { id:"ops", label:"OPERATIONS", items:[
-      {id:"docs",      icon:"📁", label:"Documents",  badge:0, admin:true},
-      {id:"invoices",  icon:"💰", label:"Invoicing",  badge:overdueInvs, admin:true},
-      {id:"esign",     icon:"✍️", label:"E-Sign",     badge:0, admin:true},
-      {id:"compliance",icon:"📋", label:"Compliance", badge:expiringItems, admin:true},
-    ]},
-    { id:"ai", label:"ANALYTICS & AI", items:[
+    { id:"business", label:"BUSINESS", items:[
       {id:"analytics", icon:"📈", label:"Analytics",    badge:0, admin:true},
       {id:"intel",     icon:"🧠", label:"Intelligence", badge:0, admin:true},
-      {id:"automations",icon:"⚡", label:"Automations",  badge:0, admin:true},
-    ]},
-    { id:"admin", label:"ADMIN", items:[
+      {id:"market",    icon:"📡", label:"Market Intel",badge:0, admin:true},
+      {id:"invoices",  icon:"💰", label:"Invoicing",  badge:overdueInvs, admin:true},
+      {id:"docs",      icon:"📁", label:"Documents",  badge:0, admin:true},
+      {id:"esign",     icon:"✍️", label:"E-Sign",     badge:0, admin:true},
+      {id:"compliance",icon:"📋", label:"Compliance", badge:expiringItems, admin:true},
       {id:"biz",       icon:"🏢", label:"Business",   badge:0, admin:true},
       {id:"vendors",   icon:"🔨", label:"Vendors",    badge:0, admin:true},
-      {id:"toolbox",   icon:"🧰", label:"Tools",      badge:0, admin:true},
-      {id:"settings",  icon:"⚙️", label:"Settings",   badge:0, admin:true},
+      {id:"automations",icon:"⚡", label:"Automations",  badge:0, admin:true},
     ]},
-    { id:"apps", label:"APPS", items:[
+    { id:"tools", label:"TOOLS", items:[
+      {id:"toolshub",  icon:"\uD83D\uDD27", label:"Tools Hub",    badge:0, admin:true},
+      {id:"toolbox",   icon:"🧰", label:"Toolbox",      badge:0, admin:true},
+      {id:"settings",  icon:"⚙️", label:"Settings",   badge:0, admin:true},
       {id:"_wolfsurety", icon:"🐺", label:"Wolf Insurance", badge:0, admin:true, external:"https://app.wolfsurety.com"},
       {id:"_dosmortgage", icon:"🏠", label:"DOS Mortgage", badge:0, admin:true, external:"https://dosmortgage.pages.dev"},
     ]},
@@ -9901,24 +9897,41 @@ function EmailVault({ user, teamProfile, onSignOut }) {
   const handleNav = (v,s) => { setView(v); if(s) setSub(s); else if(v==="crm") setSub("pipeline"); else if(v==="messages") setSub("internal"); };
 
   return (
-    <div style={{ fontFamily:"'DM Mono','Courier New',monospace",background:"#090910",color:"#e0dcd0",height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden" }}>
+    <div style={{ fontFamily:"'Inter','DM Mono','Courier New',sans-serif",background:"#0a0a12",color:"#f0ece4",height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
-        ::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:#09090f}::-webkit-scrollbar-thumb{background:#1e1e2e;border-radius:2px}
-        .rh:hover{background:rgba(255,255,255,0.03)!important}
-        .rh.sel{background:rgba(212,175,55,0.08)!important;border-left:2px solid #d4af37!important}
-        .card:hover{border-color:#2a2a4a!important}
-        .kanban-col{min-height:120px;transition:background .15s}
-        .kanban-col.drag-over{background:rgba(212,175,55,0.05)!important;border-color:#d4af3744!important}
-        textarea,input,select{outline:none}
-        .pulse{animation:pu 1.5s infinite}@keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
-        .fi{animation:fi .2s ease}@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-        .sh{background:linear-gradient(90deg,#10101c 25%,#1a1a2c 50%,#10101c 75%);background-size:200% 100%;animation:sh 1.4s infinite}@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
-        button{transition:opacity .15s}button:disabled{cursor:not-allowed!important;opacity:.5!important}
-        .tag{display:inline-block;padding:1px 6px;border-radius:2px;font-size:9px;letter-spacing:.05em;text-transform:uppercase;margin-right:3px;margin-bottom:2px}
-        .erow:hover{background:rgba(212,175,55,0.04)!important}.erow.sel{background:rgba(212,175,55,0.08)!important;border-left:2px solid #d4af37!important}
+        ::-webkit-scrollbar{width:6px;height:6px}
+        ::-webkit-scrollbar-track{background:#0a0a12}
+        ::-webkit-scrollbar-thumb{background:rgba(212,175,55,0.2);border-radius:3px}
+        ::-webkit-scrollbar-thumb:hover{background:rgba(212,175,55,0.4)}
+        .rh:hover{background:rgba(212,175,55,0.04)!important}
+        .rh.sel{background:rgba(212,175,55,0.1)!important;border-left:3px solid #d4af37!important}
+        .card{border-radius:12px!important;border:1px solid rgba(212,175,55,0.08)!important;box-shadow:0 4px 24px rgba(0,0,0,0.3)!important;transition:all 0.2s ease!important}
+        .card:hover{border-color:rgba(212,175,55,0.2)!important;transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.5)!important}
+        .kanban-col{min-height:120px;transition:background .2s ease}
+        .kanban-col.drag-over{background:rgba(212,175,55,0.06)!important;border-color:rgba(212,175,55,0.25)!important}
+        textarea,input,select{outline:none;font-family:'Inter',sans-serif;background:#0a0a12;border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 14px;color:#f0ece4;font-size:12px;transition:all 0.15s ease}
+        textarea:focus,input:focus,select:focus{border-color:#d4af37;box-shadow:0 0 0 2px rgba(212,175,55,0.15)}
+        textarea::placeholder,input::placeholder{color:#5a5549}
+        .pulse{animation:pulse 1.5s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+        .fi{animation:fadeIn .25s ease}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
+        .sh{background:linear-gradient(90deg,#12121e 25%,#1a1a2e 50%,#12121e 75%);background-size:200% 100%;animation:sh 1.4s infinite}
+        @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+        button{transition:all .2s ease;font-family:'Inter',sans-serif}
+        button:disabled{cursor:not-allowed!important;opacity:.5!important}
+        button:hover:not(:disabled){transform:translateY(-1px)}
+        .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:9px;letter-spacing:.05em;text-transform:uppercase;margin-right:4px;margin-bottom:3px;font-weight:500}
+        .erow{transition:all .15s ease}.erow:hover{background:rgba(212,175,55,0.05)!important}
+        .erow.sel{background:rgba(212,175,55,0.1)!important;border-left:3px solid #d4af37!important}
         @keyframes dot{0%,80%,100%{transform:scale(0.6);opacity:.3}40%{transform:scale(1);opacity:1}}
+        .nav-section-items{overflow:hidden;transition:max-height 0.25s ease,opacity 0.2s ease}
+        .nav-item{transition:all .15s ease;border-radius:0 8px 8px 0}
+        .nav-item:hover{background:rgba(212,175,55,0.06)}
+        @media(prefers-reduced-motion:reduce){*{animation-duration:0.01ms!important;transition-duration:0.01ms!important}}
       `}</style>
 
       {/* Modals */}
@@ -9934,36 +9947,35 @@ function EmailVault({ user, teamProfile, onSignOut }) {
 
       {/* AI Assistant */}
       {showAI&&<AIAssistant contacts={contacts} deals={deals} tasks={tasks} activities={activities} businesses={businesses} intelligence={intelligence} campaigns={campaigns} onClose={()=>setShowAI(false)} />}
-      <button onClick={()=>setShowAI(p=>!p)} style={{ position:"fixed",bottom:20,right:20,width:46,height:46,borderRadius:"50%",background:"rgba(139,92,246,.15)",border:"1px solid rgba(139,92,246,.5)",color:"#a78bfa",cursor:"pointer",fontSize:20,zIndex:200,boxShadow:"0 0 30px rgba(139,92,246,.3)" }} title="Vault AI Advisor">⬡</button>
+      <button onClick={()=>setShowAI(p=>!p)} style={{ position:"fixed",bottom:24,right:24,width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,rgba(139,92,246,.2),rgba(212,175,55,.15))",border:"1px solid rgba(139,92,246,.4)",color:"#a78bfa",cursor:"pointer",fontSize:22,zIndex:200,boxShadow:"0 4px 24px rgba(139,92,246,.3)",transition:"all .2s ease",fontFamily:"inherit" }} title="Vault AI Advisor">{"\u2B21"}</button>
 
       {/* Hey Ken AI Command Center */}
       <KenAIPanel user={user} />
 
-      {/* TOP BAR — slim */}
-      <div style={{ display:"flex",alignItems:"center",padding:"0 12px",height:40,borderBottom:"1px solid #111120",background:"#07070e",flexShrink:0,gap:8 }}>
-        <button onClick={()=>setSidebarOpen(p=>!p)} style={{background:"none",border:"none",color:"#555",cursor:"pointer",fontSize:16,padding:"2px 4px",fontFamily:"inherit"}} title="Toggle sidebar">{sidebarOpen?"◁":"▷"}</button>
-        <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}><img src="/favicon.svg" alt="" style={{width:20,height:20}} /><span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".25em",color:"#d4af37"}}>VAULT</span></div>
+      {/* TOP BAR */}
+      <div style={{ display:"flex",alignItems:"center",padding:"0 16px",height:48,borderBottom:"1px solid rgba(212,175,55,0.06)",background:"#0c0c16",flexShrink:0,gap:10 }}>
+        <button onClick={()=>setSidebarOpen(p=>!p)} style={{background:"none",border:"none",color:"#8a8578",cursor:"pointer",fontSize:16,padding:"4px 6px",fontFamily:"inherit",borderRadius:6}} title="Toggle sidebar">{sidebarOpen?"\u25C1":"\u25B7"}</button>
         <RateTicker />
         <div style={{flex:1}} />
         {/* CRM sub-nav inline */}
         {view==="crm"&&CRM_SUBS.map(s=>(
-          <button key={s.id} onClick={()=>setSub(s.id)} style={{background:sub===s.id?"rgba(212,175,55,.08)":"none",border:`1px solid ${sub===s.id?"rgba(212,175,55,.25)":"transparent"}`,color:sub===s.id?"#d4af37":"#444",fontFamily:"inherit",fontSize:9,padding:"3px 10px",borderRadius:2,cursor:"pointer",letterSpacing:".06em"}}>{s.l}</button>
+          <button key={s.id} onClick={()=>setSub(s.id)} style={{background:sub===s.id?"rgba(212,175,55,.1)":"none",border:`1px solid ${sub===s.id?"rgba(212,175,55,.25)":"rgba(255,255,255,0.04)"}`,color:sub===s.id?"#d4af37":"#8a8578",fontFamily:"inherit",fontSize:11,padding:"5px 14px",borderRadius:8,cursor:"pointer",letterSpacing:".04em",fontWeight:sub===s.id?600:400}}>{s.l}</button>
         ))}
         {/* Messages sub-nav inline */}
         {view==="messages"&&MSG_SUBS.map(s=>(
-          <button key={s.id} onClick={()=>setSub(s.id)} style={{background:sub===s.id?"rgba(212,175,55,.08)":"none",border:`1px solid ${sub===s.id?"rgba(212,175,55,.25)":"transparent"}`,color:sub===s.id?"#d4af37":"#444",fontFamily:"inherit",fontSize:9,padding:"3px 10px",borderRadius:2,cursor:"pointer",letterSpacing:".06em"}}>{s.l}</button>
+          <button key={s.id} onClick={()=>setSub(s.id)} style={{background:sub===s.id?"rgba(212,175,55,.1)":"none",border:`1px solid ${sub===s.id?"rgba(212,175,55,.25)":"rgba(255,255,255,0.04)"}`,color:sub===s.id?"#d4af37":"#8a8578",fontFamily:"inherit",fontSize:11,padding:"5px 14px",borderRadius:8,cursor:"pointer",letterSpacing:".04em",fontWeight:sub===s.id?600:400}}>{s.l}</button>
         ))}
         <div style={{flex:1}} />
-        <button onClick={()=>setShowSearch(true)} style={{ background:"rgba(255,255,255,.03)",border:"1px solid #1a1a28",color:"#444",cursor:"pointer",borderRadius:4,padding:"4px 12px",fontSize:9,fontFamily:"inherit",display:"flex",alignItems:"center",gap:6 }}>⌕ SEARCH <span style={{color:"#2a2a3a",fontSize:8}}>⌘K</span></button>
-        {toast&&<div className="fi" style={{color:"#10b981",fontSize:9,background:"rgba(16,185,129,.08)",padding:"3px 10px",borderRadius:3,border:"1px solid rgba(16,185,129,.2)",whiteSpace:"nowrap"}}>{toast}</div>}
-        {spend.calls>0&&<div title={`${spend.calls} AI calls`} style={{fontSize:8,color:Number(spend.estUSD)>.10?"#f59e0b":"#333",background:"rgba(0,0,0,.4)",padding:"3px 8px",borderRadius:3,border:"1px solid #1a1a28",cursor:"default",letterSpacing:".04em",whiteSpace:"nowrap"}}>~${spend.estUSD}</div>}
-        {overdueTasks.length>0&&<div style={{color:"#ef4444",fontSize:9,background:"rgba(239,68,68,.08)",padding:"3px 8px",borderRadius:3,border:"1px solid rgba(239,68,68,.2)",whiteSpace:"nowrap"}}>⚠ {overdueTasks.length}</div>}
+        <button onClick={()=>setShowSearch(true)} style={{ background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,0.06)",color:"#8a8578",cursor:"pointer",borderRadius:8,padding:"6px 16px",fontSize:11,fontFamily:"inherit",display:"flex",alignItems:"center",gap:8 }}>{"\u2315"} Search <span style={{color:"#5a5549",fontSize:10,marginLeft:4}}>{"\u2318"}K</span></button>
+        {toast&&<div className="fi" style={{color:"#10b981",fontSize:11,background:"rgba(16,185,129,.1)",padding:"5px 14px",borderRadius:8,border:"1px solid rgba(16,185,129,.2)",whiteSpace:"nowrap",fontWeight:500}}>{toast}</div>}
+        {spend.calls>0&&<div title={`${spend.calls} AI calls`} style={{fontSize:10,color:Number(spend.estUSD)>.10?"#f59e0b":"#5a5549",background:"rgba(0,0,0,.4)",padding:"4px 10px",borderRadius:6,border:"1px solid rgba(255,255,255,0.06)",cursor:"default",letterSpacing:".04em",whiteSpace:"nowrap"}}>~${spend.estUSD}</div>}
+        {overdueTasks.length>0&&<div style={{color:"#ef4444",fontSize:11,background:"rgba(239,68,68,.08)",padding:"4px 10px",borderRadius:6,border:"1px solid rgba(239,68,68,.2)",whiteSpace:"nowrap",fontWeight:500}}>{"\u26A0"} {overdueTasks.length}</div>}
         <div style={{position:"relative"}}>
-          <button onClick={()=>setShowNotifPanel(p=>!p)} style={{background:unreadNotifs?"rgba(239,68,68,.1)":"rgba(255,255,255,.03)",border:`1px solid ${unreadNotifs?"rgba(239,68,68,.3)":"#1a1a28"}`,color:unreadNotifs?"#ef4444":"#555",cursor:"pointer",borderRadius:3,padding:"4px 8px",fontSize:12,fontFamily:"inherit",position:"relative"}}>
-            🔔{unreadNotifs>0&&<span style={{position:"absolute",top:-4,right:-4,width:14,height:14,background:"#ef4444",borderRadius:"50%",fontSize:7,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff"}}>{unreadNotifs}</span>}
+          <button onClick={()=>setShowNotifPanel(p=>!p)} style={{background:unreadNotifs?"rgba(239,68,68,.08)":"rgba(255,255,255,.04)",border:`1px solid ${unreadNotifs?"rgba(239,68,68,.25)":"rgba(255,255,255,0.06)"}`,color:unreadNotifs?"#ef4444":"#8a8578",cursor:"pointer",borderRadius:8,padding:"6px 10px",fontSize:14,fontFamily:"inherit",position:"relative"}}>
+            {"\uD83D\uDD14"}{unreadNotifs>0&&<span style={{position:"absolute",top:-5,right:-5,width:16,height:16,background:"#ef4444",borderRadius:"50%",fontSize:8,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700}}>{unreadNotifs}</span>}
           </button>
           {showNotifPanel&&(
-            <div style={{position:"absolute",top:"100%",right:0,marginTop:4,width:340,maxHeight:400,overflow:"auto",background:"#0b0b16",border:"1px solid #1e1e28",borderRadius:6,boxShadow:"0 8px 30px rgba(0,0,0,.6)",zIndex:200,padding:8}}>
+            <div style={{position:"absolute",top:"100%",right:0,marginTop:6,width:360,maxHeight:420,overflow:"auto",background:"#12121e",border:"1px solid rgba(212,175,55,0.1)",borderRadius:12,boxShadow:"0 8px 40px rgba(0,0,0,.7)",zIndex:200,padding:10}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 6px",marginBottom:4}}>
                 <span style={{fontSize:9,color:"#d4af37",letterSpacing:".1em"}}>NOTIFICATIONS</span>
                 {unreadNotifs>0&&<button onClick={async()=>{
@@ -9989,41 +10001,62 @@ function EmailVault({ user, teamProfile, onSignOut }) {
             </div>
           )}
         </div>
-        <button onClick={()=>setShowCompose(true)} style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.3)",color:"#d4af37",cursor:"pointer",borderRadius:3,padding:"4px 10px",fontSize:10,fontFamily:"inherit"}}>✉</button>
-        {user&&<span style={{fontSize:8,color:"#333",whiteSpace:"nowrap"}}>{teamProfile?.display_name||user.email}</span>}
-        <button onClick={onSignOut} style={{background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",color:"#ef4444",cursor:"pointer",borderRadius:3,padding:"4px 8px",fontSize:8,fontFamily:"inherit",letterSpacing:".06em",whiteSpace:"nowrap"}}>LOGOUT</button>
+        <button onClick={()=>setShowCompose(true)} style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.25)",color:"#d4af37",cursor:"pointer",borderRadius:8,padding:"6px 14px",fontSize:12,fontFamily:"inherit",fontWeight:500}}>{"\u2709"}</button>
+        {user&&<span style={{fontSize:11,color:"#8a8578",whiteSpace:"nowrap",fontWeight:500}}>{teamProfile?.display_name||user.email}</span>}
+        <button onClick={onSignOut} style={{background:"rgba(239,68,68,.06)",border:"1px solid rgba(239,68,68,.15)",color:"#ef4444",cursor:"pointer",borderRadius:8,padding:"5px 12px",fontSize:10,fontFamily:"inherit",letterSpacing:".04em",whiteSpace:"nowrap",fontWeight:500}}>LOGOUT</button>
       </div>
 
       {loading&&(
-        <div style={{position:"absolute",top:40,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#d4af37,transparent)",animation:"sh 1.4s infinite",backgroundSize:"200% 100%",zIndex:100}} />
+        <div style={{position:"absolute",top:48,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#d4af37,transparent)",animation:"sh 1.4s infinite",backgroundSize:"200% 100%",zIndex:100}} />
       )}
 
       {/* SIDEBAR + MAIN CONTENT */}
       <div style={{flex:1,overflow:"hidden",display:"flex"}}>
 
-        {/* SIDEBAR — Clean, bright, always expanded */}
-        <div style={{width:sidebarOpen?220:0,minWidth:sidebarOpen?220:0,background:"#0c0c14",borderRight:sidebarOpen?"1px solid #1a1a2a":"none",overflow:"hidden",transition:"width .2s ease, min-width .2s ease",display:"flex",flexDirection:"column",flexShrink:0}}>
-          <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:sidebarOpen?"6px 0":"0"}}>
-            {filteredGroups.map(g=>(
-              <div key={g.id} style={{marginBottom:2}}>
-                {g.label&&<div style={{padding:"10px 16px 4px",fontSize:9,color:"#d4af37",letterSpacing:".15em",fontWeight:600,opacity:0.7}}>{g.label}</div>}
-                {g.items.map(n=>(
-                  <button key={n.id} onClick={()=>{if(n.external){window.open(n.external,"_blank");}else{handleNav(n.id);}}} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 16px",background:view===n.id?"rgba(212,175,55,.12)":"none",borderLeft:view===n.id?"3px solid #d4af37":"3px solid transparent",borderTop:"none",borderRight:"none",borderBottom:"none",color:view===n.id?"#f0e6c0":"#999",cursor:"pointer",fontFamily:"inherit",fontSize:11,textAlign:"left",transition:"all .15s",letterSpacing:".03em"}}>
-                    <span style={{fontSize:15,width:20,textAlign:"center",flexShrink:0}}>{n.icon}</span>
-                    <span style={{flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontWeight:view===n.id?600:400}}>{n.label}</span>
-                    {n.badge>0&&<span style={{minWidth:18,height:18,background:"#ef4444",borderRadius:9,fontSize:9,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",padding:"0 5px",flexShrink:0,fontWeight:700}}>{n.badge}</span>}
-                    {n.external&&<span style={{fontSize:9,color:"#555"}}>↗</span>}
-                  </button>
-                ))}
+        {/* SIDEBAR — Luxury dark, collapsible sections */}
+        <div style={{width:sidebarOpen?220:0,minWidth:sidebarOpen?220:0,background:"#0c0c16",borderRight:sidebarOpen?"1px solid rgba(212,175,55,0.06)":"none",overflow:"hidden",transition:"width .25s ease, min-width .25s ease",display:"flex",flexDirection:"column",flexShrink:0}}>
+          {/* Logo area */}
+          {sidebarOpen&&<div style={{padding:"16px 18px 12px",borderBottom:"1px solid rgba(212,175,55,0.06)",flexShrink:0}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <img src="/favicon.svg" alt="" style={{width:22,height:22}} />
+              <div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#d4af37",lineHeight:1}}>ZIAREM</div>
+                <div style={{fontSize:9,color:"#5a5549",letterSpacing:".1em",marginTop:1}}>Business Platform</div>
               </div>
-            ))}
+            </div>
+          </div>}
+          <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:sidebarOpen?"8px 0":"0"}}>
+            {filteredGroups.map(g=>{
+              const sectionIcon = g.id==="command"?"\uD83C\uDFAF":g.id==="deals"?"\uD83D\uDCBC":g.id==="comms"?"\uD83D\uDCAC":g.id==="business"?"\uD83D\uDCCA":"\uD83D\uDD27";
+              const isOpen = sidebarSection===g.id || (!sidebarSection && g.items.some(n=>n.id===view));
+              const groupBadge = g.items.reduce((s,n)=>s+(n.badge||0),0);
+              return (
+              <div key={g.id} style={{marginBottom:4}}>
+                <button onClick={()=>setSidebarSection(p=>p===g.id?null:g.id)} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"8px 16px",background:"none",border:"none",color:isOpen?"#d4af37":"#5a5549",cursor:"pointer",fontFamily:"'Inter',sans-serif",fontSize:9,textAlign:"left",letterSpacing:".15em",fontWeight:600,textTransform:"uppercase",transition:"all .15s ease"}}>
+                  <span style={{fontSize:12,width:16,textAlign:"center",flexShrink:0}}>{sectionIcon}</span>
+                  <span style={{flex:1}}>{g.label}</span>
+                  {groupBadge>0&&<span style={{minWidth:16,height:16,background:"rgba(239,68,68,.15)",borderRadius:8,fontSize:8,display:"flex",alignItems:"center",justifyContent:"center",color:"#ef4444",padding:"0 4px",flexShrink:0,fontWeight:700}}>{groupBadge}</span>}
+                  <span style={{fontSize:8,transition:"transform .2s ease",transform:isOpen?"rotate(90deg)":"rotate(0)",color:isOpen?"#d4af37":"#5a5549"}}>{"\u25B6"}</span>
+                </button>
+                <div className="nav-section-items" style={{maxHeight:isOpen?g.items.length*40+"px":"0",opacity:isOpen?1:0,overflow:"hidden"}}>
+                  {g.items.map(n=>(
+                    <button key={n.id} className="nav-item" onClick={()=>{if(n.external){window.open(n.external,"_blank");}else{handleNav(n.id);}}} style={{display:"flex",alignItems:"center",gap:10,width:"calc(100% - 6px)",marginLeft:6,padding:"8px 14px",background:view===n.id?"rgba(212,175,55,.1)":"none",borderLeft:view===n.id?"3px solid #d4af37":"3px solid transparent",borderTop:"none",borderRight:"none",borderBottom:"none",color:view===n.id?"#f0ece4":"#8a8578",cursor:"pointer",fontFamily:"'Inter',sans-serif",fontSize:11,textAlign:"left",letterSpacing:".03em",fontWeight:view===n.id?600:400}}>
+                      <span style={{fontSize:14,width:20,textAlign:"center",flexShrink:0}}>{n.icon}</span>
+                      <span style={{flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{n.label}</span>
+                      {n.badge>0&&<span style={{minWidth:18,height:18,background:"#ef4444",borderRadius:9,fontSize:9,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",padding:"0 5px",flexShrink:0,fontWeight:700}}>{n.badge}</span>}
+                      {n.external&&<span style={{fontSize:10,color:"#5a5549"}}>{"\u2197"}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );})}
           </div>
-          {/* Sidebar footer */}
-          {sidebarOpen&&<div style={{borderTop:"1px solid #1a1a2a",padding:"10px 16px",display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:28,height:28,borderRadius:"50%",background:"linear-gradient(135deg,#d4af37,#b8962e)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:"#000",fontWeight:700,flexShrink:0}}>K</div>
+          {/* Sidebar footer — user avatar */}
+          {sidebarOpen&&<div style={{borderTop:"1px solid rgba(212,175,55,0.06)",padding:"14px 18px",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:32,height:32,borderRadius:"50%",background:"linear-gradient(135deg,#d4af37,#b8962e)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#0a0a12",fontWeight:700,flexShrink:0,boxShadow:"0 2px 8px rgba(212,175,55,0.3)"}}>K</div>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:10,color:"#ccc",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontWeight:500}}>{teamProfile?.display_name||"Ken Wolf"}</div>
-              <div style={{fontSize:8,color:"#d4af37",letterSpacing:".1em"}}>ADMIN</div>
+              <div style={{fontSize:12,color:"#f0ece4",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",fontWeight:500}}>{teamProfile?.display_name||"Ken Wolf"}</div>
+              <div style={{fontSize:9,color:"#d4af37",letterSpacing:".1em",fontWeight:600}}>ADMIN</div>
             </div>
           </div>}
         </div>
