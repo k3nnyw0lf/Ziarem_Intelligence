@@ -5314,101 +5314,280 @@ const ZIAREM_SERVICES = [
 ];
 
 function LandingPage({ onGoLogin }) {
-  const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({behavior:"smooth"}); };
   const F = "'Inter',-apple-system,BlinkMacSystemFont,sans-serif";
+  const gold = "#d4af37";
+  const dark = "#050508";
+  const scrollTo = (id) => { document.getElementById(id)?.scrollIntoView({behavior:"smooth"}); };
+
+  // Stats counter animation
+  const [statsVisible, setStatsVisible] = useState(false);
+  const [counts, setCounts] = useState([0,0,0,0]);
+  const statsRef = useRef(null);
+  const statsTargets = [50,16,21,24];
+  const statsLabels = ["Wholesale Lenders","Insurance Carriers","Day Closings","AI Support"];
+  const statsDisplay = ["50+","16+","7-21","24/7"];
+
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setStatsVisible(true); obs.disconnect(); }
+    }, {threshold:0.3});
+    if (statsRef.current) obs.observe(statsRef.current);
+    return () => obs.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!statsVisible) return;
+    const duration = 1500;
+    const steps = 40;
+    const interval = duration / steps;
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      const progress = Math.min(step / steps, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCounts(statsTargets.map(t => Math.round(t * eased)));
+      if (step >= steps) clearInterval(timer);
+    }, interval);
+    return () => clearInterval(timer);
+  }, [statsVisible]);
+
+  // Particles data (generated once)
+  const particles = useMemo(() => Array.from({length:20}, (_,i) => ({
+    id: i,
+    left: Math.random()*100,
+    top: Math.random()*100,
+    size: 2 + Math.random()*3,
+    duration: 8 + Math.random()*12,
+    delay: Math.random()*8,
+    dx: (Math.random()-0.5)*200,
+    dy: (Math.random()-0.5)*200,
+    dz: (Math.random()-0.5)*100,
+  })), []);
+
+  const services = [
+    {icon:"\uD83C\uDFE6",name:"Mortgage",desc:"50+ wholesale lenders. Best rates guaranteed."},
+    {icon:"\uD83D\uDEE1\uFE0F",name:"Insurance",desc:"16+ carriers. Average 28% savings."},
+    {icon:"\uD83C\uDFE0",name:"Real Estate",desc:"AI-powered search. Smart negotiation."},
+    {icon:"\uD83D\uDCDC",name:"Title",desc:"7-21 day closings. Full escrow services."},
+    {icon:"\u26A1",name:"Credit",desc:"Strategic profile optimization."},
+    {icon:"\uD83D\uDCBC",name:"Business",desc:"Commercial lending & consulting."},
+  ];
+
+  const cardTilt = {
+    onMouseMove: (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      e.currentTarget.style.transform = `perspective(800px) rotateY(${x*10}deg) rotateX(${-y*10}deg) translateZ(10px)`;
+      e.currentTarget.style.borderColor = "rgba(212,175,55,.3)";
+    },
+    onMouseLeave: (e) => {
+      e.currentTarget.style.transform = "perspective(800px) rotateY(0) rotateX(0) translateZ(0)";
+      e.currentTarget.style.borderColor = "rgba(255,255,255,.05)";
+    }
+  };
+
+  const glassCard = {
+    background:"rgba(255,255,255,0.03)",
+    backdropFilter:"blur(20px)",
+    WebkitBackdropFilter:"blur(20px)",
+    border:"1px solid rgba(255,255,255,0.05)",
+    borderRadius:12,
+    padding:"32px 28px",
+    transition:"transform .4s cubic-bezier(.03,.98,.52,.99), border-color .3s",
+    cursor:"default",
+    willChange:"transform",
+  };
+
+  const glassBtn = (filled) => ({
+    background: filled ? "rgba(212,175,55,0.12)" : "rgba(255,255,255,0.03)",
+    backdropFilter:"blur(16px)",
+    WebkitBackdropFilter:"blur(16px)",
+    border:`1px solid ${filled ? "rgba(212,175,55,0.4)" : "rgba(255,255,255,0.08)"}`,
+    color: filled ? gold : "#ccc",
+    borderRadius:8,
+    padding:"14px 36px",
+    cursor:"pointer",
+    fontFamily:F,
+    fontSize:11,
+    fontWeight:500,
+    letterSpacing:".15em",
+    transition:"all .3s",
+  });
 
   return (
-    <div style={{minHeight:"100vh",background:"#06060e",color:"#e0dcd0",fontFamily:F}}>
+    <div style={{minHeight:"100vh",background:dark,color:"#e0dcd0",fontFamily:F,overflowX:"hidden"}}>
+      <style>{`
+        @keyframes lp-spin { from { transform: rotateY(0deg) rotateX(15deg); } to { transform: rotateY(360deg) rotateX(15deg); } }
+        @keyframes lp-float { 0%, 100% { transform: translateY(0px) rotate(45deg); } 50% { transform: translateY(-20px) rotate(45deg) rotateX(180deg); } }
+        @keyframes lp-spinR { from { transform: rotateY(360deg) rotateX(10deg); } to { transform: rotateY(0deg) rotateX(10deg); } }
+        @keyframes lp-particle { 0% { transform: translate3d(0,0,0); opacity:0; } 15% { opacity:1; } 85% { opacity:1; } 100% { transform: translate3d(var(--dx),var(--dy),var(--dz)); opacity:0; } }
+        @keyframes lp-lineGrow { from { width:0; } to { width:100px; } }
+        @keyframes lp-fadeInUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes lp-bounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(8px); } }
+        @keyframes lp-countUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes lp-glow { 0%,100% { box-shadow:0 0 20px rgba(212,175,55,.05); } 50% { box-shadow:0 0 40px rgba(212,175,55,.12); } }
+      `}</style>
+
       {/* ── NAV ── */}
-      <nav style={{position:"fixed",top:0,left:0,right:0,zIndex:100,background:"rgba(6,6,14,.85)",backdropFilter:"blur(12px)",borderBottom:"1px solid #1a1a28"}}>
+      <nav style={{position:"fixed",top:0,left:0,right:0,zIndex:100,background:"rgba(5,5,8,.85)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
         <div style={{maxWidth:1100,margin:"0 auto",padding:"0 24px",height:56,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <img src="/logo.svg" alt="Ziarem" style={{height:36,cursor:"pointer"}} onClick={()=>window.scrollTo({top:0,behavior:"smooth"})} />
-          <div style={{display:"flex",alignItems:"center",gap:24}}>
+          <div style={{fontSize:16,fontWeight:200,letterSpacing:".2em",color:gold,cursor:"pointer"}} onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>ZIAREM</div>
+          <div style={{display:"flex",alignItems:"center",gap:28}}>
             {["Services","About","Contact"].map(s=>(
-              <button key={s} onClick={()=>scrollTo(s.toLowerCase())} style={{background:"none",border:"none",color:"#777",cursor:"pointer",fontFamily:F,fontSize:11,letterSpacing:".08em"}}>{s.toUpperCase()}</button>
+              <button key={s} onClick={()=>scrollTo(s.toLowerCase())} style={{background:"none",border:"none",color:"#555",cursor:"pointer",fontFamily:F,fontSize:10,letterSpacing:".12em",transition:"color .3s"}}
+                onMouseEnter={e=>{e.currentTarget.style.color=gold;}} onMouseLeave={e=>{e.currentTarget.style.color="#555";}}>{s.toUpperCase()}</button>
             ))}
-            <button onClick={onGoLogin} style={{background:"#d4af37",color:"#000",border:"none",borderRadius:4,padding:"8px 20px",cursor:"pointer",fontFamily:F,fontSize:10,fontWeight:600,letterSpacing:".15em"}}>LOGIN</button>
+            <button onClick={onGoLogin} style={{...glassBtn(true),padding:"8px 22px",fontSize:9}}>LOGIN</button>
           </div>
         </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center",padding:"120px 24px 80px",position:"relative",overflow:"hidden"}}>
-        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle,rgba(212,175,55,.06) 0%,transparent 70%)",pointerEvents:"none"}} />
-        <div style={{position:"relative",maxWidth:700}}>
-          <img src="/logo.svg" alt="Ziarem" style={{width:"min(480px,80vw)",marginBottom:16}} />
-          <div style={{fontSize:13,color:"#888",letterSpacing:".2em",marginBottom:32,lineHeight:1.8}}>
-            MORTGAGE &nbsp;|&nbsp; REAL ESTATE &nbsp;|&nbsp; CREDIT &nbsp;|&nbsp; INSURANCE &nbsp;|&nbsp; CONSTRUCTION<br/>
-            ACCOUNTING &nbsp;|&nbsp; PROCESSING &nbsp;|&nbsp; MARKETING
+      <section style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center",padding:"120px 24px 80px",position:"relative",overflow:"hidden",perspective:"1000px"}}>
+        {/* 3D Floating Shapes */}
+        <div style={{position:"absolute",top:"15%",left:"10%",width:80,height:80,border:"1px solid rgba(212,175,55,0.15)",animation:"lp-spin 20s linear infinite",pointerEvents:"none",transformStyle:"preserve-3d"}} />
+        <div style={{position:"absolute",top:"25%",right:"15%",width:60,height:60,border:"1px solid rgba(212,175,55,0.1)",animation:"lp-float 15s ease-in-out infinite",pointerEvents:"none",transformStyle:"preserve-3d"}} />
+        <div style={{position:"absolute",bottom:"20%",left:"20%",width:100,height:100,borderRadius:"50%",border:"1px solid rgba(212,175,55,0.08)",animation:"lp-spinR 30s linear infinite",pointerEvents:"none",transformStyle:"preserve-3d"}} />
+
+        {/* Gold Particles */}
+        {particles.map(p=>(
+          <div key={p.id} style={{
+            position:"absolute",
+            left:`${p.left}%`,top:`${p.top}%`,
+            width:p.size,height:p.size,
+            borderRadius:"50%",
+            background:`radial-gradient(circle,${gold},rgba(212,175,55,.3))`,
+            animation:`lp-particle ${p.duration}s ease-in-out ${p.delay}s infinite`,
+            pointerEvents:"none",
+            "--dx":`${p.dx}px`,"--dy":`${p.dy}px`,"--dz":`${p.dz}px`,
+          }} />
+        ))}
+
+        {/* Radial glow */}
+        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:700,height:700,borderRadius:"50%",background:"radial-gradient(circle,rgba(212,175,55,.04) 0%,transparent 60%)",pointerEvents:"none"}} />
+
+        {/* Hero content */}
+        <div style={{position:"relative",maxWidth:700,animation:"lp-fadeInUp 1.2s ease-out"}}>
+          <div style={{
+            fontSize:60,fontWeight:200,letterSpacing:".25em",color:gold,marginBottom:16,lineHeight:1,
+            textShadow:`0 1px 0 rgba(180,150,40,.6), 0 2px 0 rgba(160,130,35,.5), 0 3px 0 rgba(140,110,30,.4), 0 4px 0 rgba(120,90,25,.3), 0 5px 0 rgba(100,70,20,.2), 0 8px 20px rgba(0,0,0,.6)`,
+          }}>ZIAREM</div>
+          <div style={{fontSize:14,letterSpacing:".3em",color:"#777",marginBottom:32,fontWeight:300}}>BUSINESS PLATFORM</div>
+
+          {/* Animated gold line */}
+          <div style={{margin:"0 auto 28px",height:1,background:gold,opacity:.4,animation:"lp-lineGrow 2s ease-out forwards",animationDelay:".5s",width:0}} />
+
+          <div style={{fontSize:12,color:"#555",letterSpacing:".15em",marginBottom:40,lineHeight:2}}>
+            Mortgage &nbsp;&middot;&nbsp; Insurance &nbsp;&middot;&nbsp; Real Estate &nbsp;&middot;&nbsp; Title &nbsp;&middot;&nbsp; Credit
           </div>
-          <p style={{fontSize:16,color:"#999",lineHeight:1.8,maxWidth:520,margin:"0 auto 40px",fontWeight:300}}>
-            A unified business ecosystem built to serve every stage of the homeownership journey &mdash; from credit optimization to closing and beyond.
-          </p>
+
           <div style={{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap"}}>
-            <button onClick={()=>scrollTo("services")} style={{background:"transparent",border:"1px solid #d4af37",color:"#d4af37",borderRadius:4,padding:"12px 32px",cursor:"pointer",fontFamily:F,fontSize:11,fontWeight:500,letterSpacing:".15em"}}>OUR SERVICES</button>
-            <button onClick={onGoLogin} style={{background:"#d4af37",color:"#000",border:"1px solid #d4af37",borderRadius:4,padding:"12px 32px",cursor:"pointer",fontFamily:F,fontSize:11,fontWeight:600,letterSpacing:".15em"}}>VAULT LOGIN</button>
+            <button onClick={()=>scrollTo("services")} style={glassBtn(false)}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(212,175,55,.3)";e.currentTarget.style.color=gold;}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,.08)";e.currentTarget.style.color="#ccc";}}>EXPLORE</button>
+            <button onClick={onGoLogin} style={glassBtn(true)}
+              onMouseEnter={e=>{e.currentTarget.style.background="rgba(212,175,55,.22)";}}
+              onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,175,55,.12)";}}>LOGIN</button>
           </div>
+        </div>
+
+        {/* Scroll indicator */}
+        <div style={{position:"absolute",bottom:32,left:"50%",transform:"translateX(-50%)",display:"flex",flexDirection:"column",alignItems:"center",gap:6,opacity:.4}}>
+          <div style={{fontSize:9,letterSpacing:".15em",color:"#555"}}>SCROLL</div>
+          <div style={{animation:"lp-bounce 2s ease-in-out infinite",fontSize:16,color:"#555"}}>{"\u2304"}</div>
         </div>
       </section>
 
       {/* ── SERVICES ── */}
-      <section id="services" style={{maxWidth:1100,margin:"0 auto",padding:"80px 24px"}}>
-        <div style={{textAlign:"center",marginBottom:56}}>
-          <div style={{fontSize:9,color:"#d4af37",letterSpacing:".3em",marginBottom:8}}>WHAT WE DO</div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:38,letterSpacing:".15em",color:"#e0dcd0"}}>OUR SERVICES</div>
-          <div style={{width:60,height:1,background:"#d4af37",margin:"16px auto 0"}} />
+      <section id="services" style={{maxWidth:1000,margin:"0 auto",padding:"100px 24px"}}>
+        <div style={{textAlign:"center",marginBottom:60}}>
+          <div style={{fontSize:11,letterSpacing:".3em",color:"#555",marginBottom:12}}>WHAT WE DO</div>
+          <div style={{fontSize:28,fontWeight:200,letterSpacing:".15em",color:"#e0dcd0",marginBottom:16}}>SERVICES</div>
+          <div style={{width:60,height:1,background:gold,margin:"0 auto",opacity:.5}} />
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:20}}>
-          {ZIAREM_SERVICES.map(s=>(
-            <div key={s.name} style={{background:"#0a0a16",border:"1px solid #1a1a28",borderRadius:6,padding:"28px 24px",transition:"border-color .3s,transform .3s"}}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(212,175,55,.35)";e.currentTarget.style.transform="translateY(-2px)";}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor="#1a1a28";e.currentTarget.style.transform="translateY(0)";}}>
-              <div style={{fontSize:28,marginBottom:12}}>{s.icon}</div>
-              <div style={{fontSize:13,color:"#d4af37",letterSpacing:".1em",marginBottom:8,fontWeight:600}}>{s.name.toUpperCase()}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:20}}>
+          {services.map(s=>(
+            <div key={s.name} style={{...glassCard}} {...cardTilt}>
+              <div style={{fontSize:32,marginBottom:14}}>{s.icon}</div>
+              <div style={{fontSize:13,color:gold,letterSpacing:".1em",marginBottom:8,fontWeight:500}}>{s.name.toUpperCase()}</div>
               <div style={{fontSize:12,color:"#666",lineHeight:1.7}}>{s.desc}</div>
             </div>
           ))}
         </div>
       </section>
 
+      {/* ── STATS ── */}
+      <section ref={statsRef} style={{padding:"80px 24px",borderTop:"1px solid rgba(255,255,255,.03)",borderBottom:"1px solid rgba(255,255,255,.03)",background:"rgba(255,255,255,.01)"}}>
+        <div style={{maxWidth:900,margin:"0 auto",display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:20,textAlign:"center"}}>
+          {statsDisplay.map((d,i)=>(
+            <div key={i} style={{animation: statsVisible ? `lp-countUp .8s ease-out ${i*0.15}s both` : "none"}}>
+              <div style={{fontSize:36,fontWeight:700,color:gold,marginBottom:6,fontVariantNumeric:"tabular-nums"}}>
+                {statsVisible ? d : "\u00A0"}
+              </div>
+              <div style={{fontSize:11,color:"#555",letterSpacing:".1em"}}>{statsLabels[i]}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* ── ABOUT ── */}
-      <section id="about" style={{background:"#08080f",borderTop:"1px solid #12121e",borderBottom:"1px solid #12121e"}}>
-        <div style={{maxWidth:800,margin:"0 auto",padding:"80px 24px",textAlign:"center"}}>
-          <div style={{fontSize:9,color:"#d4af37",letterSpacing:".3em",marginBottom:8}}>LEADERSHIP</div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:38,letterSpacing:".15em",color:"#e0dcd0",marginBottom:8}}>KEN WOLF</div>
-          <div style={{fontSize:11,color:"#555",letterSpacing:".15em",marginBottom:32}}>FOUNDER & CEO</div>
-          <p style={{fontSize:14,color:"#888",lineHeight:1.9,maxWidth:600,margin:"0 auto 24px",fontWeight:300}}>
-            With deep expertise spanning mortgage lending, real estate, credit strategy, and financial services, Ken Wolf built Ziarem to eliminate the fragmentation that plagues the homeownership industry.
-          </p>
-          <p style={{fontSize:14,color:"#777",lineHeight:1.9,maxWidth:600,margin:"0 auto",fontWeight:300}}>
-            Every division &mdash; from credit optimization to construction &mdash; operates under one roof, ensuring seamless coordination and faster results for clients and partners alike.
-          </p>
+      <section id="about" style={{padding:"100px 24px"}}>
+        <div style={{maxWidth:640,margin:"0 auto",textAlign:"center"}}>
+          <div style={{fontSize:11,letterSpacing:".3em",color:"#555",marginBottom:12}}>ABOUT</div>
+          <div style={{position:"relative",padding:"0 24px"}}>
+            <span style={{position:"absolute",top:-10,left:0,fontSize:40,color:"rgba(212,175,55,.15)",fontFamily:"Georgia,serif",lineHeight:1}}>{"\u201C"}</span>
+            <p style={{fontSize:15,color:"#888",lineHeight:2,fontWeight:300}}>
+              Built by Ken Wolf in Naples, FL &mdash; a vertically integrated financial ecosystem where every service works together.
+            </p>
+            <span style={{position:"absolute",bottom:-24,right:0,fontSize:40,color:"rgba(212,175,55,.15)",fontFamily:"Georgia,serif",lineHeight:1}}>{"\u201D"}</span>
+          </div>
+          <div style={{width:40,height:1,background:gold,margin:"40px auto 0",opacity:.3}} />
         </div>
       </section>
 
       {/* ── CONTACT ── */}
-      <section id="contact" style={{maxWidth:800,margin:"0 auto",padding:"80px 24px",textAlign:"center"}}>
-        <div style={{fontSize:9,color:"#d4af37",letterSpacing:".3em",marginBottom:8}}>GET IN TOUCH</div>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:38,letterSpacing:".15em",color:"#e0dcd0",marginBottom:32}}>CONTACT</div>
-        <div style={{display:"flex",justifyContent:"center",gap:40,flexWrap:"wrap",marginBottom:40}}>
-          {[
-            {icon:"✉",label:"EMAIL",value:"info@ziarem.com"},
-            {icon:"🌐",label:"WEB",value:"ziarem.com"},
-          ].map(c=>(
-            <div key={c.label}>
-              <div style={{fontSize:20,marginBottom:6}}>{c.icon}</div>
-              <div style={{fontSize:8,color:"#555",letterSpacing:".15em",marginBottom:4}}>{c.label}</div>
-              <div style={{fontSize:13,color:"#e0dcd0"}}>{c.value}</div>
-            </div>
-          ))}
+      <section id="contact" style={{padding:"100px 24px",borderTop:"1px solid rgba(255,255,255,.03)"}}>
+        <div style={{maxWidth:600,margin:"0 auto",textAlign:"center"}}>
+          <div style={{fontSize:11,letterSpacing:".3em",color:"#555",marginBottom:12}}>CONNECT</div>
+          <div style={{fontSize:28,fontWeight:200,letterSpacing:".15em",color:"#e0dcd0",marginBottom:40}}>Get Started</div>
+
+          <div style={{display:"flex",justifyContent:"center",gap:48,flexWrap:"wrap",marginBottom:48}}>
+            <a href="tel:2396880007" style={{textDecoration:"none",textAlign:"center",transition:"transform .3s",display:"block"}}
+              onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";}}>
+              <div style={{fontSize:20,marginBottom:6}}>📞</div>
+              <div style={{fontSize:9,color:"#555",letterSpacing:".15em",marginBottom:4}}>PHONE</div>
+              <div style={{fontSize:13,color:"#e0dcd0"}}>(239) 688-0007</div>
+            </a>
+            <a href="mailto:info@ziarem.com" style={{textDecoration:"none",textAlign:"center",transition:"transform .3s",display:"block"}}
+              onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";}}>
+              <div style={{fontSize:20,marginBottom:6}}>{"\u2709\uFE0F"}</div>
+              <div style={{fontSize:9,color:"#555",letterSpacing:".15em",marginBottom:4}}>EMAIL</div>
+              <div style={{fontSize:13,color:"#e0dcd0"}}>info@ziarem.com</div>
+            </a>
+          </div>
+
+          <div style={{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap"}}>
+            <a href="https://booking-engine.ziarem.com" target="_blank" rel="noopener noreferrer" style={{textDecoration:"none"}}>
+              <button style={glassBtn(false)}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(212,175,55,.3)";e.currentTarget.style.color=gold;}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor="rgba(255,255,255,.08)";e.currentTarget.style.color="#ccc";}}>SCHEDULE A CALL</button>
+            </a>
+            <button onClick={onGoLogin} style={glassBtn(true)}
+              onMouseEnter={e=>{e.currentTarget.style.background="rgba(212,175,55,.22)";}}
+              onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,175,55,.12)";}}>LOGIN TO PLATFORM</button>
+          </div>
         </div>
-        <button onClick={onGoLogin} style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.3)",color:"#d4af37",borderRadius:4,padding:"12px 32px",cursor:"pointer",fontFamily:F,fontSize:11,fontWeight:500,letterSpacing:".15em"}}>ACCESS VAULT CRM</button>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{borderTop:"1px solid #12121e",padding:"32px 24px",textAlign:"center"}}>
-        <img src="/logo.svg" alt="Ziarem" style={{height:24,opacity:.4,marginBottom:8}} />
-        <div style={{fontSize:9,color:"#2a2a3a",letterSpacing:".1em"}}>&copy; {new Date().getFullYear()} Ziarem. All rights reserved.</div>
+      <footer style={{borderTop:"1px solid rgba(255,255,255,.03)",padding:"40px 24px",textAlign:"center"}}>
+        <div style={{fontSize:10,color:"#333",letterSpacing:".08em",marginBottom:8}}>
+          &copy; 2026 Ziarem &nbsp;&middot;&nbsp; A Laenan Group Company &nbsp;&middot;&nbsp; NMLS# 2566498
+        </div>
+        <div style={{fontSize:9,color:"#2a2a3a",letterSpacing:".1em",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+          Powered by AI <span style={{display:"inline-block",width:5,height:5,borderRadius:"50%",background:gold,opacity:.5}} />
+        </div>
       </footer>
     </div>
   );
@@ -5985,7 +6164,7 @@ export default function EmailVaultApp() {
     const token = session?.access_token;
     setSession(null); setTeamProfile(null);
     localStorage.removeItem("vault_token");
-    setPage("login");
+    setPage("landing");
     if (token) await authSignOut(token);
   };
 
