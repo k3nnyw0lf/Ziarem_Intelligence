@@ -5261,7 +5261,408 @@ function LoginScreen({ onLogin, onBack }) {
   );
 }
 
-// ─── CLAWBOT CHAT PANEL ──────────────────────────────────────────────────────
+// ─── COMMAND CENTER ──────────────────────────────────────────────────────────
+function CommandCenterView({ showToast }) {
+  const EF = (fn) => `${SB_URL}/functions/v1/${fn}`;
+  const EFH = { "Content-Type":"application/json", apikey:SB_KEY, Authorization:`Bearer ${SB_KEY}` };
+  const [modal, setModal] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [form, setForm] = useState({});
+
+  const callEF = async (method, fn, body=null) => {
+    setLoading(true); setResult(null);
+    try {
+      const opts = { method, headers: EFH };
+      if (body) opts.body = JSON.stringify(body);
+      const r = await fetch(EF(fn), opts);
+      const d = await r.json();
+      setResult(d);
+    } catch(e) { setResult({ error: e.message }); }
+    setLoading(false);
+  };
+
+  const openTab = (fn) => window.open(EF(fn), "_blank");
+  const resetModal = () => { setModal(null); setResult(null); setForm({}); setLoading(false); };
+  const fv = (k) => form[k] || "";
+  const sf = (k,v) => setForm(p=>({...p,[k]:v}));
+
+  // Styles
+  const sCard = { background:"#0c0c18", border:"1px solid #1a1a2e", borderLeft:"3px solid #d4af37", borderRadius:6, padding:"16px 18px", cursor:"default", transition:"all .2s", position:"relative" };
+  const sCardHover = { transform:"translateY(-2px)", boxShadow:"0 8px 24px rgba(0,0,0,.4)", borderColor:"#2a2a4a" };
+  const sBtn = { background:"linear-gradient(135deg,#d4af37,#b8962e)", color:"#0a0a14", border:"none", padding:"6px 14px", borderRadius:4, cursor:"pointer", fontSize:10, fontWeight:700, fontFamily:"inherit", letterSpacing:".05em" };
+  const sBtnSm = { ...sBtn, padding:"5px 10px", fontSize:9 };
+  const sOverlay = { position:"fixed", inset:0, background:"rgba(0,0,0,.7)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center" };
+  const sModalCard = { background:"#0c0c18", border:"1px solid rgba(212,175,55,.2)", borderRadius:8, padding:"24px", width:520, maxHeight:"80vh", overflowY:"auto", color:"#e0dcd0", fontFamily:"'DM Mono',monospace" };
+  const sInp = { width:"100%", padding:"8px 10px", background:"#0f0f1a", border:"1px solid #1e1e2e", borderRadius:4, color:"#e0dcd0", fontFamily:"inherit", fontSize:11, outline:"none", marginBottom:8 };
+  const sLabel = { fontSize:9, color:"#888", letterSpacing:".08em", textTransform:"uppercase", marginBottom:3, display:"block" };
+  const sSec = { marginBottom:28 };
+  const sSecTitle = { fontSize:13, color:"#d4af37", fontWeight:600, letterSpacing:".06em", marginBottom:12, display:"flex", alignItems:"center", gap:8 };
+
+  const CardW = ({ icon, title, desc, children }) => {
+    const [hov, setHov] = useState(false);
+    return (
+      <div style={{...sCard,...(hov?sCardHover:{})}} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}>
+        <div style={{fontSize:20,marginBottom:6}}>{icon}</div>
+        <div style={{fontSize:12,fontWeight:600,color:"#e8e4d9",marginBottom:4}}>{title}</div>
+        <div style={{fontSize:10,color:"#666",marginBottom:10,lineHeight:1.4}}>{desc}</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>{children}</div>
+      </div>
+    );
+  };
+
+  const ResultDisplay = ({ data }) => {
+    if (!data) return null;
+    if (data.error) return <div style={{color:"#ef4444",fontSize:11,marginTop:10}}>Error: {typeof data.error==="string"?data.error:JSON.stringify(data.error)}</div>;
+    if (typeof data === "string") return <pre style={{fontSize:10,color:"#ccc",whiteSpace:"pre-wrap",marginTop:10}}>{data}</pre>;
+    return <pre style={{fontSize:10,color:"#ccc",background:"#080810",padding:10,borderRadius:4,maxHeight:300,overflowY:"auto",whiteSpace:"pre-wrap",marginTop:10}}>{JSON.stringify(data,null,2)}</pre>;
+  };
+
+  const Spinner = () => <div style={{textAlign:"center",padding:20,color:"#d4af37",fontSize:11}}>Loading...</div>;
+
+  // Categories
+  const categories = [
+    { icon:"💰", title:"REVENUE", cards:[
+      { icon:"📊", title:"Commission P&L", desc:"View your cross-business revenue", action:()=>{setModal("commission");callEF("GET","commission-tracker/dashboard");} },
+      { icon:"👑", title:"Top Clients (CLV)", desc:"Your highest value clients", action:()=>{setModal("topclv");callEF("GET","clv-engine/top?limit=10");} },
+      { icon:"🔍", title:"Cross-Sell Finder", desc:"Find missing opportunities", action:()=>{setModal("crosssell");callEF("POST","clv-engine/opportunities");} },
+      { icon:"🧮", title:"Profit Calculator", desc:"Calculate net profit on any deal", action:"profitcalc" },
+    ]},
+    { icon:"📞", title:"OUTREACH", cards:[
+      { icon:"🤖", title:"AI Cold Caller", desc:"Launch AI dialer campaigns", action:"aicaller" },
+      { icon:"📞", title:"Power Dialer", desc:"Blast through a call list", action:"powerdialer" },
+      { icon:"💬", title:"SMS Blast", desc:"Mass text your list", action:"smsblast" },
+      { icon:"📧", title:"Email Blast", desc:"Mass email your list", action:"emailblast" },
+      { icon:"🟢", title:"WhatsApp Blast", desc:"Mass WhatsApp message", action:"wablast" },
+    ]},
+    { icon:"🎯", title:"LEAD GENERATION", cards:[
+      { icon:"🔎", title:"Find Leads", desc:"8 proven lead strategies", action:"findleads" },
+      { icon:"👴", title:"Senior Market", desc:"Find reverse mortgage leads", action:"seniormarket" },
+      { icon:"🏠", title:"HECM Calculator", desc:"Reverse mortgage proceeds", action:"hecmcalc" },
+      { icon:"🎰", title:"Deal Predictor", desc:"Score all active leads", action:()=>{setModal("dealpred");callEF("POST","deal-predictor/batch");} },
+    ]},
+    { icon:"🏠", title:"PROPERTY", cards:[
+      { icon:"🔬", title:"Analyze Property", desc:"Full property intelligence", action:"analyzeprop" },
+      { icon:"🏆", title:"Top 10 Deals", desc:"Best investment deals", action:"topdeals" },
+      { icon:"🤝", title:"Negotiate", desc:"AI negotiation strategy", action:"negotiate" },
+      { icon:"📋", title:"Neighborhood Report", desc:"Full area report", action:"neighborhood" },
+      { icon:"🔔", title:"Property Alerts", desc:"Subscribe client to alerts", action:"propalerts" },
+    ]},
+    { icon:"📋", title:"OPERATIONS", cards:[
+      { icon:"⭐", title:"Send Review Request", desc:"Ask client for a review", action:"reviewreq" },
+      { icon:"📩", title:"Start Follow-Up", desc:"Auto follow-up sequence", action:"followup" },
+      { icon:"🔄", title:"Retention Scan", desc:"Scan for anniversaries & renewals", action:()=>{setModal("retention");callEF("POST","retention-engine/scan");} },
+      { icon:"🎂", title:"Birthday Scan", desc:"Check today's birthdays", action:()=>{setModal("birthday");callEF("POST","retention-engine/birthday-scan");} },
+      { icon:"📉", title:"Rate Watch", desc:"Check competitor rates", action:()=>{setModal("ratewatch");callEF("POST","rate-watch/scrape");} },
+      { icon:"🏦", title:"AI Underwriter", desc:"Screen a loan scenario", action:"underwriter" },
+    ]},
+    { icon:"📊", title:"REPORTS", cards:[
+      { icon:"📑", title:"MCR Report", desc:"NMLS quarterly report", action:"mcrreport" },
+      { icon:"📈", title:"Production Report", desc:"View production stats", action:()=>openTab("nmls-reports/production") },
+      { icon:"👤", title:"LO Performance", desc:"Your performance metrics", action:()=>openTab("nmls-reports/lo-performance?lo=Ken%20Wolf") },
+      { icon:"📺", title:"Market Pulse TV", desc:"Live market dashboard", action:()=>openTab("market-pulse") },
+    ]},
+    { icon:"🔗", title:"PORTALS", cards:[
+      { icon:"🌐", title:"Client Portal", desc:"Create invite link", action:"clientportal" },
+      { icon:"📅", title:"Booking Page", desc:"Your scheduling page", action:()=>openTab("booking-engine") },
+      { icon:"💳", title:"Digital Card", desc:"Your digital business card", action:()=>openTab("digital-card") },
+      { icon:"🏢", title:"Ziarem Homepage", desc:"Company homepage", action:()=>openTab("ziarem-home") },
+    ]},
+  ];
+
+  // Modal forms
+  const renderModal = () => {
+    if (!modal) return null;
+    const close = resetModal;
+    const submit = (fn, body, method="POST") => { callEF(method, fn, body); };
+    return (
+      <div style={sOverlay} onClick={close}>
+        <div style={sModalCard} onClick={e=>e.stopPropagation()}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div style={{fontSize:14,fontWeight:600,color:"#d4af37"}}>{
+              modal==="commission"?"Commission P&L":
+              modal==="topclv"?"Top Clients by CLV":
+              modal==="crosssell"?"Cross-Sell Opportunities":
+              modal==="profitcalc"?"Profit Calculator":
+              modal==="aicaller"?"AI Cold Caller":
+              modal==="powerdialer"?"Power Dialer":
+              modal==="smsblast"?"SMS Blast":
+              modal==="emailblast"?"Email Blast":
+              modal==="wablast"?"WhatsApp Blast":
+              modal==="findleads"?"Find Leads":
+              modal==="seniormarket"?"Senior Market Leads":
+              modal==="hecmcalc"?"HECM Calculator":
+              modal==="dealpred"?"Deal Predictor":
+              modal==="analyzeprop"?"Analyze Property":
+              modal==="topdeals"?"Top 10 Deals":
+              modal==="negotiate"?"Negotiation Strategy":
+              modal==="neighborhood"?"Neighborhood Report":
+              modal==="propalerts"?"Property Alerts":
+              modal==="reviewreq"?"Send Review Request":
+              modal==="followup"?"Start Follow-Up":
+              modal==="retention"?"Retention Scan":
+              modal==="birthday"?"Birthday Scan":
+              modal==="ratewatch"?"Rate Watch":
+              modal==="underwriter"?"AI Underwriter":
+              modal==="mcrreport"?"MCR Report":
+              modal==="clientportal"?"Client Portal Invite":
+              "Command"
+            }</div>
+            <button onClick={close} style={{background:"none",border:"none",color:"#666",cursor:"pointer",fontSize:16}}>✕</button>
+          </div>
+
+          {/* Direct-result modals (no form) */}
+          {["commission","topclv","crosssell","dealpred","retention","birthday","ratewatch"].includes(modal) && (
+            loading ? <Spinner/> : <ResultDisplay data={result}/>
+          )}
+
+          {/* Profit Calculator */}
+          {modal==="profitcalc" && !result && (<>
+            <label style={sLabel}>Deal Amount ($)</label><input style={sInp} type="number" value={fv("amount")} onChange={e=>sf("amount",e.target.value)} placeholder="350000"/>
+            <label style={sLabel}>Deal Type</label>
+            <select style={sInp} value={fv("type")} onChange={e=>sf("type",e.target.value)}>
+              <option value="">Select...</option><option value="mortgage">Mortgage</option><option value="insurance">Insurance</option><option value="real_estate">Real Estate</option><option value="title">Title</option><option value="credit">Credit Optimization</option>
+            </select>
+            <label style={sLabel}>Commission %</label><input style={sInp} type="number" step="0.1" value={fv("commission")} onChange={e=>sf("commission",e.target.value)} placeholder="2.5"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("profit-calc/analyze",{deal_amount:+fv("amount"),type:fv("type"),commission_pct:+fv("commission")})}>Calculate</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="profitcalc" && result && <ResultDisplay data={result}/>}
+
+          {/* AI Cold Caller */}
+          {modal==="aicaller" && !result && (<>
+            <label style={sLabel}>Campaign Name</label><input style={sInp} value={fv("campaign")} onChange={e=>sf("campaign",e.target.value)} placeholder="Spring Refi Push"/>
+            <label style={sLabel}>Leads (one per line: name,phone)</label><textarea style={{...sInp,height:80}} value={fv("leads")} onChange={e=>sf("leads",e.target.value)} placeholder="John Doe,+15551234567"/>
+            <label style={sLabel}>Script Type</label>
+            <select style={sInp} value={fv("script")} onChange={e=>sf("script",e.target.value)}>
+              <option value="mortgage_refi">Mortgage Refi</option><option value="insurance">Insurance</option><option value="real_estate">Real Estate</option><option value="general">General</option>
+            </select>
+            <label style={sLabel}>Language</label>
+            <select style={sInp} value={fv("lang")} onChange={e=>sf("lang",e.target.value)}>
+              <option value="en">English</option><option value="es">Spanish</option>
+            </select>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>{const leads=fv("leads").split("\n").filter(Boolean).map(l=>{const[n,p]=l.split(",");return{name:n?.trim(),phone:p?.trim()};});submit("ai-dialer/campaign",{campaign_name:fv("campaign"),leads,script_type:fv("script")||"mortgage_refi",language:fv("lang")||"en"});}}>Launch Campaign</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="aicaller" && result && <ResultDisplay data={result}/>}
+
+          {/* Power Dialer */}
+          {modal==="powerdialer" && !result && (<>
+            <label style={sLabel}>Phone Numbers (one per line)</label><textarea style={{...sInp,height:100}} value={fv("phones")} onChange={e=>sf("phones",e.target.value)} placeholder="+15551234567"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("power-dialer/start",{phones:fv("phones").split("\n").filter(Boolean).map(p=>p.trim())})}>Start Dialer</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="powerdialer" && result && <ResultDisplay data={result}/>}
+
+          {/* SMS Blast */}
+          {modal==="smsblast" && !result && (<>
+            <label style={sLabel}>Message</label><textarea style={{...sInp,height:60}} value={fv("message")} onChange={e=>sf("message",e.target.value)} placeholder="Hey {name}, just wanted to reach out..."/>
+            <label style={sLabel}>Recipients (one phone per line)</label><textarea style={{...sInp,height:80}} value={fv("recipients")} onChange={e=>sf("recipients",e.target.value)} placeholder="+15551234567"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("blast-engine/sms",{message:fv("message"),recipients:fv("recipients").split("\n").filter(Boolean).map(p=>p.trim())})}>Send SMS Blast</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="smsblast" && result && <ResultDisplay data={result}/>}
+
+          {/* Email Blast */}
+          {modal==="emailblast" && !result && (<>
+            <label style={sLabel}>Subject</label><input style={sInp} value={fv("subject")} onChange={e=>sf("subject",e.target.value)} placeholder="Important Update"/>
+            <label style={sLabel}>Body</label><textarea style={{...sInp,height:80}} value={fv("body")} onChange={e=>sf("body",e.target.value)} placeholder="Hi {name},"/>
+            <label style={sLabel}>Recipients (one email per line)</label><textarea style={{...sInp,height:80}} value={fv("recipients")} onChange={e=>sf("recipients",e.target.value)} placeholder="john@example.com"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("blast-engine/email",{subject:fv("subject"),body:fv("body"),recipients:fv("recipients").split("\n").filter(Boolean).map(e=>e.trim())})}>Send Email Blast</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="emailblast" && result && <ResultDisplay data={result}/>}
+
+          {/* WhatsApp Blast */}
+          {modal==="wablast" && !result && (<>
+            <label style={sLabel}>Message</label><textarea style={{...sInp,height:60}} value={fv("message")} onChange={e=>sf("message",e.target.value)} placeholder="Hey {name}!"/>
+            <label style={sLabel}>Recipients (one phone per line)</label><textarea style={{...sInp,height:80}} value={fv("recipients")} onChange={e=>sf("recipients",e.target.value)} placeholder="+15551234567"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("blast-engine/whatsapp",{message:fv("message"),recipients:fv("recipients").split("\n").filter(Boolean).map(p=>p.trim())})}>Send WhatsApp Blast</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="wablast" && result && <ResultDisplay data={result}/>}
+
+          {/* Find Leads */}
+          {modal==="findleads" && !result && (<>
+            <label style={sLabel}>Strategy</label>
+            <select style={sInp} value={fv("strategy")} onChange={e=>sf("strategy",e.target.value)}>
+              <option value="high_equity_refi">High Equity Refi</option><option value="insurance_reshop">Insurance Reshop</option><option value="pre_foreclosure">Pre-Foreclosure</option><option value="expired_listings">Expired Listings</option><option value="cross_sell">Cross-Sell</option><option value="investor_targets">Investor Targets</option><option value="new_construction">New Construction</option><option value="life_events">Life Events</option>
+            </select>
+            <label style={sLabel}>City or ZIP</label><input style={sInp} value={fv("location")} onChange={e=>sf("location",e.target.value)} placeholder="Miami or 33101"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("lead-generator/find",{strategy:fv("strategy")||"high_equity_refi",location:fv("location")})}>Find Leads</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="findleads" && result && <ResultDisplay data={result}/>}
+
+          {/* Senior Market */}
+          {modal==="seniormarket" && !result && (<>
+            <label style={sLabel}>ZIP Codes (comma-separated)</label><input style={sInp} value={fv("zips")} onChange={e=>sf("zips",e.target.value)} placeholder="33101,33102,33103"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("senior-market/find-leads",{zip_codes:fv("zips").split(",").map(z=>z.trim()).filter(Boolean)})}>Search</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="seniormarket" && result && <ResultDisplay data={result}/>}
+
+          {/* HECM Calculator */}
+          {modal==="hecmcalc" && !result && (<>
+            <label style={sLabel}>Borrower Age</label><input style={sInp} type="number" value={fv("age")} onChange={e=>sf("age",e.target.value)} placeholder="65"/>
+            <label style={sLabel}>Home Value ($)</label><input style={sInp} type="number" value={fv("homevalue")} onChange={e=>sf("homevalue",e.target.value)} placeholder="400000"/>
+            <label style={sLabel}>Existing Mortgage ($)</label><input style={sInp} type="number" value={fv("mortgage")} onChange={e=>sf("mortgage",e.target.value)} placeholder="50000"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("senior-market/hecm-calculator",{age:+fv("age"),home_value:+fv("homevalue"),existing_mortgage:+fv("mortgage")})}>Calculate</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="hecmcalc" && result && <ResultDisplay data={result}/>}
+
+          {/* Analyze Property */}
+          {modal==="analyzeprop" && !result && (<>
+            <label style={sLabel}>Address</label><input style={sInp} value={fv("address")} onChange={e=>sf("address",e.target.value)} placeholder="123 Main St"/>
+            <label style={sLabel}>City</label><input style={sInp} value={fv("city")} onChange={e=>sf("city",e.target.value)} placeholder="Miami"/>
+            <label style={sLabel}>State</label><input style={sInp} value={fv("state")} onChange={e=>sf("state",e.target.value)} placeholder="FL"/>
+            <label style={sLabel}>ZIP</label><input style={sInp} value={fv("zip")} onChange={e=>sf("zip",e.target.value)} placeholder="33101"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("deal-intelligence/analyze",{address:fv("address"),city:fv("city"),state:fv("state"),zip:fv("zip")})}>Analyze</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="analyzeprop" && result && <ResultDisplay data={result}/>}
+
+          {/* Top 10 Deals */}
+          {modal==="topdeals" && !result && (<>
+            <label style={sLabel}>City</label><input style={sInp} value={fv("city")} onChange={e=>sf("city",e.target.value)} placeholder="Miami"/>
+            <label style={sLabel}>Max Price ($)</label><input style={sInp} type="number" value={fv("maxprice")} onChange={e=>sf("maxprice",e.target.value)} placeholder="500000"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("deal-intelligence/top-deals",{city:fv("city"),max_price:+fv("maxprice")})}>Find Deals</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="topdeals" && result && <ResultDisplay data={result}/>}
+
+          {/* Negotiate */}
+          {modal==="negotiate" && !result && (<>
+            <label style={sLabel}>Property Address</label><input style={sInp} value={fv("address")} onChange={e=>sf("address",e.target.value)} placeholder="123 Main St, Miami FL"/>
+            <label style={sLabel}>List Price ($)</label><input style={sInp} type="number" value={fv("listprice")} onChange={e=>sf("listprice",e.target.value)} placeholder="450000"/>
+            <label style={sLabel}>Days on Market</label><input style={sInp} type="number" value={fv("dom")} onChange={e=>sf("dom",e.target.value)} placeholder="45"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("deal-intelligence/negotiate",{address:fv("address"),list_price:+fv("listprice"),days_on_market:+fv("dom")})}>Get Strategy</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="negotiate" && result && <ResultDisplay data={result}/>}
+
+          {/* Neighborhood Report */}
+          {modal==="neighborhood" && !result && (<>
+            <label style={sLabel}>Address</label><input style={sInp} value={fv("address")} onChange={e=>sf("address",e.target.value)} placeholder="123 Main St, Miami FL 33101"/>
+            <button style={{...sBtn,marginTop:8}} onClick={()=>{window.open(EF("neighborhood-report")+"?address="+encodeURIComponent(fv("address")),"_blank");resetModal();}}>Generate Report</button>
+          </>)}
+
+          {/* Property Alerts */}
+          {modal==="propalerts" && !result && (<>
+            <label style={sLabel}>Client Name</label><input style={sInp} value={fv("clientname")} onChange={e=>sf("clientname",e.target.value)} placeholder="John Doe"/>
+            <label style={sLabel}>Phone</label><input style={sInp} value={fv("phone")} onChange={e=>sf("phone",e.target.value)} placeholder="+15551234567"/>
+            <label style={sLabel}>City</label><input style={sInp} value={fv("city")} onChange={e=>sf("city",e.target.value)} placeholder="Miami"/>
+            <label style={sLabel}>Price Range (e.g. 200000-400000)</label><input style={sInp} value={fv("pricerange")} onChange={e=>sf("pricerange",e.target.value)} placeholder="200000-400000"/>
+            <label style={sLabel}>Bedrooms</label><input style={sInp} type="number" value={fv("beds")} onChange={e=>sf("beds",e.target.value)} placeholder="3"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("property-alerts/subscribe",{client_name:fv("clientname"),phone:fv("phone"),city:fv("city"),price_range:fv("pricerange"),beds:+fv("beds")})}>Subscribe</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="propalerts" && result && <ResultDisplay data={result}/>}
+
+          {/* Review Request */}
+          {modal==="reviewreq" && !result && (<>
+            <label style={sLabel}>Client Name</label><input style={sInp} value={fv("clientname")} onChange={e=>sf("clientname",e.target.value)} placeholder="John Doe"/>
+            <label style={sLabel}>Phone</label><input style={sInp} value={fv("phone")} onChange={e=>sf("phone",e.target.value)} placeholder="+15551234567"/>
+            <label style={sLabel}>Email</label><input style={sInp} value={fv("email")} onChange={e=>sf("email",e.target.value)} placeholder="john@example.com"/>
+            <label style={sLabel}>Business</label><input style={sInp} value={fv("business")} onChange={e=>sf("business",e.target.value)} placeholder="DOS Mortgage"/>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("review-request/send",{client_name:fv("clientname"),phone:fv("phone"),email:fv("email"),business:fv("business")})}>Send Request</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="reviewreq" && result && <ResultDisplay data={result}/>}
+
+          {/* Follow-Up */}
+          {modal==="followup" && !result && (<>
+            <label style={sLabel}>Client Name</label><input style={sInp} value={fv("clientname")} onChange={e=>sf("clientname",e.target.value)} placeholder="John Doe"/>
+            <label style={sLabel}>Email</label><input style={sInp} value={fv("email")} onChange={e=>sf("email",e.target.value)} placeholder="john@example.com"/>
+            <label style={sLabel}>Phone</label><input style={sInp} value={fv("phone")} onChange={e=>sf("phone",e.target.value)} placeholder="+15551234567"/>
+            <label style={sLabel}>Sequence Type</label>
+            <select style={sInp} value={fv("seqtype")} onChange={e=>sf("seqtype",e.target.value)}>
+              <option value="mortgage_nurture">Mortgage Nurture</option><option value="insurance_followup">Insurance Follow-Up</option><option value="realty_drip">Realty Drip</option><option value="post_close">Post-Close</option><option value="referral_ask">Referral Ask</option>
+            </select>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("follow-up-engine/create",{client_name:fv("clientname"),email:fv("email"),phone:fv("phone"),sequence_type:fv("seqtype")||"mortgage_nurture"})}>Start Sequence</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="followup" && result && <ResultDisplay data={result}/>}
+
+          {/* AI Underwriter */}
+          {modal==="underwriter" && !result && (<>
+            <label style={sLabel}>FICO Score</label><input style={sInp} type="number" value={fv("fico")} onChange={e=>sf("fico",e.target.value)} placeholder="720"/>
+            <label style={sLabel}>LTV %</label><input style={sInp} type="number" step="0.1" value={fv("ltv")} onChange={e=>sf("ltv",e.target.value)} placeholder="80"/>
+            <label style={sLabel}>DTI %</label><input style={sInp} type="number" step="0.1" value={fv("dti")} onChange={e=>sf("dti",e.target.value)} placeholder="43"/>
+            <label style={sLabel}>Loan Amount ($)</label><input style={sInp} type="number" value={fv("loanamt")} onChange={e=>sf("loanamt",e.target.value)} placeholder="300000"/>
+            <label style={sLabel}>Property Type</label>
+            <select style={sInp} value={fv("proptype")} onChange={e=>sf("proptype",e.target.value)}>
+              <option value="single_family">Single Family</option><option value="condo">Condo</option><option value="townhouse">Townhouse</option><option value="multi_family">Multi-Family</option><option value="manufactured">Manufactured</option>
+            </select>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={()=>submit("ai-underwriter/screen",{fico:+fv("fico"),ltv:+fv("ltv"),dti:+fv("dti"),loan_amount:+fv("loanamt"),property_type:fv("proptype")||"single_family"})}>Screen</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="underwriter" && result && <ResultDisplay data={result}/>}
+
+          {/* MCR Report */}
+          {modal==="mcrreport" && !result && (<>
+            <label style={sLabel}>Quarter</label>
+            <select style={sInp} value={fv("quarter")} onChange={e=>sf("quarter",e.target.value)}>
+              <option value="Q1">Q1</option><option value="Q2">Q2</option><option value="Q3">Q3</option><option value="Q4">Q4</option>
+            </select>
+            <label style={sLabel}>Year</label><input style={sInp} type="number" value={fv("year")} onChange={e=>sf("year",e.target.value)} placeholder="2026"/>
+            <button style={{...sBtn,marginTop:8}} onClick={()=>{window.open(EF(`nmls-reports/mcr/html?quarter=${fv("quarter")||"Q1"}&year=${fv("year")||"2026"}`),"_blank");resetModal();}}>Open Report</button>
+          </>)}
+
+          {/* Client Portal */}
+          {modal==="clientportal" && !result && (<>
+            <label style={sLabel}>Client Name</label><input style={sInp} value={fv("clientname")} onChange={e=>sf("clientname",e.target.value)} placeholder="John Doe"/>
+            <label style={sLabel}>Email</label><input style={sInp} value={fv("email")} onChange={e=>sf("email",e.target.value)} placeholder="john@example.com"/>
+            <label style={sLabel}>Loan Type</label>
+            <select style={sInp} value={fv("loantype")} onChange={e=>sf("loantype",e.target.value)}>
+              <option value="conventional">Conventional</option><option value="fha">FHA</option><option value="va">VA</option><option value="usda">USDA</option><option value="jumbo">Jumbo</option><option value="reverse">Reverse</option>
+            </select>
+            <button style={{...sBtn,marginTop:8}} disabled={loading} onClick={async()=>{setLoading(true);try{const inv=await sb("vault_client_invites","POST",{client_name:fv("clientname"),email:fv("email"),loan_type:fv("loantype")||"conventional",token:crypto.randomUUID()});setResult({link:`${window.location.origin}/portal/${inv?.[0]?.token||"error"}`,message:"Invite created!"});}catch(e){setResult({error:e.message});}setLoading(false);}}>Create Invite</button>
+            {loading&&<Spinner/>}
+          </>)}
+          {modal==="clientportal" && result && (
+            <div style={{marginTop:10}}>
+              {result.link && <div style={{marginBottom:8}}>
+                <div style={{fontSize:10,color:"#888",marginBottom:4}}>Share this link:</div>
+                <div style={{background:"#080810",padding:"8px 10px",borderRadius:4,fontSize:11,color:"#d4af37",wordBreak:"break-all",cursor:"pointer"}} onClick={()=>{navigator.clipboard.writeText(result.link);showToast("Link copied!");}}>{result.link} (click to copy)</div>
+              </div>}
+              <ResultDisplay data={result}/>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{flex:1,overflowY:"auto",padding:"24px 28px",background:"#090910"}}>
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:22,fontWeight:700,color:"#d4af37",letterSpacing:".04em",fontFamily:"'Bebas Neue',sans-serif"}}>COMMAND CENTER</div>
+        <div style={{fontSize:10,color:"#555",letterSpacing:".1em",marginTop:2}}>ALL SYSTEMS. ONE PLACE.</div>
+      </div>
+      {categories.map((cat,ci)=>(
+        <div key={ci} style={sSec}>
+          <div style={sSecTitle}><span>{cat.icon}</span>{cat.title}</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
+            {cat.cards.map((c,i)=>(
+              <CardW key={i} icon={c.icon} title={c.title} desc={c.desc}>
+                {typeof c.action==="function" ? (
+                  <button style={sBtnSm} onClick={c.action}>Run</button>
+                ) : typeof c.action==="string" ? (
+                  <button style={sBtnSm} onClick={()=>{setModal(c.action);setResult(null);setForm({});}}>Open</button>
+                ) : null}
+              </CardW>
+            ))}
+          </div>
+        </div>
+      ))}
+      {renderModal()}
+    </div>
+  );
+}
+
+// ─── HEY KEN CHAT PANEL ─────────────────────────────────────────────────────
 function KenAIPanel({ user }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState(() => {
@@ -9255,6 +9656,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
   const [sidebarSection, setSidebarSection] = useState(null);
   const navGroups = [
     { id:"core", label:"CORE", items:[
+      {id:"commandcenter", icon:"🎯", label:"Command Center", badge:0, admin:true},
       {id:"dashboard", icon:"📊", label:"Dashboard", badge:0, admin:true},
       {id:"inbox",     icon:"✉️", label:"Inbox",     badge:emails.filter(e=>!e.is_read).length, admin:true},
       {id:"callcenter",icon:"📞", label:"Calls",     badge:unreadNotifs, admin:false},
@@ -9434,6 +9836,9 @@ function EmailVault({ user, teamProfile, onSignOut }) {
 
         {/* MAIN CONTENT */}
         <div style={{flex:1,overflow:"hidden",display:"flex"}}>
+
+        {/* ── COMMAND CENTER ── */}
+        {view==="commandcenter"&&<CommandCenterView showToast={showToast} />}
 
         {/* ── DASHBOARD ── */}
         {view==="dashboard"&&<Dashboard contacts={contacts} deals={deals} tasks={tasks} activities={activities} businesses={businesses} intelligence={intelligence} documents={documents} campaigns={campaigns} onNav={handleNav} onNewDeal={()=>{setEditDeal(null);setShowDeal(true);}} onNewTask={()=>{setEditTask(null);setShowTask(true);}} />}
