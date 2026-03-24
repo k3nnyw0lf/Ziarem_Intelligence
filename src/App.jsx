@@ -5959,7 +5959,7 @@ export default function EmailVaultApp() {
   const [session, setSession] = useState(null);
   const [teamProfile, setTeamProfile] = useState(null);
   const [checking, setChecking] = useState(true);
-  const [page, setPage] = useState("login"); // "landing" | "login"
+  const [page, setPage] = useState("landing"); // "landing" | "login"
 
   useEffect(()=>{
     const stored = localStorage.getItem("vault_token");
