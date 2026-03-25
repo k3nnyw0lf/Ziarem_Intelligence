@@ -5,21 +5,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Dev Commands
 
 ```bash
-npm run dev        # Vite dev server (port 5173 or 5174)
+npm run dev        # Vite dev server (default port 5173)
 npm run build      # Production build → dist/
-npm run preview    # Preview production build
+npm run preview    # Preview production build locally
 ```
 
-Deploy to Cloudflare Pages:
+No linting or test commands configured. No TypeScript strict mode on the Vite app (App.jsx/MortgagePOS.jsx are plain JSX, not TSX).
+
+Deploy to Cloudflare Pages (auto-deploy also triggers on `git push origin vault`):
 ```bash
-CLOUDFLARE_API_TOKEN=cfut_kXDg1F3CUeEGidOXD8F0lErQQ8SFY4ce7vVPVCNQ33001efc npx wrangler pages deploy dist --project-name=ziarem --branch=main
+npm run build && CLOUDFLARE_API_TOKEN=cfut_kXDg1F3CUeEGidOXD8F0lErQQ8SFY4ce7vVPVCNQ33001efc npx wrangler pages deploy dist --project-name=ziarem --branch=main
 ```
 
-Auto-deploy is configured via GitHub Actions on push to `vault` branch.
+Upload static sites to Hostinger via FTP:
+```python
+from ftplib import FTP
+ftp = FTP('156.67.72.214')
+ftp.login('u966192992', 'Mi@mi2020!!')
+ftp.cwd('domains/{site}.com/public_html')
+with open('index.html', 'rb') as f:
+    ftp.storbinary('STOR index.html', f)
+ftp.quit()
+```
+
+## Preview Server (Claude Preview tools)
+
+The `.claude/launch.json` configures the dev server for Claude Preview:
+```json
+{ "name": "vault-dev", "runtimeExecutable": "npx", "runtimeArgs": ["vite", "--port", "5174", "--host"], "port": 5174 }
+```
 
 ## Architecture
 
-This is a **hybrid codebase** with two coexisting systems:
+This is a **hybrid codebase** with two coexisting systems that share the same `src/` directory:
 
 ### 1. Legacy Vite + React App (PRIMARY — what users see)
 - **Entry**: `src/main.jsx` → `src/App.jsx` (10,800+ lines)
@@ -35,8 +53,10 @@ This is a **hybrid codebase** with two coexisting systems:
 - **Live Portal**: `src/app/live/[portalId]/page.tsx` — Vapi live canvas
 
 ### Which system serves what:
-- **ziarem.pages.dev** → Vite build (dist/) — the CRM users interact with
-- **Next.js routes** → API webhooks and dashboard (not yet deployed to production)
+- **ziarem.pages.dev** → Vite build (dist/) — the CRM users interact with daily
+- **Next.js routes** → API webhooks and AI sales floor dashboard (not yet deployed to production)
+- Both systems coexist in `src/` — Vite ignores Next.js files, Next.js ignores `.jsx` legacy files
+- The Vite build only bundles `main.jsx` → `App.jsx` → `MortgagePOS.jsx` etc.
 
 ## Supabase (Project: sfelhasepvaoianyuvxe)
 
@@ -136,11 +156,34 @@ All webhooks → `telegram-actions` Edge Function. Ken's chat ID: 284251009.
 
 Hostinger FTP: 156.67.72.214, user u966192992, domains at /domains/{site}/public_html/
 
-## Data Flow: Call-End Pipeline
+## Data Flow: Call-End Pipeline (Next.js)
 
-1. Vapi sends transcript → `/api/webhooks/vapi-call-end`
-2. Gemini extracts structured data (intent, vertical, value, language)
-3. Revenue calculated per vertical formula
-4. Lead upserted, call inserted, cross-sells created
-5. Recording uploaded to Supabase Storage
-6. n8n webhook triggered for onboarding sequence
+1. Vapi sends transcript → `POST /api/webhooks/vapi-call-end`
+2. Gemini extracts structured JSON (`src/lib/gemini/extract.ts`) — intent, vertical, value, language
+3. Revenue calculated per vertical formula (`src/lib/call-end/revenue.ts`): DOS Mortgage 2.75%, Laenan $1000, CBW $1500, Wolf $600
+4. Lead upserted, call inserted, cross-sells created (`src/lib/call-end/cross-sell.ts`)
+5. Recording uploaded to Supabase Storage (`vault-documents` bucket)
+6. n8n webhook triggered for onboarding (`src/lib/call-end/n8n.ts`)
+
+## Data Flow: Vite CRM (Legacy)
+
+All Supabase calls in App.jsx/MortgagePOS.jsx use direct REST API wrappers:
+- `sb(table)` → `fetch(SB_URL + '/rest/v1/' + table, { headers: { apikey, Authorization } })`
+- `sbInsert(table, data)` → POST to REST API
+- `sbUpdate(table, data, id)` → PATCH with `?id=eq.{id}`
+- `sbDelete(table, id)` → DELETE with `?id=eq.{id}`
+- Edge Function calls: `fetch(SB_URL + '/functions/v1/' + name, { ... })`
+
+No Supabase JS client used in the Vite app — all raw REST.
+
+## Persona Assembly (AI Voice)
+
+`src/lib/persona/assemblePersona.ts` builds Vapi agent system prompts:
+- Loads lead location + preferred language (EN/ES)
+- Selects sales framework (Sandler, SPIN, Straight Line, Challenger)
+- Selects cultural matrix (Miami/Caribbean ES, Florida Gulf Coast EN, etc.)
+- Returns concatenated system prompt for the AI voice agent
+
+## Shared Types
+
+`shared/types/database.ts` defines: Company, Lead, Call, CrossSell, LeadStatus, VERTICALS enum
