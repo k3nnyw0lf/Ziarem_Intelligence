@@ -54,27 +54,61 @@ CREATE INDEX IF NOT EXISTS idx_mem0_alias_alias_id
 -- user_id. Hermes resolves any incoming surface to a single user_id by
 -- looking up here, then merging via mem0_identity_aliases.
 --
--- Defensive: only references columns we know exist (some leads/wa/tg
--- tables vary across deploys). Adjust per-deploy if needed.
+-- Defensive: builds a UNION ALL only over the source tables that exist
+-- in this deploy. Lets the migration apply against:
+--   * a fresh CI Postgres (no legs → empty stub view)
+--   * a partial Supabase project (one leg)
+--   * the real Ziarem Supabase (all legs)
+-- without referencing tables that haven't been created yet.
 -- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE VIEW public.v_customer_identities AS
-  SELECT
-    'lead:' || id::text                AS mem0_user_id,
-    'lead'                             AS surface,
-    id::text                           AS surface_id,
-    NULL::text                         AS display_hint
-  FROM public.leads
-UNION ALL
-  SELECT
-    'tg:' || chat_id::text             AS mem0_user_id,
-    'telegram'                         AS surface,
-    chat_id::text                      AS surface_id,
-    NULL::text                         AS display_hint
-  FROM public.vault_telegram_config
-WHERE chat_id IS NOT NULL;
+DO $migration$
+DECLARE
+  legs   text[] := ARRAY[]::text[];
+  vw_sql text;
+BEGIN
+  IF to_regclass('public.leads') IS NOT NULL THEN
+    legs := array_append(legs, $sql$
+      SELECT 'lead:' || id::text AS mem0_user_id,
+             'lead'              AS surface,
+             id::text             AS surface_id,
+             NULL::text           AS display_hint
+      FROM public.leads
+    $sql$);
+  END IF;
+
+  IF to_regclass('public.vault_telegram_config') IS NOT NULL THEN
+    legs := array_append(legs, $sql$
+      SELECT 'tg:' || chat_id::text AS mem0_user_id,
+             'telegram'             AS surface,
+             chat_id::text          AS surface_id,
+             NULL::text             AS display_hint
+      FROM public.vault_telegram_config
+      WHERE chat_id IS NOT NULL
+    $sql$);
+  END IF;
+
+  IF cardinality(legs) > 0 THEN
+    vw_sql := 'CREATE OR REPLACE VIEW public.v_customer_identities AS ' ||
+              array_to_string(legs, ' UNION ALL ');
+  ELSE
+    -- Stub view: same column shape, never returns rows. Lets downstream
+    -- code reference the view safely on a fresh DB.
+    vw_sql := $stub$
+      CREATE OR REPLACE VIEW public.v_customer_identities AS
+      SELECT NULL::text AS mem0_user_id,
+             NULL::text AS surface,
+             NULL::text AS surface_id,
+             NULL::text AS display_hint
+      WHERE false
+    $stub$;
+  END IF;
+
+  EXECUTE vw_sql;
+END
+$migration$;
 
 COMMENT ON VIEW public.v_customer_identities IS
-  'Hermes/Mem0 identity map. Extend per-deploy with email/wa surfaces as their tables stabilize.';
+  'Hermes/Mem0 identity map. Built dynamically over whichever source tables exist; extend the DO block when a new surface table lands.';
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- ws_outbound_queue is referenced by every Wolf Insurance Skyvern
