@@ -1,71 +1,68 @@
 # Hermes Agent — Ziarem CLI config overlay
-# Destination: ~/.hermes/config.yaml
-# Only the keys we actually want to override are listed here.
+# Destination: ~/.hermes/config.yaml (merge into the upstream defaults; do
+# NOT replace the whole file — upstream has 800+ lines of useful comments).
+#
+# Only Ziarem-specific overrides live here. Things that are CLI commands,
+# not YAML, are noted at the bottom.
 
+# ─── Model ──────────────────────────────────────────────────────────────────
+# Gemini matches the rest of the Ziarem stack (transcript extraction,
+# already has GEMINI_API_KEY in .env).
 model:
-  # Gemini matches the rest of the Ziarem stack (transcript extraction).
   default: "gemini-2.5-pro"
   provider: "gemini"
 
-# Try a fallback chain so a Gemini outage doesn't take comms down.
-fallback:
-  enabled: true
-  chain:
-    - provider: "openrouter"
-      model: "anthropic/claude-sonnet-4.6"
-    - provider: "anthropic"
-      model: "claude-sonnet-4-6"
+# ─── Per-provider timeouts ──────────────────────────────────────────────────
+# Bedrock paths use boto3 (not affected). These overrides matter for
+# OpenAI-wire and native Anthropic clients.
+providers:
+  gemini:
+    request_timeout_seconds: 120
+  anthropic:
+    request_timeout_seconds: 60
 
-# Memory: keep the built-in store unless we wire pgvector explicitly.
+# ─── Per-platform toolsets ──────────────────────────────────────────────────
+# Lock down Telegram/Slack so operators can't accidentally `terminal` or
+# `file` write from a chat surface. CLI keeps everything.
+platform_toolsets:
+  cli:      [hermes-cli]
+  telegram: [web, vision, skills, todo, tts, send_message]
+  slack:    [web, vision, skills, todo, send_message]
+  whatsapp: [web, vision, skills, todo, send_message]
+
+# ─── Platform runtime knobs ─────────────────────────────────────────────────
+platforms:
+  telegram:
+    reply_to_mode: "first"
+    extra:
+      disable_link_previews: true
+
+# ─── Agent loop ─────────────────────────────────────────────────────────────
+agent:
+  # Cross-sell + bilingual reply flows can take a few extra turns.
+  max_turns: 80
+  reasoning_effort: "medium"
+
+# ─── Skills ─────────────────────────────────────────────────────────────────
+skills:
+  # Nudge curator more often so Ziarem-specific skills accumulate faster.
+  creation_nudge_interval: 10
+  # Pull in repo-local skills without copying them.
+  external_dirs:
+    - "${ZIAREM_HOME}/hermes/skills"
+
+# ─── Memory ────────────────────────────────────────────────────────────────
 memory:
   provider: "builtin"
 
-# Curator runs in the background and edits skills based on what worked.
-# Pin Ziarem-specific skills so curator never disables them.
-curator:
-  enabled: true
-  pinned_skills:
-    - "ziarem-leads"        # created from skills/ziarem-leads/ when you author it
-    - "ziarem-cross-sell"
-    - "ziarem-bilingual"
+# ─── Gateway timeouts ──────────────────────────────────────────────────────
+# Comms paths shouldn't run forever silently.
+# (These nest under agent: in the upstream schema; keep them here for clarity.)
+# agent.gateway_timeout: 1800
+# agent.gateway_timeout_warning: 900
 
-# Gateway: only enable the channels we run in production.
-gateway:
-  channels:
-    cli: true
-    telegram: true
-    slack: true
-    whatsapp: false        # flip to true once you've decided Hermes owns the number
-    discord: false
-    signal: false
-    email: true
-
-# Tools: lock down what each surface can do.
-tools:
-  telegram:
-    allow: [postgres, web, summarize, todo]
-    deny:  [shell, file_write]
-  slack:
-    allow: [postgres, web, summarize, todo]
-    deny:  [shell, file_write]
-  cli:
-    allow: ["*"]
-
-# Postgres skill — point at the Ziarem DB so the agent can answer lead questions.
-skills:
-  postgres:
-    enabled: true
-    connection:
-      host: "${PGHOST}"
-      user: "${PGUSER}"
-      password: "${PGPASSWORD}"
-      database: "${PGDATABASE}"
-      sslmode: "${PGSSLMODE}"
-    read_only: true        # safer default; flip per-tool when you need writes
-
-# Webhooks Hermes can subscribe to (cross-sell, call-end notifications).
-webhook:
-  subscriptions:
-    - name: "n8n-cross-sell"
-      url: "${N8N_WEBHOOK_ONBOARDING_URL}"
-      direction: "outbound"
+# ─── NOT configured here — use CLI commands ────────────────────────────────
+# Fallback chain:    hermes fallback add        (writes to internal store)
+# MCP servers:       hermes mcp add             (e.g. Supabase MCP, Postgres)
+# Messaging tokens:  hermes gateway setup       (writes to ~/.hermes/.env)
+# Skill install:     hermes skills install <id>

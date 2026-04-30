@@ -38,36 +38,59 @@ hermes doctor
    (`GEMINI_API_KEY`, `PG*`, `SUPABASE_*`, SMTP creds), so one source of
    truth.
 
-2. **Apply the Ziarem CLI config** on top of the default. The example file
-   sets Gemini as the primary provider (matches the rest of the stack),
-   wires the gateway channels we actually use, and points Hermes at our
-   Postgres so it can answer lead questions.
+2. **Apply the Ziarem CLI config** on top of the upstream default. Don't
+   overwrite — the upstream file has 800+ lines of comments. Merge the
+   keys from `hermes/config.example.yaml` into the matching sections of
+   `~/.hermes/config.yaml`:
 
    ```bash
-   cp hermes/config.example.yaml ~/.hermes/config.yaml
+   $EDITOR hermes/config.example.yaml ~/.hermes/config.yaml
+   # then merge model:, platform_toolsets:, platforms:, agent:, skills:, providers:
    ```
 
-3. **Load the domain context** so Hermes knows the schema and business
+   What this overlay actually changes:
+   - `model.{default,provider}` → Gemini 2.5 Pro (matches `GEMINI_API_KEY`).
+   - `platform_toolsets` → Telegram/Slack/WhatsApp lose `terminal` + `file`
+     write so chat surfaces can't shell out.
+   - `platforms.telegram.extra.disable_link_previews: true`.
+   - `agent.max_turns: 80`, `reasoning_effort: medium`.
+   - `skills.external_dirs` includes `${ZIAREM_HOME}/hermes/skills` so
+     repo-local skills load without copying.
+   - `providers.{gemini,anthropic}.request_timeout_seconds`.
+
+3. **Set the fallback chain** (CLI, not YAML):
+
+   ```bash
+   hermes fallback add   # pick OpenRouter / Anthropic as backup
+   ```
+
+4. **Load the domain context** so Hermes knows the schema and business
    rules without being told every turn.
 
    ```bash
    cat hermes/ziarem-soul.md >> ~/.hermes/SOUL.md
    ```
 
-4. **Pick a model & provider** (interactive):
+5. **Add MCP servers Ziarem already uses** (Postgres / Supabase / GitHub):
+
+   ```bash
+   hermes mcp add   # discovery-first install, picks from registry
+   ```
+
+6. **Pick a model & provider** if you didn't already:
 
    ```bash
    hermes model
    ```
 
-5. **Start the messaging gateway** (Telegram/WhatsApp/Slack/Email):
+7. **Start the messaging gateway** (Telegram/WhatsApp/Slack/Email):
 
    ```bash
    hermes gateway setup     # paste tokens
    hermes gateway run       # foreground (use `start` for systemd service)
    ```
 
-6. **Test from the CLI** before exposing to operators:
+8. **Test from the CLI** before exposing to operators:
 
    ```bash
    hermes -z "How many leads moved to Under Contract this week?"
@@ -82,6 +105,45 @@ hermes doctor
 | `wa-bridge/`                 | `hermes whatsapp` integration           | Decide which one owns the WhatsApp number; don't run both against the same session. |
 | n8n webhooks (cross-sell)    | `hermes webhook` + cron                 | Hermes can subscribe to webhooks and call back to n8n; n8n stays for long workflows. |
 | Vapi/Retell call-end ingest  | unchanged                               | Hermes consumes the resulting `calls` rows via Postgres skill, not the raw transcript stream. |
+
+## Multi-app coverage (Supabase + GitHub)
+
+Every Ziarem product co-tenants in **one** Supabase project
+(`sfelhasepvaoianyuvxe`) under a table prefix. The full app list lives in
+[`apps.yaml`](apps.yaml) — `vault_*`, `re4lty_*`, `dm_*`, `cbw_*`, `ws_*`,
+`ph_*`, `ff_*`, `ziarem_*`, `hha_*`, `health_*`, `auto_*`, `cc_*`, `cd_*`,
+and so on.
+
+The skill at `hermes/skills/ziarem-apps/SKILL.md` (loaded automatically via
+`skills.external_dirs` in the config overlay) teaches Hermes to:
+
+- match a question to one app's prefix,
+- refuse to silently page across prefixes,
+- honor anchor cross-sell relationships (`re4lty_*` → `dm_*` / `cbw_*` /
+  `ws_*` / `vault_*`),
+- ask for clarification when the prefix is ambiguous.
+
+Add a new app:
+
+```bash
+$EDITOR hermes/apps.yaml   # append <slug>: { name, prefix, vertical, anchor, notes }
+git commit -am "hermes: register <slug> app"
+```
+
+### Installing the same overlay into other GitHub repos
+
+Each repo gets its own copy of the overlay — there's no central registry.
+From the root of any other Ziarem repo run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/k3nnyw0lf/Ziarem_Intelligence/main/scripts/install-hermes-into-repo.sh | bash
+# optional: pin a specific app slug
+APP_SLUG=re4lty bash <(curl -fsSL https://raw.githubusercontent.com/k3nnyw0lf/Ziarem_Intelligence/main/scripts/install-hermes-into-repo.sh)
+```
+
+The script drops `hermes/` and `.claude/skills/hermes/` into the target
+repo, mirroring this one. The Hermes CLI itself is installed once per
+machine — not per repo.
 
 ## Updating
 
