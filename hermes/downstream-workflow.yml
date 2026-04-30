@@ -49,5 +49,7 @@ jobs:
           delete-branch: true
           add-paths: |
             hermes/**
+            hermes/agents/**
+            hermes/skills/**
             .claude/skills/hermes/**
             scripts/install-hermes-into-repo.sh

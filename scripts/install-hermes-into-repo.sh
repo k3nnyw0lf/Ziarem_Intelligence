@@ -35,6 +35,32 @@ echo "  · hermes/skills/ziarem-apps/SKILL.md"
 mkdir -p hermes/skills/ziarem-apps
 curl -fsSL "$SOURCE_REPO/hermes/skills/ziarem-apps/SKILL.md" -o hermes/skills/ziarem-apps/SKILL.md
 
+echo "  · hermes/skills/agent-fleet/SKILL.md (Skyvern/Mem0/Pipecat/Crawl4AI/OpenHands routing)"
+mkdir -p hermes/skills/agent-fleet
+curl -fsSL "$SOURCE_REPO/hermes/skills/agent-fleet/SKILL.md" -o hermes/skills/agent-fleet/SKILL.md
+
+echo "  · hermes/agents/ (fleet docs, docker-compose, Wolf Insurance Skyvern workflows)"
+mkdir -p hermes/agents/skyvern/workflows hermes/agents/openhands hermes/agents/mem0 hermes/agents/pipecat/pipelines hermes/agents/crawl4ai
+for f in \
+    "agents/README.md" \
+    "agents/.env.example" \
+    "agents/docker-compose.yml" \
+    "agents/install-global.sh" \
+    "agents/skyvern/README.md" \
+    "agents/skyvern/workflows/ws-quote-pull.yaml" \
+    "agents/skyvern/workflows/ws-quote-fanout.yaml" \
+    "agents/skyvern/workflows/ws-claim-status.yaml" \
+    "agents/openhands/README.md" \
+    "agents/mem0/README.md" \
+    "agents/pipecat/README.md" \
+    "agents/pipecat/Dockerfile" \
+    "agents/pipecat/server.py" \
+    "agents/crawl4ai/README.md" \
+  ; do
+  curl -fsSL "$SOURCE_REPO/hermes/$f" -o "hermes/$f" || true
+done
+chmod +x hermes/agents/install-global.sh 2>/dev/null || true
+
 echo "  · .claude/skills/hermes/SKILL.md"
 mkdir -p .claude/skills/hermes
 curl -fsSL "$SOURCE_REPO/.claude/skills/hermes/SKILL.md" -o .claude/skills/hermes/SKILL.md
@@ -57,9 +83,30 @@ fi
 echo
 echo "✓ Hermes overlay installed."
 echo
+
+# Detect whether the global agent fleet (Skyvern, Crawl4AI, Mem0, Pipecat,
+# OpenHands) is already up on this machine. If not, point the user at it.
+FLEET_OK=true
+for url in \
+  "http://localhost:8000/api/v1/heartbeat" \
+  "http://localhost:11235/health"          \
+  ; do
+  if ! curl -fsS --max-time 2 "$url" >/dev/null 2>&1; then
+    FLEET_OK=false
+    break
+  fi
+done
+
 echo "Next steps:"
 echo "  1. command -v hermes || curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash"
 echo "  2. cp hermes/env.example ~/.hermes/.env && \$EDITOR ~/.hermes/.env"
 echo "  3. Merge hermes/config.example.yaml into ~/.hermes/config.yaml (model, platform_toolsets, providers)"
 echo "  4. cat hermes/ziarem-soul.md >> ~/.hermes/SOUL.md"
-echo "  5. git add hermes/ .claude/ scripts/ && git commit -m 'Add Ziarem Hermes adapter'"
+if [ "$FLEET_OK" = false ]; then
+  echo "  5. Bring up the global agent fleet (one-time, machine-wide):"
+  echo "       cp hermes/agents/.env.example hermes/agents/.env && \$EDITOR hermes/agents/.env"
+  echo "       bash hermes/agents/install-global.sh"
+else
+  echo "  5. Global agent fleet detected (skyvern + crawl4ai healthy) — no action needed."
+fi
+echo "  6. git add hermes/ .claude/ scripts/ && git commit -m 'Add Ziarem Hermes adapter'"

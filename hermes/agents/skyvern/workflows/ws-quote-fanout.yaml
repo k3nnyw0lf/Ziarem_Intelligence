@@ -1,0 +1,56 @@
+# Skyvern workflow: fan out quote-pull across all carriers in
+# carrier_appetite that match the risk profile of a ws_quote_requests row.
+# Used by the hourly cron (hermes cron add ws-quote-fanout-hourly).
+
+title: "Wolf Insurance — fan out quote pulls to matched carriers"
+description: |
+  For one ws_quote_requests row, find every carrier whose appetite matches
+  the risk class, enqueue one ws_outbound_queue row per carrier, then
+  trigger ws-quote-pull for each. Respects per-carrier daily rate limits
+  in carrier_targets.
+
+inputs:
+  quote_request_id:
+    type: integer
+  max_carriers:
+    type: integer
+    default: 5
+    description: "Cap fan-out to top N by carrier_win_rates"
+
+steps:
+  - name: matched_carriers
+    type: sql
+    query: |
+      SELECT c.id, c.name
+      FROM carriers c
+      JOIN carrier_appetite ca ON ca.carrier_id = c.id
+      JOIN ws_quote_requests qr ON qr.id = $quote_request_id
+      LEFT JOIN carrier_win_rates wr ON wr.carrier_id = c.id
+      LEFT JOIN carrier_targets ct ON ct.carrier_id = c.id
+      WHERE ca.risk_class = qr.risk_class
+        AND c.active = true
+        AND (ct.daily_used IS NULL OR ct.daily_used < ct.daily_limit)
+      ORDER BY wr.win_rate DESC NULLS LAST
+      LIMIT $max_carriers
+
+  - name: enqueue
+    type: sql
+    query: |
+      INSERT INTO ws_outbound_queue (kind, status, payload, created_at)
+      SELECT 'quote_pull', 'Pending',
+             jsonb_build_object('carrier_id', c.id,
+                                'quote_request_id', $quote_request_id),
+             now()
+      FROM unnest(ARRAY[{{ matched_carriers.ids | join(',') }}]::int[]) AS c(id)
+      RETURNING id
+
+  - name: trigger_each
+    type: foreach
+    over: "{{ enqueue.rows }}"
+    do:
+      type: workflow
+      name: ws-quote-pull
+      args:
+        queue_id: "{{ item.id }}"
+        carrier_id: "{{ item.payload.carrier_id }}"
+        quote_request_id: "{{ item.payload.quote_request_id }}"

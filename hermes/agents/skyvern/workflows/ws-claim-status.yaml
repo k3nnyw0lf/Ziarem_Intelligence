@@ -1,0 +1,66 @@
+# Skyvern workflow: daily sweep claim status across carrier portals.
+# Triggered by hermes cron at 06:00 daily.
+
+title: "Wolf Insurance — daily claim status sweep"
+description: |
+  For every open ws_claims row (status NOT IN ('Closed','Denied')), log
+  into the carrier portal (via vault_api_configs), pull the latest claim
+  status + adjuster notes, update ws_claims and append to ws_communications
+  if the status changed.
+
+steps:
+  - name: open_claims
+    type: sql
+    query: |
+      SELECT cl.id, cl.claim_number, cl.carrier_id, cl.status AS prev_status,
+             c.portal_url, c.naic_code
+      FROM ws_claims cl
+      JOIN carriers c ON c.id = cl.carrier_id
+      WHERE cl.status NOT IN ('Closed','Denied')
+      ORDER BY cl.last_checked_at NULLS FIRST
+      LIMIT 100
+
+  - name: per_claim
+    type: foreach
+    over: "{{ open_claims.rows }}"
+    do:
+      - type: navigate
+        url: "{{ item.portal_url }}/claims/{{ item.claim_number }}"
+        auth_via: vault_api_configs
+        auth_name: "carrier_{{ item.naic_code }}"
+
+      - type: extract
+        schema:
+          status:           { type: string }
+          adjuster_name:    { type: string }
+          adjuster_phone:   { type: string }
+          last_note:        { type: string }
+          paid_amount:      { type: number }
+          reserve_amount:   { type: number }
+
+      - type: sql
+        query: |
+          UPDATE ws_claims
+          SET status = {{ extract.status }},
+              adjuster_name = {{ extract.adjuster_name }},
+              adjuster_phone = {{ extract.adjuster_phone }},
+              paid_amount = {{ extract.paid_amount }},
+              reserve_amount = {{ extract.reserve_amount }},
+              last_checked_at = now()
+          WHERE id = {{ item.id }}
+
+      - type: sql
+        # Only log a communication when the status actually changed.
+        condition: "{{ extract.status != item.prev_status }}"
+        query: |
+          INSERT INTO ws_communications
+            (claim_id, kind, summary, created_at, source)
+          VALUES
+            ({{ item.id }}, 'status_change',
+             format('%s → %s: %s', '{{ item.prev_status }}',
+                    '{{ extract.status }}', '{{ extract.last_note }}'),
+             now(), 'skyvern')
+
+guards:
+  - "Never modify a Closed/Denied claim — read-only after terminal status."
+  - "If the portal returns a 'Claim not found' page, set ws_claims.review_needed = true and skip."

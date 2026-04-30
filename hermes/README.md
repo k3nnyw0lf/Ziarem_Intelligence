@@ -106,6 +106,30 @@ hermes doctor
 | n8n webhooks (cross-sell)    | `hermes webhook` + cron                 | Hermes can subscribe to webhooks and call back to n8n; n8n stays for long workflows. |
 | Vapi/Retell call-end ingest  | unchanged                               | Hermes consumes the resulting `calls` rows via Postgres skill, not the raw transcript stream. |
 
+## Agent fleet (global, all repos benefit)
+
+Hermes is the orchestrator. The specialist agents live in
+[`agents/`](agents/) as a single docker-compose fleet that you bring up
+**once per VPS** — every Ziarem repo's Hermes reaches them via MCP, no
+per-repo install needed.
+
+```bash
+cp hermes/agents/.env.example hermes/agents/.env && $EDITOR hermes/agents/.env
+bash hermes/agents/install-global.sh
+```
+
+| Agent     | Port  | Job                                          | Wolf Insurance fit                   |
+| --------- | ----- | -------------------------------------------- | ------------------------------------ |
+| Skyvern   | 8000  | Browser/RPA — vendor portals, form fill      | **Primary**: `ws_*` workflows in `agents/skyvern/workflows/` |
+| Crawl4AI  | 11235 | Research / competitive intel scraping        | Carrier rate filings, market data    |
+| Mem0      | 8080  | Per-customer durable memory                  | Returning lead memory across surfaces |
+| Pipecat   | 7860  | Voice pipeline composer over Vapi/Retell     | Bilingual EN/ES + claim escalation   |
+| OpenHands | 3010  | Issue-driven coding agent                    | Per-repo PRs (e.g. `ws_*` schema migrations) |
+
+See [`agents/README.md`](agents/README.md) for the architecture diagram
+and [`agents/skyvern/README.md`](agents/skyvern/README.md) for the
+Wolf Insurance rollout plan.
+
 ## Auto-sync (now and forever)
 
 Two automations keep the overlay current without you re-running anything:
