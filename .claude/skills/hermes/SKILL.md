@@ -1,58 +1,49 @@
 ---
 name: hermes
-description: Use this skill for ANY external communication in this repo — outbound web fetches, news/article research, scraping, and contacting third-party services. Hermes plans steps, prefers fast HTTP fetches, falls back to a real browser when a fetch fails, and APPENDS what it learned to .claude/skills/hermes/journal.md after every action so the skill improves over time. Trigger when the user asks to "research", "fetch", "scrape", "summarize a page", "look up", or otherwise reach the network.
+description: Use this skill whenever the user wants to talk to the Ziarem Hermes Agent (NousResearch/hermes-agent) or run a one-shot communication task in this repo. Hermes owns the unified CLI/Telegram/Slack/WhatsApp/email gateway. This skill prefers the real `hermes` CLI, falls back to plain HTTP only when the agent is unavailable, and APPENDS one lesson per action to journal.md so future runs apply prior findings. Trigger on: "ask hermes", "run hermes", "send via hermes", "hermes gateway", "research", "fetch", "scrape", or any request that needs to reach a person or external service.
 ---
 
-# Hermes — communication & research skill
+# Hermes — Ziarem communication skill
 
-Hermes is the messenger. When a task requires reaching outside the repo (web,
-HN, GitHub, vendor docs, partner APIs), use Hermes instead of ad-hoc curls.
+Hermes Agent is installed at `/usr/local/lib/hermes-agent` with the binary on
+`$PATH` as `hermes`. Repo-side adaptation lives in `hermes/` (config, env,
+SOUL extension). Don't reinvent — delegate.
 
-## Workflow
+## Decision tree
 
-For every run, follow these steps and write the plan to the user before
-executing:
+1. **Is `hermes` on PATH?** Run `command -v hermes`. If yes, prefer the CLI.
+2. **One-shot task** (single question, no streaming): use
+   `hermes -z "<prompt>"` and capture stdout.
+3. **Interactive / multi-turn**: open `hermes chat` in a terminal — don't try
+   to drive the TUI from here.
+4. **Outbound message** (Telegram/Slack/WhatsApp/email): the gateway must be
+   running (`hermes gateway status`). If not, tell the user — don't
+   silently start a system service.
+5. **Web research** with no Hermes available: fall back to `WebFetch` or
+   `curl`, then `navigate`/`snapshot` if that fails.
 
-1. **Plan** — list the URLs / endpoints you intend to hit and what you want
-   from each. One line per step (e.g. `STEP 1: Fetch HN front page`).
-2. **Try the fast path** — `WebFetch` for HTML/JSON, or `curl` via Bash for
-   APIs. Capture the result.
-3. **Fallback to browser** — if a fetch fails (403, JS-rendered page, empty
-   body, anti-bot), retry with the browser MCP / `navigate` + `snapshot` tools.
-   Note WHY the fast path failed in the journal.
-4. **Summarize** — produce the user-visible answer. Keep it tight.
-5. **Learn** — append a single entry to `.claude/skills/hermes/journal.md`:
+## Workflow for every run
+
+1. **Plan** — list the URLs / endpoints / channels you'll touch.
+2. **Read `journal.md`** — apply prior lessons (e.g. "telegram bot rate-limits
+   above 30 msg/s", "github.com article pages need browser fallback").
+3. **Execute** — fewest tool calls that get the answer.
+4. **Summarize** for the user.
+5. **Learn** — append to `.claude/skills/hermes/journal.md`:
 
    ```
    ## YYYY-MM-DD HH:MM <one-line task>
-   - host: <example.com> — fast path: ok | failed (<reason>)
-   - lesson: <what to do differently next time for this host / pattern>
+   - surface: hermes-cli | webfetch | browser | gateway-<channel>
+   - result: ok | failed (<reason>)
+   - lesson: <what to do differently next time>
    ```
-
-   Before starting a new run, READ `journal.md` and apply prior lessons (e.g.
-   "github.com article pages need browser fallback").
-
-## Output format
-
-When reporting back to the user, mirror this structure:
-
-```
-STEP 1: <action>
-  <tool>  <target>  <status/timing>
-  <one-line result>
-
-STEP 2: ...
-```
-
-End with a numbered summary list when the task produced a list of items.
 
 ## Hard rules
 
-- Never invent URLs. Use only URLs the user provided, ones present in repo
-  files, or ones returned by a search tool.
-- Never bypass auth, captchas, or rate limits.
-- For GitHub URLs in this repo's allowed scope, prefer the GitHub MCP tools
-  over WebFetch.
-- Don't post to external services (Slack, GitHub comments, n8n webhooks)
-  unless the user explicitly asked for that exact action.
-- Keep journal entries to <=4 lines each — it's a lesson log, not a transcript.
+- Never run `hermes setup`, `hermes gateway install`, `hermes login`, or
+  `hermes auth` without explicit user instruction — they prompt for secrets
+  and install system services.
+- Never paste API keys or tokens into chat output, even from `~/.hermes/.env`.
+- For repo-scoped GitHub work, prefer the GitHub MCP tools over Hermes.
+- For bulk marketing email, route through `omni_sender.js`, not Hermes.
+- Keep journal entries to <=4 lines — it's a lesson log, not a transcript.

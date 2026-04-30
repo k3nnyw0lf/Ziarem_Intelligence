@@ -1,0 +1,71 @@
+# Hermes Agent — Ziarem CLI config overlay
+# Destination: ~/.hermes/config.yaml
+# Only the keys we actually want to override are listed here.
+
+model:
+  # Gemini matches the rest of the Ziarem stack (transcript extraction).
+  default: "gemini-2.5-pro"
+  provider: "gemini"
+
+# Try a fallback chain so a Gemini outage doesn't take comms down.
+fallback:
+  enabled: true
+  chain:
+    - provider: "openrouter"
+      model: "anthropic/claude-sonnet-4.6"
+    - provider: "anthropic"
+      model: "claude-sonnet-4-6"
+
+# Memory: keep the built-in store unless we wire pgvector explicitly.
+memory:
+  provider: "builtin"
+
+# Curator runs in the background and edits skills based on what worked.
+# Pin Ziarem-specific skills so curator never disables them.
+curator:
+  enabled: true
+  pinned_skills:
+    - "ziarem-leads"        # created from skills/ziarem-leads/ when you author it
+    - "ziarem-cross-sell"
+    - "ziarem-bilingual"
+
+# Gateway: only enable the channels we run in production.
+gateway:
+  channels:
+    cli: true
+    telegram: true
+    slack: true
+    whatsapp: false        # flip to true once you've decided Hermes owns the number
+    discord: false
+    signal: false
+    email: true
+
+# Tools: lock down what each surface can do.
+tools:
+  telegram:
+    allow: [postgres, web, summarize, todo]
+    deny:  [shell, file_write]
+  slack:
+    allow: [postgres, web, summarize, todo]
+    deny:  [shell, file_write]
+  cli:
+    allow: ["*"]
+
+# Postgres skill — point at the Ziarem DB so the agent can answer lead questions.
+skills:
+  postgres:
+    enabled: true
+    connection:
+      host: "${PGHOST}"
+      user: "${PGUSER}"
+      password: "${PGPASSWORD}"
+      database: "${PGDATABASE}"
+      sslmode: "${PGSSLMODE}"
+    read_only: true        # safer default; flip per-tool when you need writes
+
+# Webhooks Hermes can subscribe to (cross-sell, call-end notifications).
+webhook:
+  subscriptions:
+    - name: "n8n-cross-sell"
+      url: "${N8N_WEBHOOK_ONBOARDING_URL}"
+      direction: "outbound"
