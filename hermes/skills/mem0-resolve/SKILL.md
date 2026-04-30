@@ -64,4 +64,17 @@ ON CONFLICT DO NOTHING;
 - **Never expose `mem0_user_id` in user-facing output.** It's an
   internal key.
 - **Aliases are append-only.** Don't delete rows; if a merge was wrong,
-  add a row in a `mem0_identity_unmerges` table (TODO) so audit holds.
+  insert into `mem0_identity_unmerges` so the audit trail holds:
+  ```sql
+  INSERT INTO mem0_identity_unmerges (primary_id, alias_id, reason, source)
+  VALUES ($primary_id, $alias_id, $reason, $source);
+  ```
+  Resolution code must filter aliases against the unmerges table:
+  ```sql
+  SELECT a.*
+  FROM mem0_identity_aliases a
+  WHERE NOT EXISTS (
+    SELECT 1 FROM mem0_identity_unmerges u
+    WHERE u.primary_id = a.primary_id AND u.alias_id = a.alias_id
+  );
+  ```

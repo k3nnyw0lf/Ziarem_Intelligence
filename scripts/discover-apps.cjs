@@ -81,7 +81,7 @@ ${slug}:
   prefix: "${prefix}"
   vertical: "other"
   anchor: false
-  notes: "Auto-discovered by scripts/discover-apps.js (${tableCount} tables under ${prefix}_*). TODO: set vertical + notes."
+  notes: "Auto-discovered by scripts/discover-apps.cjs (${tableCount} tables under ${prefix}_*). TODO: set vertical + notes."
 `;
   return rawYaml.replace(/\s*$/, '') + '\n' + block;
 }

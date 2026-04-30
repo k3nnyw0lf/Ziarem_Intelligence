@@ -34,6 +34,21 @@ CREATE INDEX IF NOT EXISTS idx_crawl4ai_sources_due
   ON public.crawl4ai_sources (active, last_run_at)
   WHERE active = true;
 
+-- Bump updated_at on every UPDATE so cadence checks see fresh rows.
+CREATE OR REPLACE FUNCTION public.tg_crawl4ai_sources_touch_updated_at()
+RETURNS trigger AS $tg$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$tg$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS crawl4ai_sources_touch_updated_at
+  ON public.crawl4ai_sources;
+CREATE TRIGGER crawl4ai_sources_touch_updated_at
+  BEFORE UPDATE ON public.crawl4ai_sources
+  FOR EACH ROW EXECUTE FUNCTION public.tg_crawl4ai_sources_touch_updated_at();
+
 -- ────────────────────────────────────────────────────────────────────────────
 -- Mem0 identity alias table (UNION-FIND across surfaces).
 -- ────────────────────────────────────────────────────────────────────────────
@@ -48,6 +63,21 @@ CREATE TABLE IF NOT EXISTS public.mem0_identity_aliases (
 
 CREATE INDEX IF NOT EXISTS idx_mem0_alias_alias_id
   ON public.mem0_identity_aliases (alias_id);
+
+-- Audit table for un-merges. Append-only — referenced by
+-- hermes/skills/mem0-resolve/SKILL.md so a wrong merge can be reversed
+-- without ever deleting from mem0_identity_aliases.
+CREATE TABLE IF NOT EXISTS public.mem0_identity_unmerges (
+  id          serial PRIMARY KEY,
+  primary_id  text NOT NULL,
+  alias_id    text NOT NULL,
+  reason      text,
+  source      text,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_mem0_unmerge_pair
+  ON public.mem0_identity_unmerges (primary_id, alias_id);
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- v_customer_identities — read-only view exposing every surface's Mem0
