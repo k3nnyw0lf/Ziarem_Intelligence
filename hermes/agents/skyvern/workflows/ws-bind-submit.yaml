@@ -1,0 +1,107 @@
+# Skyvern workflow: submit a bind request to a carrier portal — ONLY for
+# bind_requests rows with status='Approved'. Hard gated to prevent any
+# auto-binding without human sign-off.
+
+title: "Wolf Insurance — submit approved bind request"
+description: |
+  Pick up bind_requests rows where status='Approved' AND processed_at IS
+  NULL, log into the chosen carrier portal, submit the bind, capture
+  the policy number and effective date, write to binds and ws_policies.
+
+inputs:
+  bind_request_id:
+    type: integer
+
+steps:
+  - name: gate
+    type: sql
+    query: |
+      SELECT br.*, q.carrier_id, q.quote_number, c.portal_url, c.naic_code
+      FROM bind_requests br
+      JOIN ws_carrier_quotes q ON q.id = br.quote_id
+      JOIN carriers c ON c.id = q.carrier_id
+      WHERE br.id = $bind_request_id
+        AND br.status = 'Approved'
+        AND br.processed_at IS NULL
+        AND br.approved_by IS NOT NULL
+        AND br.approved_at IS NOT NULL
+    fail_if_empty: "Bind request is not approved or already processed — refusing."
+
+  - name: lock_row
+    # Optimistic lock so two Skyvern runs can't double-submit.
+    type: sql
+    query: |
+      UPDATE bind_requests
+      SET status = 'Submitting', processed_at = now()
+      WHERE id = $bind_request_id
+        AND status = 'Approved'
+      RETURNING id
+    fail_if_empty: "Race lost — another runner picked this up."
+
+  - name: login
+    type: navigate
+    url: "{{ gate.portal_url }}/bind/{{ gate.quote_number }}"
+    auth_via: vault_api_configs
+    auth_name: "carrier_{{ gate.naic_code }}"
+
+  - name: review_and_submit
+    type: agent
+    instruction: |
+      Review the bind page. The premium MUST match
+      {{ gate.bound_premium }} within $1.00. If it doesn't, abort.
+      Otherwise, accept the bind, sign electronically using the
+      producer name {{ gate.producer_name }}, and submit.
+
+  - name: capture_policy
+    type: extract
+    schema:
+      policy_number:    { type: string,  required: true }
+      effective_date:   { type: string,  required: true }
+      bound_premium:    { type: number,  required: true }
+
+  - name: persist_bind
+    type: sql
+    query: |
+      INSERT INTO binds
+        (bind_request_id, carrier_id, policy_number, effective_date,
+         bound_premium, bound_at, source)
+      VALUES
+        ($bind_request_id, {{ gate.carrier_id }},
+         {{ capture_policy.policy_number }},
+         {{ capture_policy.effective_date }},
+         {{ capture_policy.bound_premium }},
+         now(), 'skyvern')
+      RETURNING id
+
+  - name: persist_policy
+    type: sql
+    query: |
+      INSERT INTO ws_policies
+        (client_id, carrier_id, policy_number, effective_date,
+         premium, status, created_at)
+      SELECT br.client_id, {{ gate.carrier_id }},
+             {{ capture_policy.policy_number }},
+             {{ capture_policy.effective_date }},
+             {{ capture_policy.bound_premium }},
+             'Active', now()
+      FROM bind_requests br WHERE br.id = $bind_request_id
+
+  - name: mark_done
+    type: sql
+    query: |
+      UPDATE bind_requests
+      SET status = 'Bound', bound_at = now()
+      WHERE id = $bind_request_id
+
+on_failure:
+  - type: sql
+    query: |
+      UPDATE bind_requests
+      SET status = 'Failed', error_message = {{ error.message }}
+      WHERE id = $bind_request_id
+
+guards:
+  - "ABORT if bound_premium drifts more than $1.00 from approved_premium."
+  - "ABORT if portal asks for a method of payment we don't have on file."
+  - "ABORT if the bind page shows an MFA challenge — escalate to human."
+  - "Never re-submit a bind_request that's already in 'Submitting' or 'Bound' state."

@@ -1,0 +1,63 @@
+# Skyvern workflow: pull renewal terms 60 days before policy expiry.
+# Triggered nightly by hermes cron at 02:00.
+
+title: "Wolf Insurance — renewal-term pull (T-60)"
+description: |
+  For every ws_policies row expiring within 60 days where renewals has
+  no row yet, log into the carrier portal, pull renewal premium and
+  any flagged endorsements, write to renewals.
+
+steps:
+  - name: due_for_renewal
+    type: sql
+    query: |
+      SELECT p.id AS policy_id, p.carrier_id, p.policy_number,
+             p.client_id, p.effective_date, p.expiry_date,
+             c.portal_url, c.naic_code
+      FROM ws_policies p
+      JOIN carriers c ON c.id = p.carrier_id
+      LEFT JOIN renewals r
+        ON r.policy_id = p.id
+       AND r.expiry_date = p.expiry_date
+      WHERE p.status = 'Active'
+        AND p.expiry_date BETWEEN now() AND now() + interval '60 days'
+        AND r.id IS NULL
+      ORDER BY p.expiry_date ASC
+      LIMIT 50
+
+  - name: per_policy
+    type: foreach
+    over: "{{ due_for_renewal.rows }}"
+    do:
+      - type: navigate
+        url: "{{ item.portal_url }}/policies/{{ item.policy_number }}/renewal"
+        auth_via: vault_api_configs
+        auth_name: "carrier_{{ item.naic_code }}"
+
+      - type: extract
+        schema:
+          renewal_premium:    { type: number,  required: true }
+          new_effective:      { type: string,  required: true }
+          new_expiry:         { type: string,  required: true }
+          flagged_endorsements: { type: array, items: { type: string } }
+          loss_runs_url:      { type: string,  required: false }
+
+      - type: sql
+        query: |
+          INSERT INTO renewals
+            (policy_id, client_id, carrier_id, expiry_date,
+             renewal_premium, new_effective, new_expiry,
+             flagged_endorsements, loss_runs_url, pulled_at, source)
+          VALUES
+            ({{ item.policy_id }}, {{ item.client_id }},
+             {{ item.carrier_id }}, {{ item.expiry_date }},
+             {{ extract.renewal_premium }},
+             {{ extract.new_effective }},
+             {{ extract.new_expiry }},
+             {{ extract.flagged_endorsements | tojson }},
+             {{ extract.loss_runs_url }},
+             now(), 'skyvern')
+
+guards:
+  - "Don't re-pull a renewal if the same expiry_date already exists in renewals."
+  - "If the portal says 'non-renewable', set ws_policies.review_needed=true and write a renewals row with renewal_premium=null + reason."
