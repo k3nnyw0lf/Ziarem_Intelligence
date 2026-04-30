@@ -1,0 +1,123 @@
+name: Hermes lint
+
+# Gate every PR (and every push to main) against YAML / bash / SQL
+# regressions in the Hermes overlay. Catches the kind of breakage that
+# silently downgraded install-hermes-into-repo.sh in the past.
+
+on:
+  pull_request:
+    paths:
+      - 'hermes/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+      - 'supabase/migrations/**'
+  push:
+    branches: [main]
+    paths:
+      - 'hermes/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+      - 'supabase/migrations/**'
+  workflow_dispatch:
+
+jobs:
+  yaml:
+    name: YAML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate every YAML/YML under hermes/, .github/, supabase/
+        run: |
+          set -e
+          fail=0
+          while IFS= read -r f; do
+            if ! python3 -c "import yaml,sys; yaml.safe_load(open(sys.argv[1]))" "$f"; then
+              echo "::error file=$f::YAML parse error"
+              fail=1
+            fi
+          done < <(find hermes .github -type f \( -name '*.yml' -o -name '*.yaml' \) 2>/dev/null)
+          exit "$fail"
+
+  bash:
+    name: Bash
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: bash -n every shell script
+        run: |
+          set -e
+          fail=0
+          while IFS= read -r f; do
+            if ! bash -n "$f"; then
+              echo "::error file=$f::bash syntax error"
+              fail=1
+            fi
+          done < <(find scripts hermes -type f -name '*.sh' 2>/dev/null)
+          exit "$fail"
+      - uses: ludeeus/action-shellcheck@master
+        with:
+          severity: warning
+          scandir: ./scripts
+        continue-on-error: true   # advisory only
+
+  node:
+    name: Node scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: |
+          set -e
+          for f in scripts/*.cjs scripts/*.js; do
+            [ -f "$f" ] || continue
+            node --check "$f" || exit 1
+          done
+
+  sql:
+    name: SQL migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_USER: ci
+          POSTGRES_DB: ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply every migration in lexical order against fresh Postgres
+        env:
+          PGPASSWORD: ci
+        run: |
+          set -e
+          # Only check the Hermes-owned migrations to avoid friction with
+          # legacy migrations that may rely on Supabase-only extensions.
+          for f in supabase/migrations/2026*hermes*.sql supabase/migrations/2026*fleet*.sql; do
+            [ -f "$f" ] || continue
+            echo "→ applying $f"
+            psql -h localhost -U ci -d ci -v ON_ERROR_STOP=1 -f "$f"
+          done
+
+  skill-frontmatter:
+    name: Skill frontmatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Every SKILL.md must have a name and description
+        run: |
+          set -e
+          fail=0
+          while IFS= read -r f; do
+            head -1 "$f" | grep -q '^---$' || { echo "::error file=$f::missing opening ---"; fail=1; continue; }
+            grep -q '^name:'        "$f" || { echo "::error file=$f::missing name:";        fail=1; }
+            grep -q '^description:' "$f" || { echo "::error file=$f::missing description:"; fail=1; }
+          done < <(find hermes/skills .claude/skills -name 'SKILL.md' 2>/dev/null)
+          exit "$fail"

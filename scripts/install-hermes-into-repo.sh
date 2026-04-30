@@ -11,10 +11,15 @@
 #
 # Or with a custom app slug (matches an entry in apps.yaml):
 #   APP_SLUG=re4lty bash install-hermes-into-repo.sh
+#
+# Override source for testing against a feature branch:
+#   SOURCE_REF=claude/install-hermes-8cwjy bash install-hermes-into-repo.sh
 
 set -euo pipefail
 
-SOURCE_REPO="${SOURCE_REPO:-https://raw.githubusercontent.com/k3nnyw0lf/Ziarem_Intelligence/main}"
+SOURCE_OWNER="${SOURCE_OWNER:-k3nnyw0lf}"
+SOURCE_REPO="${SOURCE_REPO:-Ziarem_Intelligence}"
+SOURCE_REF="${SOURCE_REF:-main}"
 APP_SLUG="${APP_SLUG:-}"
 
 if [ ! -d .git ]; then
@@ -22,58 +27,65 @@ if [ ! -d .git ]; then
   exit 1
 fi
 
-echo "→ Fetching Ziarem hermes overlay from $SOURCE_REPO"
-
-mkdir -p hermes hermes/skills
-
-for f in README.md config.example.yaml env.example ziarem-soul.md apps.yaml; do
-  echo "  · hermes/$f"
-  curl -fsSL "$SOURCE_REPO/hermes/$f" -o "hermes/$f"
+for bin in curl tar; do
+  command -v "$bin" >/dev/null 2>&1 || { echo "✗ Missing $bin" >&2; exit 1; }
 done
 
-echo "  · hermes/skills/ziarem-apps/SKILL.md"
-mkdir -p hermes/skills/ziarem-apps
-curl -fsSL "$SOURCE_REPO/hermes/skills/ziarem-apps/SKILL.md" -o hermes/skills/ziarem-apps/SKILL.md
+# rsync is preferred but optional — fall back to cp -r when missing.
+HAS_RSYNC=true
+command -v rsync >/dev/null 2>&1 || HAS_RSYNC=false
 
-echo "  · hermes/skills/agent-fleet/SKILL.md (Skyvern/Mem0/Pipecat/Crawl4AI/OpenHands routing)"
-mkdir -p hermes/skills/agent-fleet
-curl -fsSL "$SOURCE_REPO/hermes/skills/agent-fleet/SKILL.md" -o hermes/skills/agent-fleet/SKILL.md
+echo "→ Fetching $SOURCE_OWNER/$SOURCE_REPO @ $SOURCE_REF"
 
-echo "  · hermes/agents/ (fleet docs, docker-compose, Wolf Insurance Skyvern workflows)"
-mkdir -p hermes/agents/skyvern/workflows hermes/agents/openhands hermes/agents/mem0 hermes/agents/pipecat/pipelines hermes/agents/crawl4ai
-for f in \
-    "agents/README.md" \
-    "agents/.env.example" \
-    "agents/docker-compose.yml" \
-    "agents/install-global.sh" \
-    "agents/skyvern/README.md" \
-    "agents/skyvern/workflows/ws-quote-pull.yaml" \
-    "agents/skyvern/workflows/ws-quote-fanout.yaml" \
-    "agents/skyvern/workflows/ws-claim-status.yaml" \
-    "agents/openhands/README.md" \
-    "agents/mem0/README.md" \
-    "agents/pipecat/README.md" \
-    "agents/pipecat/Dockerfile" \
-    "agents/pipecat/server.py" \
-    "agents/crawl4ai/README.md" \
-  ; do
-  curl -fsSL "$SOURCE_REPO/hermes/$f" -o "hermes/$f" || true
-done
-chmod +x hermes/agents/install-global.sh 2>/dev/null || true
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
 
-echo "  · .claude/skills/hermes/SKILL.md"
-mkdir -p .claude/skills/hermes
-curl -fsSL "$SOURCE_REPO/.claude/skills/hermes/SKILL.md" -o .claude/skills/hermes/SKILL.md
-curl -fsSL "$SOURCE_REPO/.claude/skills/hermes/journal.md" -o .claude/skills/hermes/journal.md
+# codeload handles branch names with slashes (claude/install-hermes-8cwjy).
+url="https://codeload.github.com/$SOURCE_OWNER/$SOURCE_REPO/tar.gz/$SOURCE_REF"
+if ! curl -fsSL "$url" -o "$tmp/src.tar.gz"; then
+  echo "✗ Couldn't fetch $url" >&2
+  exit 1
+fi
 
-echo "  · .github/workflows/hermes-pull.yml (auto-sync from canonical)"
-mkdir -p .github/workflows
-curl -fsSL "$SOURCE_REPO/hermes/downstream-workflow.yml" -o .github/workflows/hermes-pull.yml
+mkdir -p "$tmp/extract"
+tar -xzf "$tmp/src.tar.gz" -C "$tmp/extract" --strip-components=1
 
-echo "  · scripts/install-hermes-into-repo.sh (self-update)"
-mkdir -p scripts
-curl -fsSL "$SOURCE_REPO/scripts/install-hermes-into-repo.sh" -o scripts/install-hermes-into-repo.sh
+# ─── Sync the overlay ──────────────────────────────────────────────────────
+sync_dir() {
+  local src="$tmp/extract/$1" dest="$2"
+  [ -d "$src" ] || return 0
+  mkdir -p "$dest"
+  if [ "$HAS_RSYNC" = true ]; then
+    rsync -a --delete-excluded "$src/" "$dest/"
+  else
+    cp -rT "$src" "$dest"
+  fi
+  echo "  · $2/"
+}
+
+sync_one() {
+  local src="$tmp/extract/$1" dest="$2"
+  [ -f "$src" ] || return 0
+  mkdir -p "$(dirname "$dest")"
+  cp "$src" "$dest"
+  echo "  · $dest"
+}
+
+# Bulk: every file under hermes/ (configs, agents, skills, workflows).
+sync_dir hermes hermes
+
+# Claude Code skill bundle
+sync_dir .claude/skills/hermes .claude/skills/hermes
+
+# Downstream auto-pull workflow (renamed from canonical's source name).
+sync_one hermes/downstream-workflow.yml .github/workflows/hermes-pull.yml
+
+# Self-updating installer copy.
+sync_one scripts/install-hermes-into-repo.sh scripts/install-hermes-into-repo.sh
 chmod +x scripts/install-hermes-into-repo.sh
+chmod +x hermes/agents/install-global.sh 2>/dev/null || true
+chmod +x hermes/agents/doctor.sh         2>/dev/null || true
+chmod +x hermes/agents/cron.example.sh   2>/dev/null || true
 
 if [ -n "$APP_SLUG" ]; then
   echo "→ Pinning APP_SLUG=$APP_SLUG into hermes/.app"
@@ -107,6 +119,7 @@ if [ "$FLEET_OK" = false ]; then
   echo "       cp hermes/agents/.env.example hermes/agents/.env && \$EDITOR hermes/agents/.env"
   echo "       bash hermes/agents/install-global.sh"
 else
-  echo "  5. Global agent fleet detected (skyvern + crawl4ai healthy) — no action needed."
+  echo "  5. Global agent fleet detected — no action needed."
 fi
-echo "  6. git add hermes/ .claude/ scripts/ && git commit -m 'Add Ziarem Hermes adapter'"
+echo "  6. bash hermes/agents/doctor.sh   # verify"
+echo "  7. git add hermes/ .claude/ scripts/ .github/ && git commit -m 'Add Ziarem Hermes adapter'"
