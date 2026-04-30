@@ -1,0 +1,99 @@
+name: Hermes auto-sync
+
+# Two jobs:
+#   1. discover-apps  — runs in THIS repo. Scans the shared Supabase
+#      Postgres for new table prefixes and opens a PR appending them to
+#      hermes/apps.yaml.
+#   2. notify-downstream — fans out a repository_dispatch to every
+#      downstream Ziarem repo that opted into auto-sync via repo
+#      variables, so they pull the latest hermes/ overlay from this repo.
+#
+# Required repo secrets (this repo only):
+#   PGHOST, PGUSER, PGPASSWORD, PGDATABASE   — Supabase connection
+#   GH_PAT_DOWNSTREAM_DISPATCH               — PAT with repo:write scope
+#                                              for downstream repos
+#
+# Optional repo variable:
+#   DOWNSTREAM_REPOS — JSON array of "owner/repo" entries, e.g.
+#     ["k3nnyw0lf/vault","k3nnyw0lf/re4lty","k3nnyw0lf/dm"]
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # Mondays 06:00 UTC
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'hermes/**'
+      - 'scripts/install-hermes-into-repo.sh'
+      - 'scripts/discover-apps.js'
+      - '.github/workflows/hermes-sync.yml'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  discover-apps:
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm install pg --no-audit --no-fund
+
+      - name: Discover new app prefixes
+        env:
+          PGHOST: ${{ secrets.PGHOST }}
+          PGUSER: ${{ secrets.PGUSER }}
+          PGPASSWORD: ${{ secrets.PGPASSWORD }}
+          PGDATABASE: ${{ secrets.PGDATABASE }}
+          PGSSLMODE: require
+        run: node scripts/discover-apps.cjs | tee /tmp/discover.log
+
+      - name: Open PR if apps.yaml changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "hermes: auto-register new Ziarem apps"
+          title: "hermes: auto-register new Ziarem apps"
+          body: |
+            Automated update from `scripts/discover-apps.js`.
+
+            New prefixes appended with placeholder `vertical: other` and
+            a `TODO:` marker — please edit `hermes/apps.yaml` to set
+            `vertical`, `anchor`, and `notes` before merging.
+
+            ```
+            ${{ steps.discover.outputs.log || '(see job log)' }}
+            ```
+          branch: hermes/auto-register-apps
+          delete-branch: true
+          add-paths: hermes/apps.yaml
+
+  notify-downstream:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fan out repository_dispatch to downstream repos
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT_DOWNSTREAM_DISPATCH }}
+          DOWNSTREAM_REPOS: ${{ vars.DOWNSTREAM_REPOS }}
+        run: |
+          if [ -z "${DOWNSTREAM_REPOS:-}" ] || [ -z "${GH_TOKEN:-}" ]; then
+            echo "No downstream repos configured (vars.DOWNSTREAM_REPOS) or no PAT — skipping."
+            exit 0
+          fi
+          echo "$DOWNSTREAM_REPOS" | jq -r '.[]' | while read -r repo; do
+            echo "→ dispatching hermes-overlay-updated to $repo"
+            curl -fsSL \
+              -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              "https://api.github.com/repos/$repo/dispatches" \
+              -d '{"event_type":"hermes-overlay-updated"}'
+          done

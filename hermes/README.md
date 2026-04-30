@@ -106,6 +106,39 @@ hermes doctor
 | n8n webhooks (cross-sell)    | `hermes webhook` + cron                 | Hermes can subscribe to webhooks and call back to n8n; n8n stays for long workflows. |
 | Vapi/Retell call-end ingest  | unchanged                               | Hermes consumes the resulting `calls` rows via Postgres skill, not the raw transcript stream. |
 
+## Auto-sync (now and forever)
+
+Two automations keep the overlay current without you re-running anything:
+
+1. **`apps.yaml` self-extends.** `scripts/discover-apps.js` queries the
+   shared Supabase Postgres for any table prefix it doesn't already know
+   about, and `.github/workflows/hermes-sync.yml` runs it weekly + on
+   manual dispatch. New prefixes show up as a PR with `vertical: other`
+   and a `TODO:` marker for you to fill in.
+
+   Run it locally any time:
+   ```bash
+   npm run hermes:discover
+   ```
+
+   Required GitHub secrets in this repo: `PGHOST`, `PGUSER`,
+   `PGPASSWORD`, `PGDATABASE`.
+
+2. **Downstream repos pull on every change.** When this repo's `hermes/`
+   folder changes on `main`, the workflow fires a `repository_dispatch`
+   to every entry in the `DOWNSTREAM_REPOS` repo variable (JSON array of
+   `owner/repo`). Each downstream repo's `.github/workflows/hermes-pull.yml`
+   (installed by `scripts/install-hermes-into-repo.sh`) reacts by
+   re-running the install script and opening a sync PR.
+
+   Required: a PAT with `repo:write` scope stored as
+   `GH_PAT_DOWNSTREAM_DISPATCH` in this repo, and a
+   `vars.DOWNSTREAM_REPOS` JSON list, e.g.
+   `["k3nnyw0lf/vault","k3nnyw0lf/re4lty","k3nnyw0lf/dm"]`.
+
+   Each downstream repo also has a daily cron in `hermes-pull.yml` as a
+   safety net — they'll catch up even if a dispatch is missed.
+
 ## Multi-app coverage (Supabase + GitHub)
 
 Every Ziarem product co-tenants in **one** Supabase project

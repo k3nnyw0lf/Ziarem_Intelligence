@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "hermes:discover": "node scripts/discover-apps.cjs",
+    "hermes:install-overlay": "bash scripts/install-hermes-into-repo.sh",
+    "hermes:doctor": "hermes doctor"
   },
   "dependencies": {
     "react": "^18.3.1",

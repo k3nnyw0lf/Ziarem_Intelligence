@@ -40,6 +40,15 @@ mkdir -p .claude/skills/hermes
 curl -fsSL "$SOURCE_REPO/.claude/skills/hermes/SKILL.md" -o .claude/skills/hermes/SKILL.md
 curl -fsSL "$SOURCE_REPO/.claude/skills/hermes/journal.md" -o .claude/skills/hermes/journal.md
 
+echo "  · .github/workflows/hermes-pull.yml (auto-sync from canonical)"
+mkdir -p .github/workflows
+curl -fsSL "$SOURCE_REPO/hermes/downstream-workflow.yml" -o .github/workflows/hermes-pull.yml
+
+echo "  · scripts/install-hermes-into-repo.sh (self-update)"
+mkdir -p scripts
+curl -fsSL "$SOURCE_REPO/scripts/install-hermes-into-repo.sh" -o scripts/install-hermes-into-repo.sh
+chmod +x scripts/install-hermes-into-repo.sh
+
 if [ -n "$APP_SLUG" ]; then
   echo "→ Pinning APP_SLUG=$APP_SLUG into hermes/.app"
   echo "$APP_SLUG" > hermes/.app
