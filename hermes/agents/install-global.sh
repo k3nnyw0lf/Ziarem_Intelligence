@@ -47,7 +47,7 @@ if [ "$SKIP_DOCKER" = false ]; then
   ( cd "$HERE" && docker compose --env-file .env up -d --remove-orphans )
 
   echo "→ waiting for health checks (60s budget)"
-  for i in $(seq 1 30); do
+  for _ in $(seq 1 30); do
     if curl -fsS http://localhost:8000/api/v1/heartbeat >/dev/null 2>&1 \
     && curl -fsS http://localhost:11235/health           >/dev/null 2>&1; then
       echo "  ✓ skyvern + crawl4ai healthy"

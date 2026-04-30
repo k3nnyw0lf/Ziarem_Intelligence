@@ -111,12 +111,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Every SKILL.md must have a name and description
+      - name: Every SKILL.md must have valid frontmatter (open + close + name + description)
         run: |
           set -e
           fail=0
           while IFS= read -r f; do
             head -1 "$f" | grep -q '^---$' || { echo "::error file=$f::missing opening ---"; fail=1; continue; }
+            markers=$(grep -c '^---$' "$f")
+            [ "$markers" -ge 2 ] || { echo "::error file=$f::missing closing --- (got $markers markers)"; fail=1; }
             grep -q '^name:'        "$f" || { echo "::error file=$f::missing name:";        fail=1; }
             grep -q '^description:' "$f" || { echo "::error file=$f::missing description:"; fail=1; }
           done < <(find hermes/skills .claude/skills -name 'SKILL.md' 2>/dev/null)
