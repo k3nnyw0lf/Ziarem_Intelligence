@@ -177,3 +177,59 @@ plaid:
   vertical: "ops"
   anchor: false
   notes: "Banking integration. plaid_items, plaid_accounts, plaid_transactions."
+
+ai:
+  name: "AI Knowledge & Learning"
+  prefix: "ai"
+  vertical: "ops"
+  anchor: false
+  notes: "Shared AI memory / learning surface. ai_knowledge_base (~67), ai_learning_log, ai_chat_sessions, ai_override_log."
+
+pro:
+  name: "Producer / Agent Profiles"
+  prefix: "pro"
+  vertical: "ops"
+  anchor: false
+  notes: "Producer-side profiles + licensing + payout. pro_licenses, pro_profiles, pro_wallets, pro_testimonials, pro_lead_inquiries."
+
+business:
+  name: "Business Management"
+  prefix: "business"
+  vertical: "ops"
+  anchor: false
+  notes: "Business-entity management surface. business_domains, business_products, business_compliance_reminders, business_tasks."
+
+carrier:
+  name: "Insurance Carriers"
+  prefix: "carrier"
+  vertical: "insurance"
+  anchor: false
+  notes: "Carrier registry powering ws_*. carriers (~85), carrier_appetite (~59), carrier_win_rates, carrier_targets, carrier_rate_reviews."
+
+crm:
+  name: "Generic CRM"
+  prefix: "crm"
+  vertical: "ops"
+  anchor: false
+  notes: "Cross-app CRM primitives (separate from each app's own pipeline). crm_pipelines, crm_deals, crm_activities, crm_tasks."
+
+drive:
+  name: "Google Drive"
+  prefix: "drive"
+  vertical: "ops"
+  anchor: false
+  notes: "Drive integration / watch log. drive_connections, drive_watch_log."
+
+outreach:
+  name: "Outreach"
+  prefix: "outreach"
+  vertical: "ops"
+  anchor: false
+  notes: "Outbound outreach log + campaigns. outreach_log, outreach_campaigns."
+
+wolf:
+  name: "Wolf Surety AI"
+  prefix: "wolf"
+  vertical: "insurance"
+  anchor: false
+  notes: "Wolf Surety memory / config — sister to ws_*. wolf_memory, wolf_machine_config."
