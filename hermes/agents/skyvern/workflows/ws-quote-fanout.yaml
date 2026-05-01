@@ -5,7 +5,7 @@
 title: "Wolf Insurance — fan out quote pulls to matched carriers"
 description: |
   For one ws_quote_requests row, find every carrier whose appetite matches
-  the risk class, enqueue one ws_outbound_queue row per carrier, then
+  the risk class, enqueue one skyvern_jobs row per carrier, then
   trigger ws-quote-pull for each. Respects per-carrier daily rate limits
   in carrier_targets.
 
@@ -36,13 +36,13 @@ steps:
   - name: enqueue
     type: sql
     query: |
-      INSERT INTO ws_outbound_queue (kind, status, payload, created_at)
-      SELECT 'quote_pull', 'Pending',
+      INSERT INTO skyvern_jobs (workflow, status, payload, created_at)
+      SELECT 'ws-quote-pull', 'Pending',
              jsonb_build_object('carrier_id', c.id,
                                 'quote_request_id', $quote_request_id),
              now()
       FROM unnest(ARRAY[{{ matched_carriers.ids | join(',') }}]::int[]) AS c(id)
-      RETURNING id
+      RETURNING id, payload
 
   - name: trigger_each
     type: foreach
@@ -51,6 +51,6 @@ steps:
       type: workflow
       name: ws-quote-pull
       args:
-        queue_id: "{{ item.id }}"
+        job_id: "{{ item.id }}"
         carrier_id: "{{ item.payload.carrier_id }}"
         quote_request_id: "{{ item.payload.quote_request_id }}"

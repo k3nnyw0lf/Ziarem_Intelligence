@@ -55,8 +55,11 @@ The `workflows/` folder has Skyvern workflow definitions tuned to the
 | `ws-policy-renewal.yaml`    | Pull renewal terms 60d before expiry                      | `ws_policies`, `renewals`  |
 | `ws-license-verify.yaml`    | Quarterly: re-verify producer licenses per state DOI     | `pro_licenses`, `license_verification_logs` |
 
-Each workflow accepts inputs via `ws_outbound_queue` rows (status =
-`Pending`) and updates them on completion.
+Each workflow accepts inputs via `skyvern_jobs` rows (status =
+`Pending`) and updates them on completion. **Do not confuse with**
+`ws_outbound_queue`, which is the existing Wolf Surety voice-call
+queue (Twilio/Vapi outbound dialing) — different table, different
+purpose.
 
 ### Suggested rollout (one carrier at a time)
 

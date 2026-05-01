@@ -141,26 +141,30 @@ COMMENT ON VIEW public.v_customer_identities IS
   'Hermes/Mem0 identity map. Built dynamically over whichever source tables exist; extend the DO block when a new surface table lands.';
 
 -- ────────────────────────────────────────────────────────────────────────────
--- ws_outbound_queue is referenced by every Wolf Insurance Skyvern
--- workflow. Create it if it doesn't already exist (some deployments
--- already have it).
+-- skyvern_jobs is the dispatch queue for Skyvern (Wolf Insurance carrier
+-- portal workflows etc).
+--
+-- NOT to be confused with public.ws_outbound_queue, which is the existing
+-- voice-call queue for Wolf Surety (phone_number, department, consent_id,
+-- opening_line — Twilio/Vapi territory). Two queues, two purposes.
 -- ────────────────────────────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS public.ws_outbound_queue (
+CREATE TABLE IF NOT EXISTS public.skyvern_jobs (
   id              serial PRIMARY KEY,
-  kind            text NOT NULL,                     -- 'quote_pull' | 'bind_submit' | ...
+  workflow        text NOT NULL,                     -- 'ws-quote-pull' | 'ws-bind-submit' | ...
   status          text NOT NULL DEFAULT 'Pending'
-                  CHECK (status IN ('Pending','Sent','Failed','Cancelled')),
+                  CHECK (status IN ('Pending','Running','Sent','Failed','Cancelled')),
   payload         jsonb NOT NULL DEFAULT '{}'::jsonb,
   attempts        int NOT NULL DEFAULT 0,
   result_id       int,
   error_message   text,
   scheduled_for   timestamptz,
   created_at      timestamptz NOT NULL DEFAULT now(),
+  started_at      timestamptz,
   completed_at    timestamptz
 );
 
-CREATE INDEX IF NOT EXISTS idx_ws_queue_pending
-  ON public.ws_outbound_queue (kind, scheduled_for)
+CREATE INDEX IF NOT EXISTS idx_skyvern_jobs_pending
+  ON public.skyvern_jobs (workflow, scheduled_for)
   WHERE status = 'Pending';
 
 COMMIT;

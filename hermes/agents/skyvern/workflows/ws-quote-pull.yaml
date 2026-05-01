@@ -1,6 +1,6 @@
 # Skyvern workflow: pull one Wolf Insurance quote from one carrier portal.
-# Triggered by a row in ws_outbound_queue (status='Pending', kind='quote_pull').
-# Writes result to ws_carrier_quotes and flips the queue row to 'Sent' or 'Failed'.
+# Triggered by a row in skyvern_jobs (status='Pending', workflow='ws-quote-pull').
+# Writes result to ws_carrier_quotes and flips the job row to 'Sent' or 'Failed'.
 
 title: "Wolf Insurance — single carrier quote pull"
 description: |
@@ -9,9 +9,9 @@ description: |
   the returned premium and policy form numbers, write to ws_carrier_quotes.
 
 inputs:
-  queue_id:
+  job_id:
     type: integer
-    description: "ws_outbound_queue.id to process"
+    description: "skyvern_jobs.id to process"
   carrier_id:
     type: integer
     description: "carriers.id of the target portal"
@@ -80,18 +80,18 @@ steps:
   - name: mark_done
     type: sql
     query: |
-      UPDATE ws_outbound_queue
+      UPDATE skyvern_jobs
       SET status = 'Sent', completed_at = now(),
           result_id = {{ persist.id }}
-      WHERE id = $queue_id
+      WHERE id = $job_id
 
 on_failure:
   - type: sql
     query: |
-      UPDATE ws_outbound_queue
+      UPDATE skyvern_jobs
       SET status = 'Failed', error_message = {{ error.message }},
           attempts = attempts + 1
-      WHERE id = $queue_id
+      WHERE id = $job_id
 
 guards:
   - "Never accept a quote with annual_premium <= 0 — flag for human review."

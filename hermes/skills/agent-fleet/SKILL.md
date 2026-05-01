@@ -32,8 +32,11 @@ Skyvern workflows under `hermes/agents/skyvern/workflows/`:
 - "renewal coming up" → `ws-policy-renewal.yaml`
 - "verify producer license" → `ws-license-verify.yaml`
 
-Always check `ws_outbound_queue` for an existing Pending row before
-enqueuing — duplicate queue entries cause portal rate-limit bans.
+Always check `skyvern_jobs` for an existing Pending row matching the
+workflow + carrier + quote_request before enqueuing — duplicate queue
+entries cause portal rate-limit bans. Note: `skyvern_jobs` is the
+Skyvern dispatch queue; `ws_outbound_queue` is the Wolf Surety
+voice-call queue (Twilio/Vapi). Don't write to the wrong one.
 
 ## Hard rules
 

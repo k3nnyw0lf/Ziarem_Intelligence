@@ -112,4 +112,4 @@ echo
 echo "Sanity check:"
 echo "  hermes mcp list"
 echo "  hermes doctor"
-echo "  hermes -z 'use skyvern to pull a Wolf Insurance quote for the next pending row in ws_outbound_queue'"
+echo "  hermes -z 'use skyvern to pull a Wolf Insurance quote for the next pending row in skyvern_jobs'"
