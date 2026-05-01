@@ -1,0 +1,99 @@
+# Skyvern workflow: pull one Wolf Insurance quote from one carrier portal.
+# Triggered by a row in skyvern_jobs (status='Pending', workflow='ws-quote-pull').
+# Writes result to ws_carrier_quotes and flips the job row to 'Sent' or 'Failed'.
+
+title: "Wolf Insurance — single carrier quote pull"
+description: |
+  Log into a carrier portal (credentials from vault_api_configs), fill the
+  quote form using the risk profile referenced by the queue row, capture
+  the returned premium and policy form numbers, write to ws_carrier_quotes.
+
+inputs:
+  job_id:
+    type: integer
+    description: "skyvern_jobs.id to process"
+  carrier_id:
+    type: integer
+    description: "carriers.id of the target portal"
+  quote_request_id:
+    type: integer
+    description: "ws_quote_requests.id whose risk profile to quote"
+
+steps:
+  - name: load_inputs
+    type: sql
+    query: |
+      SELECT
+        c.name           AS carrier_name,
+        c.portal_url,
+        c.naic_code,
+        qr.risk_data,
+        rp.*
+      FROM carriers c
+      JOIN ws_quote_requests qr ON qr.id = $quote_request_id
+      LEFT JOIN risk_profiles rp ON rp.id = qr.risk_profile_id
+      WHERE c.id = $carrier_id
+
+  - name: login
+    type: navigate
+    url: "{{ load_inputs.portal_url }}"
+    auth_via: vault_api_configs
+    auth_name: "carrier_{{ load_inputs.naic_code }}"
+
+  - name: start_quote
+    type: agent
+    instruction: |
+      Start a new commercial liability quote. The risk profile is:
+      {{ load_inputs.risk_data | tojson }}.
+      Fill every required field. If the portal asks for a NAICS code that
+      isn't in the risk profile, derive it from `business_type`.
+      Do NOT submit yet.
+
+  - name: capture_premium
+    type: extract
+    schema:
+      annual_premium:    { type: number,  required: true }
+      effective_date:    { type: string,  required: true }
+      policy_form:       { type: string,  required: true }
+      coverage_limits:   { type: object,  required: true }
+      taxes_fees:        { type: number,  required: false }
+      quote_number:      { type: string,  required: true }
+
+  - name: persist
+    type: sql
+    query: |
+      INSERT INTO ws_carrier_quotes
+        (quote_request_id, carrier_id, annual_premium, effective_date,
+         policy_form, coverage_limits, taxes_fees, quote_number,
+         pulled_at, source)
+      VALUES
+        ($quote_request_id, $carrier_id,
+         {{ capture_premium.annual_premium }},
+         {{ capture_premium.effective_date }},
+         {{ capture_premium.policy_form }},
+         {{ capture_premium.coverage_limits | tojson }},
+         {{ capture_premium.taxes_fees }},
+         {{ capture_premium.quote_number }},
+         now(), 'skyvern')
+      RETURNING id
+
+  - name: mark_done
+    type: sql
+    query: |
+      UPDATE skyvern_jobs
+      SET status = 'Sent', completed_at = now(),
+          result_id = {{ persist.id }}
+      WHERE id = $job_id
+
+on_failure:
+  - type: sql
+    query: |
+      UPDATE skyvern_jobs
+      SET status = 'Failed', error_message = {{ error.message }},
+          attempts = attempts + 1
+      WHERE id = $job_id
+
+guards:
+  - "Never accept a quote with annual_premium <= 0 — flag for human review."
+  - "Never auto-bind from this workflow. Quote pull only."
+  - "If the portal demands MFA, abort and write 'NeedsMFA' to error_message."

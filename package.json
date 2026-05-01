@@ -6,7 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "hermes:discover": "node scripts/discover-apps.cjs",
+    "hermes:install-overlay": "bash scripts/install-hermes-into-repo.sh",
+    "hermes:install-fleet": "bash hermes/agents/install-global.sh",
+    "hermes:fleet-status": "hermes mcp list",
+    "hermes:fleet-doctor": "bash hermes/agents/doctor.sh",
+    "hermes:cron-install": "bash hermes/agents/cron.example.sh",
+    "hermes:doctor": "hermes doctor"
   },
   "dependencies": {
     "react": "^18.3.1",

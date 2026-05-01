@@ -1,0 +1,119 @@
+# Ziarem agent fleet — global install. Run once on your VPS.
+# Every Ziarem repo's Hermes points at these via MCP and gets the same
+# agents for free.
+#
+# Bring up:
+#   cd hermes/agents && docker compose --env-file .env up -d
+#
+# Bring down:
+#   docker compose down
+#
+# Prereqs: docker + docker compose v2, Xvfb on the host for Skyvern
+# (managed Skyvern doesn't need this).
+
+name: ziarem-agents
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  # ─── Skyvern: browser/RPA agent (Wolf Insurance carrier portals etc) ─────
+  skyvern:
+    <<: *restart
+    image: public.ecr.aws/skyvern/skyvern:latest
+    ports: ["8000:8000"]
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      BROWSER_TYPE: chromium-headful
+      DATABASE_STRING: ${SKYVERN_DATABASE_STRING}
+      SKYVERN_API_KEY: ${SKYVERN_API_KEY}
+    volumes:
+      - skyvern-artifacts:/data/artifacts
+      - skyvern-har:/data/har
+    shm_size: 2g
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # ─── Crawl4AI: research / competitive intel scraping ─────────────────────
+  crawl4ai:
+    <<: *restart
+    image: unclecode/crawl4ai:latest
+    ports: ["11235:11235"]
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      CRAWL4AI_API_TOKEN: ${CRAWL4AI_API_TOKEN}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:11235/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # ─── Mem0: per-customer durable memory across surfaces ───────────────────
+  mem0:
+    <<: *restart
+    image: mem0ai/mem0:latest
+    ports: ["8080:8080"]
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      MEM0_TELEMETRY: "false"
+      DATABASE_URL: ${MEM0_DATABASE_URL}
+      VECTOR_STORE: pgvector
+    depends_on:
+      - mem0-postgres
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  mem0-postgres:
+    <<: *restart
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_DB: mem0
+      POSTGRES_USER: mem0
+      POSTGRES_PASSWORD: ${MEM0_PG_PASSWORD}
+    volumes:
+      - mem0-data:/var/lib/postgresql/data
+
+  # ─── Pipecat: voice pipeline composer over Vapi/Retell ───────────────────
+  # Slim runtime; the actual pipeline lives in pipecat/pipelines/
+  pipecat:
+    <<: *restart
+    build:
+      context: ./pipecat
+      dockerfile: Dockerfile
+    ports: ["7860:7860"]
+    environment:
+      DEEPGRAM_API_KEY: ${DEEPGRAM_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      VAPI_PRIVATE_KEY: ${VAPI_PRIVATE_KEY}
+      HERMES_BASE_URL: http://host.docker.internal:9100
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ─── OpenHands: issue-driven coding agent ────────────────────────────────
+  # Runs on 3010 to avoid colliding with Next.js (3000) and Node API (3001).
+  openhands:
+    <<: *restart
+    image: docker.all-hands.dev/all-hands-ai/openhands:latest
+    ports: ["3010:3000"]
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENHANDS_RUNTIME: docker
+      LLM_MODEL: anthropic/claude-sonnet-4-6
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - openhands-state:/.openhands-state
+
+volumes:
+  skyvern-artifacts:
+  skyvern-har:
+  mem0-data:
+  openhands-state:

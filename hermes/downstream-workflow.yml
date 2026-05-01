@@ -1,0 +1,55 @@
+# Drop this file into any other Ziarem repo as
+# `.github/workflows/hermes-pull.yml` to keep its hermes/ overlay in
+# sync with k3nnyw0lf/Ziarem_Intelligence (the canonical source).
+#
+# Triggered by:
+#   - repository_dispatch from the upstream Hermes-sync workflow
+#   - manual dispatch
+#   - daily cron as a safety net
+#
+# Required repo secrets (in the downstream repo): none.
+# The pull script uses raw.githubusercontent.com over public HTTPS and
+# commits via the default GITHUB_TOKEN.
+name: Hermes overlay pull
+
+on:
+  repository_dispatch:
+    types: [hermes-overlay-updated]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 7 * * 1'  # Mondays 07:00 UTC
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pull latest hermes overlay from canonical repo
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/k3nnyw0lf/Ziarem_Intelligence/main/scripts/install-hermes-into-repo.sh \
+            | bash
+
+      - name: Open PR if overlay changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "hermes: sync overlay from Ziarem_Intelligence"
+          title: "hermes: sync overlay from canonical"
+          body: |
+            Automated pull from
+            `k3nnyw0lf/Ziarem_Intelligence/scripts/install-hermes-into-repo.sh`.
+
+            Review changes in `hermes/` and `.claude/skills/hermes/`
+            before merging.
+          branch: hermes/auto-pull
+          delete-branch: true
+          add-paths: |
+            hermes/**
+            hermes/agents/**
+            hermes/skills/**
+            .claude/skills/hermes/**
+            scripts/install-hermes-into-repo.sh

@@ -1,0 +1,179 @@
+# Ziarem app manifest — every product housed in the single Supabase project
+# (ref: sfelhasepvaoianyuvxe). Hermes uses this to route a question to the
+# right table prefix. Add a new entry when you spin up a new app.
+#
+# Schema:
+#   <slug>:
+#     name:        human-readable
+#     prefix:      table prefix in public.* (without trailing _)
+#     vertical:    real-estate | mortgage | insurance | title | credit | health | ops | creator | other
+#     anchor:      true if it triggers cross-sells per ziarem-soul.md
+#     notes:       free-form one-liner
+
+vault:
+  name: "VAULT CRM"
+  prefix: "vault"
+  vertical: "ops"
+  anchor: false
+  notes: "Multi-business deal pipeline (insurance, mortgage, RE, credit, lending). 100+ vault_* tables."
+
+re4lty:
+  name: "Re4lty Inc."
+  prefix: "re4lty"
+  vertical: "real-estate"
+  anchor: true
+  notes: "Anchor. Under Contract → cross-sell Dos Mortgage, Laenan, Closed By Whom?, Wolf Insurance."
+
+dm:
+  name: "Dos Mortgage"
+  prefix: "dm"
+  vertical: "mortgage"
+  anchor: false
+  notes: "Revenue: 2.75% × estimated_loan_amount. dm_loans is the pipeline."
+
+cd:
+  name: "Dispute LLC"
+  prefix: "cd"
+  vertical: "credit"
+  anchor: false
+  notes: "Credit repair. Lead tag: Credit_Repair_Urgent."
+
+cbw:
+  name: "Closed By Whom?"
+  prefix: "cbw"
+  vertical: "title"
+  anchor: false
+  notes: "Title settlement. Revenue: $1,500 flat. cbw_orders + cbw_realtors (~2k rows)."
+
+ws:
+  name: "Wolf Surety"
+  prefix: "ws"
+  vertical: "insurance"
+  anchor: false
+  notes: "Surety + insurance ops. ws_clients (~496), ws_quote_requests (~101)."
+
+cc:
+  name: "Closing Coordinator"
+  prefix: "cc"
+  vertical: "title"
+  anchor: false
+  notes: "Sister to cbw_*. cc_compliance_forms (~79), cc_users (~5)."
+
+ziarem:
+  name: "Ziarem (creator AI suite)"
+  prefix: "ziarem"
+  vertical: "creator"
+  anchor: false
+  notes: "Avatar/video pipeline + creator CRM. ziarem_video_jobs (~50), ziarem_brands (~7)."
+
+ph:
+  name: "Property Hunter"
+  prefix: "ph"
+  vertical: "real-estate"
+  anchor: false
+  notes: "Skip-trace + probate intake. ph_api_registry (~32)."
+
+ff:
+  name: "Fix & Flip"
+  prefix: "ff"
+  vertical: "real-estate"
+  anchor: false
+  notes: "Wholesaling. ff_wholesalers (~13), ff_scan_log (~375)."
+
+hha:
+  name: "Home Health Aide"
+  prefix: "hha"
+  vertical: "health"
+  anchor: false
+  notes: "EVV + scheduling. hha_admins, hha_agents, hha_patients."
+
+health:
+  name: "Health Insurance"
+  prefix: "health"
+  vertical: "insurance"
+  anchor: false
+  notes: "ACA / Medicare / Medicaid quoting. health_carriers, health_plans."
+
+auto:
+  name: "Auto Insurance"
+  prefix: "auto"
+  vertical: "insurance"
+  anchor: false
+  notes: "auto_marketing_sequences (~24), auto_leads, auto_policies."
+
+insurance:
+  name: "Insurance (generic)"
+  prefix: "insurance"
+  vertical: "insurance"
+  anchor: false
+  notes: "insurance_leads, insurance_quotes, insurance_binds."
+
+vk:
+  name: "VK"
+  prefix: "vk"
+  vertical: "other"
+  anchor: false
+  notes: "vk_clients, vk_orders."
+
+nas:
+  name: "NAS Services"
+  prefix: "nas"
+  vertical: "ops"
+  anchor: false
+  notes: "nas_services (~18) — service catalog."
+
+social:
+  name: "Social Brand Suite"
+  prefix: "social"
+  vertical: "creator"
+  anchor: false
+  notes: "social_brands (~6), social_posts (~15)."
+
+oss:
+  name: "OSS Radar"
+  prefix: "oss"
+  vertical: "ops"
+  anchor: false
+  notes: "Open-source tool radar. oss_radar_tools (~20), oss_stack (~50)."
+
+primvx:
+  name: "PrimVX"
+  prefix: "primvx"
+  vertical: "credit"
+  anchor: false
+  notes: "Soft-pull + monitoring. primvx_contacts (~6), primvx_alerts (~5)."
+
+e9:
+  name: "Equity9"
+  prefix: "e9"
+  vertical: "mortgage"
+  anchor: false
+  notes: "Borrower nurture sequences. e9_borrowers (~6), e9_partners (~5)."
+
+d4:
+  name: "D4"
+  prefix: "d4"
+  vertical: "real-estate"
+  anchor: false
+  notes: "Market data + saved searches. d4_markets (~17)."
+
+p7:
+  name: "P7"
+  prefix: "p7"
+  vertical: "real-estate"
+  anchor: false
+  notes: "Simulations + decisions. p7_markets (~17)."
+
+m0:
+  name: "M0 Pipeline"
+  prefix: "m0"
+  vertical: "mortgage"
+  anchor: false
+  notes: "Rate snapshots + listing checks."
+
+plaid:
+  name: "Plaid"
+  prefix: "plaid"
+  vertical: "ops"
+  anchor: false
+  notes: "Banking integration. plaid_items, plaid_accounts, plaid_transactions."

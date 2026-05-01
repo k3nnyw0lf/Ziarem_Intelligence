@@ -1,0 +1,73 @@
+# Skyvern workflow: quarterly verify producer licenses on each state DOI
+# portal. Updates pro_licenses + appends to license_verification_logs.
+
+title: "Wolf Insurance — quarterly producer license verification"
+description: |
+  For every pro_licenses row whose last_verified_at is older than 90
+  days, hit the relevant state Department of Insurance lookup tool,
+  confirm status + expiration, write back, and log the check.
+
+steps:
+  - name: stale_licenses
+    type: sql
+    query: |
+      SELECT pl.id AS license_id, pl.license_number, pl.state,
+             pl.producer_name, pl.last_verified_at,
+             pl.npn, pl.license_type
+      FROM pro_licenses pl
+      WHERE pl.active = true
+        AND (pl.last_verified_at IS NULL
+             OR pl.last_verified_at < now() - interval '90 days')
+      ORDER BY pl.last_verified_at NULLS FIRST
+      LIMIT 50
+
+  - name: per_license
+    type: foreach
+    over: "{{ stale_licenses.rows }}"
+    do:
+      # The portal URL is per-state; agent picks the right one.
+      - type: agent
+        instruction: |
+          Open the public producer-license lookup tool for the
+          {{ item.state }} Department of Insurance. Search by NPN
+          {{ item.npn }} (or license number {{ item.license_number }}
+          if NPN search isn't supported). This is a public lookup,
+          no login required.
+
+      - type: extract
+        schema:
+          status:          { type: string, required: true }   # Active|Inactive|Expired|Suspended
+          expiration_date: { type: string, required: true }
+          authorities:     { type: array, items: { type: string } }
+          state_returned:  { type: string }
+
+      - type: sql
+        query: |
+          UPDATE pro_licenses
+          SET status = {{ extract.status }},
+              expiration_date = {{ extract.expiration_date }},
+              authorities = {{ extract.authorities | tojson }},
+              last_verified_at = now()
+          WHERE id = {{ item.license_id }}
+
+      - type: sql
+        query: |
+          INSERT INTO license_verification_logs
+            (license_id, status, expiration_date, verified_at, source)
+          VALUES
+            ({{ item.license_id }},
+             {{ extract.status }},
+             {{ extract.expiration_date }},
+             now(), 'skyvern')
+
+      # Auto-deactivate Expired/Suspended licenses so producers can't
+      # quote off them by accident.
+      - type: sql
+        condition: "{{ extract.status in ['Expired','Suspended','Inactive'] }}"
+        query: |
+          UPDATE pro_licenses SET active = false WHERE id = {{ item.license_id }}
+
+guards:
+  - "Public DOI lookups only — never log into a producer-only DOI portal from this workflow."
+  - "If the state DOI tool is down, skip and try next quarter (do NOT mark as Inactive)."
+  - "If the lookup returns multiple matches, abort that license and flag for human review."

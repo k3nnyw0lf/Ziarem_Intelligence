@@ -1,0 +1,68 @@
+# Hermes Agent — Ziarem CLI config overlay
+# Destination: ~/.hermes/config.yaml (merge into the upstream defaults; do
+# NOT replace the whole file — upstream has 800+ lines of useful comments).
+#
+# Only Ziarem-specific overrides live here. Things that are CLI commands,
+# not YAML, are noted at the bottom.
+
+# ─── Model ──────────────────────────────────────────────────────────────────
+# Gemini matches the rest of the Ziarem stack (transcript extraction,
+# already has GEMINI_API_KEY in .env).
+model:
+  default: "gemini-2.5-pro"
+  provider: "gemini"
+
+# ─── Per-provider timeouts ──────────────────────────────────────────────────
+# Bedrock paths use boto3 (not affected). These overrides matter for
+# OpenAI-wire and native Anthropic clients.
+providers:
+  gemini:
+    request_timeout_seconds: 120
+  anthropic:
+    request_timeout_seconds: 60
+
+# ─── Per-platform toolsets ──────────────────────────────────────────────────
+# Lock down Telegram/Slack so operators can't accidentally `terminal` or
+# `file` write from a chat surface. CLI keeps everything.
+platform_toolsets:
+  cli:      [hermes-cli]
+  telegram: [web, vision, skills, todo, tts, send_message]
+  slack:    [web, vision, skills, todo, send_message]
+  whatsapp: [web, vision, skills, todo, send_message]
+
+# ─── Platform runtime knobs ─────────────────────────────────────────────────
+platforms:
+  telegram:
+    reply_to_mode: "first"
+    extra:
+      disable_link_previews: true
+
+# ─── Agent loop ─────────────────────────────────────────────────────────────
+agent:
+  # Cross-sell + bilingual reply flows can take a few extra turns.
+  max_turns: 80
+  reasoning_effort: "medium"
+
+# ─── Skills ─────────────────────────────────────────────────────────────────
+skills:
+  # Nudge curator more often so Ziarem-specific skills accumulate faster.
+  creation_nudge_interval: 10
+  # Pull in repo-local skills without copying them.
+  external_dirs:
+    - "${ZIAREM_HOME}/hermes/skills"
+
+# ─── Memory ────────────────────────────────────────────────────────────────
+memory:
+  provider: "builtin"
+
+# ─── Gateway timeouts ──────────────────────────────────────────────────────
+# Comms paths shouldn't run forever silently.
+# (These nest under agent: in the upstream schema; keep them here for clarity.)
+# agent.gateway_timeout: 1800
+# agent.gateway_timeout_warning: 900
+
+# ─── NOT configured here — use CLI commands ────────────────────────────────
+# Fallback chain:    hermes fallback add        (writes to internal store)
+# MCP servers:       hermes mcp add             (e.g. Supabase MCP, Postgres)
+# Messaging tokens:  hermes gateway setup       (writes to ~/.hermes/.env)
+# Skill install:     hermes skills install <id>
