@@ -24,16 +24,48 @@ and Supabase data.
 | Closed By Whom?  | $1,500 flat                          |
 | Wolf Insurance   | $600 flat                            |
 
-## Schema cheatsheet (RLS enabled)
+## Schema cheatsheet (RLS enabled — verified against live Supabase)
 
-- `companies(id, name, vertical, is_partner, active_status)`
-- `leads(phone_number, first_name, last_name, preferred_language, location, estimated_value, status)`
-  — `status ∈ {Cold, Qualified, Under Contract, Closed}`
-- `calls(lead_id, company_id, transcript, recording_url, extracted_data jsonb, calculated_revenue)`
-- `cross_sells(original_lead_id, target_company_id, status)`
-  — `status ∈ {Pending, Automated_Outreach, Closed}`
-- `raw_leads`, `email_tracking`, `marketing_campaigns`, `campaign_queue`,
-  `smtp_identities` — Ziarem Intelligence side.
+- `leads(id, address, owner_name, owner_phone, owner_email, sale_price,
+   loan_amount, loan_type, business, lead_type, priority, ai_score,
+   ai_reasoning, status, ...)`
+  — **status is lowercase**: `new` is the dominant value. Possible:
+   `new | qualified | under_contract | closed | cold`. Always compare
+   case-insensitively or lowercase.
+- `cross_sell_opportunities(id, client_id, client_name, current_lobs,
+   missing_lobs, estimated_annual_premium, estimated_commission,
+   priority, status, ...)`
+  — `status ∈ {identified, outreach, closed}` (lowercase).
+- `vault_calls(id, caller_id, direction, status, started_at, ended_at,
+   transcript, summary, disposition, ...)` — Vapi/Retell call records.
+- `vault_call_log(id, date_time, caller_number, ai_score, ai_analysis,
+   transcript, action_taken, follow_up_needed, ...)` — sister surface.
+- `vault_email_campaigns(id, name, sender_id, status, total_recipients,
+   sent_count, opened_count, clicked_count, ...)`
+  — `status ∈ {draft, scheduled, sending, completed, sent}` (lowercase).
+- `marketing_campaigns(id, name, type, segment, recipient_count,
+   status, sent_at, send_at, ...)`
+  — `status ∈ {draft, active, sent}` (lowercase).
+- `vault_email_senders(id, email, provider, smtp_host, smtp_port,
+   smtp_user, smtp_pass, daily_limit, sent_today, is_active, ...)` —
+   omni-SMTP rotation pool.
+- `email_tracking(id, recipient_email, campaign_id, opened_at,
+   clicked_at, bounced_at, ...)` — pixel + click tracking.
+- `credentials(id, service_name, api_key, api_secret, base_url, config,
+   category, ...)` — ONE source of truth for every external service key
+   used across Hermes, the agent fleet, and the Ziarem CRM.
+- `vault_apis(id, name, slug, api_key, headers, config, enabled, ...)` —
+   higher-level API registry (sister to `credentials`).
+- `vault_api_configs(id, api_id, key_name, key_value, is_active, ...)` —
+   per-API named config slots (multi-key services).
+
+## Hermes-internal helper tables (added by 20260430120000_hermes_fleet_tables.sql)
+
+- `crawl4ai_sources` — research crawl registry.
+- `mem0_identity_aliases` / `mem0_identity_unmerges` — identity merging.
+- `skyvern_jobs` — Skyvern dispatch queue (NOT to be confused with
+   `ws_outbound_queue`, which is the Wolf Surety voice-call queue).
+- `v_customer_identities` — surface→Mem0 user_id view.
 
 ## Lead scoring tags (from `lead_scorer.js`)
 
