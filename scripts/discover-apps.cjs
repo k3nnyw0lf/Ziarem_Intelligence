@@ -45,7 +45,8 @@ const IGNORED_PREFIXES = new Set([
   'newsletter', 'channel', 'product', 'products', 'pricing',
   'partners', 'policies', 'orders', 'partner', 'order',
   'flyer', 'review', 'reviews', 'inspections', 'inspection',
-  'health', // health_* is registered explicitly; keep manual control
+  // Hermes-internal tables (added by 20260430120000_hermes_fleet_tables.sql)
+  'mem0', 'skyvern', 'crawl4ai',
 ]);
 
 async function listPublicTables() {
