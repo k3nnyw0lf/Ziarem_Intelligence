@@ -22,7 +22,8 @@ Use `service_name` exactly as registered (case-sensitive). Common ones:
 
 | Need                    | service_name                                |
 | ----------------------- | ------------------------------------------- |
-| Hermes default LLM      | `Google Gemini API`                         |
+| Hermes default LLM      | `Anthropic Claude API` (live; preferred)    |
+| Hermes fallback (Google) | `Google Gemini API` (optional, via `hermes fallback add`) |
 | Hermes fallback         | `OpenRouter API (Hermes fallback)`          |
 | Crawl4AI / Mem0 / Pipecat shared LLM | `OpenAI API (shared by Crawl4AI/Mem0/Pipecat)` |
 | Vapi calls              | `Vapi - AI Voice Calls`                     |
