@@ -108,14 +108,23 @@ UI reads `public.v_credentials_admin` for status without exposing values.
 | wolf_machine        |     2 |   2 |            0 |
 | personal            |     1 |   1 |            0 |
 
-**44 keys** await values from the admin UI. Top 6 highest-leverage to fill:
+**Already populated** (operationally complete at the platform layer):
 
-1. `Google Gemini API` — Hermes default LLM. Without it, no agent reasoning.
-2. `OpenAI API (shared by Crawl4AI/Mem0/Pipecat)` — three agents wired to one key.
-3. `Vapi - AI Voice Calls` — without it, AI sales floor stays dark.
-4. `Telegram Bot - Hermes Gateway` — fastest operator surface to come online.
-5. `GitHub PAT - Hermes Skills Hub` — kills the 60 req/hr rate limit on skill installs.
-6. `Cloudflare Turnstile - Apply Form` — apply form bot protection (referenced in lead-manager-crm).
+- `Anthropic Claude API` — **Hermes default LLM** (no Gemini key needed; Anthropic works directly with the Hermes agent fork)
+- `Skyvern RPA (after deployment)` — running on Wolf Machine `10.1.10.42:8000`
+- `n8n Wolf Machine (after deployment)` — running on Wolf Machine `10.1.10.42:5678`
+- Supabase (both project entries) · 3 MLS providers · Synology NAS DSM (3 entries) · Hostinger Webmail · Google Account · Wolf Machine DSM Python Client
+
+**Still empty — top 6 highest-leverage** (in priority order for what they unlock):
+
+1. `Telegram Bot - Hermes Gateway` — fastest operator surface to come online (5 min from `@BotFather`)
+2. `OpenAI API (shared by Crawl4AI/Mem0/Pipecat)` — these three agents need OpenAI for embeddings; one key, three services
+3. `Vapi - AI Voice Calls` — without it, AI sales floor stays dark (`vault_calls` = 0 / 7d)
+4. `GitHub PAT - Hermes Skills Hub` — kills the 60 req/hr unauth rate limit on skill installs
+5. `Cloudflare Turnstile - Apply Form` — bot protection on the apply form (parked in lead-manager-crm)
+6. **At least one email provider** (Mailgun / Resend / Postmark / SendGrid / SES) — so `omni_sender.js` can route campaigns. Pick one.
+
+Note: Hermes runs on Anthropic Claude API; you don't need a separate Gemini key. The Gemini catalog row stays as an option for fallback chain (`hermes fallback add gemini ...`) but isn't blocking anything.
 
 ## Hermes agent fleet (Wolf Machine LAN)
 

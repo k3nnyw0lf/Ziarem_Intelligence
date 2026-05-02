@@ -132,17 +132,32 @@ active, 32 apps registered, 57 credential slots — but 0 sends in 30
 days, 0 Vapi calls in 7 days, 15 cross-sells frozen at `identified`.
 **The system is dressed and waiting; nothing's been turned on yet.**
 
-## Tier-1 keys you'll need from the user
+## Keys — what's set vs. still empty
 
-`hermes-keys` skill maps service names. The 6 highest-leverage to
-populate first:
+Always run `hermes -z "use hermes-doctor-deep"` (or
+`hermes -z "use hermes-keys to list every empty credential by category"`)
+to get the live picture. Don't rely on this section getting older —
+the credentials catalog is the source of truth.
 
-1. `Google Gemini API` — Hermes default LLM
-2. `OpenAI API (shared by Crawl4AI/Mem0/Pipecat)` — three agents on one key
-3. `Vapi - AI Voice Calls` — AI sales floor
-4. `Telegram Bot - Hermes Gateway` — fastest operator surface
-5. `GitHub PAT - Hermes Skills Hub` — kills 60 req/hr unauth limit
-6. `Cloudflare Turnstile - Apply Form` — apply form bot protection
+**Currently set (operationally live):**
+
+- `Anthropic Claude API` — **Hermes default LLM**. No Gemini needed.
+- `Skyvern RPA (after deployment)` — Wolf Machine `10.1.10.42:8000`
+- `n8n Wolf Machine (after deployment)` — Wolf Machine `10.1.10.42:5678`
+- Supabase (project + Wolf Machine) · 3 MLS providers · Synology NAS DSM ×3
+  · Hostinger Webmail · Google Account · Wolf Machine DSM Python Client
+
+**Still empty — highest leverage to fill next:**
+
+1. `Telegram Bot - Hermes Gateway` — fastest operator surface (5 min via `@BotFather`)
+2. `OpenAI API (shared by Crawl4AI/Mem0/Pipecat)` — three agents need it for embeddings
+3. `Vapi - AI Voice Calls` — AI sales floor (`vault_calls` = 0 / 7d right now)
+4. `GitHub PAT - Hermes Skills Hub` — kills 60 req/hr unauth limit on skill installs
+5. `Cloudflare Turnstile - Apply Form` — bot protection on the apply form
+6. **One** of Mailgun / Resend / Postmark / SendGrid / SES — so `omni_sender.js` can route
+
+Note: `Google Gemini API` row stays in the catalog as an optional fallback
+provider for `hermes fallback add`. Not blocking anything.
 
 ## Pre-existing P0 — not introduced by Hermes, parked
 
