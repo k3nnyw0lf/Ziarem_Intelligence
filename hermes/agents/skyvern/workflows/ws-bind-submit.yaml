@@ -1,12 +1,31 @@
-# Skyvern workflow: submit a bind request to a carrier portal — ONLY for
-# bind_requests rows with status='Approved'. Hard gated to prevent any
-# auto-binding without human sign-off.
+# Skyvern workflow: submit an Approved bind request to a carrier portal.
+# Hard-gated: status='Approved' AND bound_at IS NULL AND bound_by IS NOT NULL.
+# A human operator must have set bound_by on bind_requests before this
+# workflow will pick the row up.
+#
+# Schema-verified against live Supabase:
+#   bind_requests       id, lob, lead_id, auto_lead_id, quote_request_id,
+#                       carrier_quote_id, carrier_name, premium_annual,
+#                       premium_monthly, client_name, email, phone, status,
+#                       ezlynx_bind_id, policy_number, effective_date,
+#                       expiration_date, notes, bound_by, bound_at,
+#                       created_at, updated_at
+#   binds               id, quote_id, client_id, carrier_id, risk_profile_id,
+#                       bound_at, policy_number, effective_date,
+#                       expiration_date, final_premium, ai_was_correct,
+#                       override_reason, notes
+#   ws_carrier_quotes   id, quote_request_id, carrier_id, carrier_name, ...
+#   ws_quote_requests   id, client_id, ...
+#   ws_policies         id, policy_number, client_id, carrier_id,
+#                       carrier_name, line_of_business, status, premium,
+#                       premium_annual, effective_date, expiration_date, ...
 
 title: "Wolf Insurance — submit approved bind request"
 description: |
-  Pick up bind_requests rows where status='Approved' AND processed_at IS
-  NULL, log into the chosen carrier portal, submit the bind, capture
-  the policy number and effective date, write to binds and ws_policies.
+  Pick up bind_requests rows where status='Approved' AND bound_at IS NULL
+  AND bound_by IS NOT NULL, log into the carrier portal, submit the bind,
+  capture policy number + effective date, write to binds and ws_policies,
+  and flip the bind_request to status='Bound'.
 
 inputs:
   bind_request_id:
@@ -16,23 +35,39 @@ steps:
   - name: gate
     type: sql
     query: |
-      SELECT br.*, q.carrier_id, q.quote_number, c.portal_url, c.naic_code
+      SELECT br.id,
+             br.lob,
+             br.quote_request_id,
+             br.carrier_quote_id,
+             br.carrier_name,
+             br.premium_annual    AS approved_premium,
+             br.premium_monthly,
+             br.client_name,
+             br.bound_by,
+             qr.client_id,
+             cq.carrier_id,
+             rp.id                AS risk_profile_id,
+             c.short_code         AS carrier_short_code,
+             c.portal_url
       FROM bind_requests br
-      JOIN ws_carrier_quotes q ON q.id = br.quote_id
-      JOIN carriers c ON c.id = q.carrier_id
+      LEFT JOIN ws_carrier_quotes cq ON cq.id = br.carrier_quote_id
+      LEFT JOIN ws_quote_requests qr ON qr.id = br.quote_request_id
+      LEFT JOIN risk_profiles    rp ON rp.client_id = qr.client_id
+      LEFT JOIN carriers          c ON c.id = cq.carrier_id
       WHERE br.id = $bind_request_id
-        AND br.status = 'Approved'
-        AND br.processed_at IS NULL
-        AND br.approved_by IS NOT NULL
-        AND br.approved_at IS NOT NULL
-    fail_if_empty: "Bind request is not approved or already processed — refusing."
+        AND br.status   = 'Approved'
+        AND br.bound_at IS NULL
+        AND br.bound_by IS NOT NULL
+    fail_if_empty: "Bind request not Approved, already Bound, or missing bound_by — refusing."
 
   - name: lock_row
-    # Optimistic lock so two Skyvern runs can't double-submit.
+    # Optimistic lock so two Skyvern runs can't double-submit. We move
+    # status from Approved → Submitting in one CAS.
     type: sql
     query: |
       UPDATE bind_requests
-      SET status = 'Submitting', processed_at = now()
+      SET status     = 'Submitting',
+          updated_at = now()
       WHERE id = $bind_request_id
         AND status = 'Approved'
       RETURNING id
@@ -40,68 +75,95 @@ steps:
 
   - name: login
     type: navigate
-    url: "{{ gate.portal_url }}/bind/{{ gate.quote_number }}"
+    url: "{{ gate.portal_url }}/bind/{{ gate.carrier_quote_id }}"
     auth_via: vault_api_configs
-    auth_name: "carrier_{{ gate.naic_code }}"
+    auth_name: "carrier_{{ gate.carrier_short_code or gate.carrier_name }}"
 
   - name: review_and_submit
     type: agent
     instruction: |
       Review the bind page. The premium MUST match
-      {{ gate.bound_premium }} within $1.00. If it doesn't, abort.
-      Otherwise, accept the bind, sign electronically using the
-      producer name {{ gate.producer_name }}, and submit.
+      ${{ gate.approved_premium }} within $1.00. If it doesn't, abort.
+      Otherwise sign electronically using the producer name {{ gate.bound_by }}
+      and submit.
 
   - name: capture_policy
     type: extract
     schema:
       policy_number:    { type: string,  required: true }
       effective_date:   { type: string,  required: true }
+      expiration_date:  { type: string,  required: false }
       bound_premium:    { type: number,  required: true }
 
   - name: persist_bind
     type: sql
     query: |
       INSERT INTO binds
-        (bind_request_id, carrier_id, policy_number, effective_date,
-         bound_premium, bound_at, source)
+        (quote_id, client_id, carrier_id, risk_profile_id,
+         bound_at, policy_number, effective_date, expiration_date,
+         final_premium, ai_was_correct, notes)
       VALUES
-        ($bind_request_id, {{ gate.carrier_id }},
+        ({{ gate.carrier_quote_id }},
+         {{ gate.client_id }},
+         {{ gate.carrier_id }},
+         {{ gate.risk_profile_id }},
+         now(),
          {{ capture_policy.policy_number }},
-         {{ capture_policy.effective_date }},
+         {{ capture_policy.effective_date }}::date,
+         {{ capture_policy.expiration_date }}::date,
          {{ capture_policy.bound_premium }},
-         now(), 'skyvern')
+         (abs({{ capture_policy.bound_premium }} - {{ gate.approved_premium }}) < 1.00),
+         'Skyvern auto-submit, bind_request_id=' || $bind_request_id)
       RETURNING id
 
   - name: persist_policy
     type: sql
     query: |
       INSERT INTO ws_policies
-        (client_id, carrier_id, policy_number, effective_date,
-         premium, status, created_at)
-      SELECT br.client_id, {{ gate.carrier_id }},
-             {{ capture_policy.policy_number }},
-             {{ capture_policy.effective_date }},
-             {{ capture_policy.bound_premium }},
-             'Active', now()
-      FROM bind_requests br WHERE br.id = $bind_request_id
+        (policy_number, client_id, carrier_id, carrier_name,
+         line_of_business, status, premium, premium_annual,
+         premium_mode, effective_date, expiration_date,
+         bound_by, bound_at, quote_request_id)
+      VALUES
+        ({{ capture_policy.policy_number }},
+         {{ gate.client_id }},
+         {{ gate.carrier_id }},
+         {{ gate.carrier_name }},
+         {{ gate.lob }},
+         'Active',
+         {{ capture_policy.bound_premium }},
+         {{ capture_policy.bound_premium }},
+         CASE WHEN {{ gate.premium_monthly }} IS NOT NULL THEN 'monthly' ELSE 'annual' END,
+         {{ capture_policy.effective_date }}::date,
+         {{ capture_policy.expiration_date }}::date,
+         {{ gate.bound_by }},
+         now(),
+         {{ gate.quote_request_id }})
 
   - name: mark_done
     type: sql
     query: |
       UPDATE bind_requests
-      SET status = 'Bound', bound_at = now()
+      SET status          = 'Bound',
+          policy_number   = {{ capture_policy.policy_number }},
+          effective_date  = {{ capture_policy.effective_date }}::date,
+          expiration_date = {{ capture_policy.expiration_date }}::date,
+          bound_at        = now(),
+          updated_at      = now()
       WHERE id = $bind_request_id
 
 on_failure:
   - type: sql
     query: |
       UPDATE bind_requests
-      SET status = 'Failed', error_message = {{ error.message }}
+      SET status     = 'Failed',
+          notes      = COALESCE(notes,'') || E'\n[Skyvern fail] ' || {{ error.message }},
+          updated_at = now()
       WHERE id = $bind_request_id
 
 guards:
-  - "ABORT if bound_premium drifts more than $1.00 from approved_premium."
+  - "ABORT if bound_premium drifts more than $1.00 from approved premium_annual."
   - "ABORT if portal asks for a method of payment we don't have on file."
   - "ABORT if the bind page shows an MFA challenge — escalate to human."
-  - "Never re-submit a bind_request that's already in 'Submitting' or 'Bound' state."
+  - "Never re-submit a bind_request that's already in Submitting / Bound state."
+  - "Carrier portal credentials NEVER printed back into chat / logs."

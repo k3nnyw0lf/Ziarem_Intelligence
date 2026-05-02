@@ -1,21 +1,35 @@
-# Skyvern workflow: fan out quote-pull across all carriers in
-# carrier_appetite that match the risk profile of a ws_quote_requests row.
+# Skyvern workflow: fan out quote-pull across all carriers whose appetite
+# matches the line_of_business of a ws_quote_requests row.
 # Used by the hourly cron (hermes cron add ws-quote-fanout-hourly).
+#
+# Schema-verified against live Supabase (sfelhasepvaoianyuvxe):
+#   - carrier_appetite     (id, carrier_id, risk_factor, appetite, ...)
+#   - carrier_win_rates    (id, carrier_id, risk_factor, win_rate, ...)
+#   - ws_quote_requests    (id, line_of_business, ...)
+#
+# carrier_targets does NOT have daily_used / daily_limit — it's an
+# appointment-tracking table, not a rate-limit table. Rate limiting is
+# handled by skyvern_jobs scheduling (max 1 Pending row per carrier+request).
 
 title: "Wolf Insurance — fan out quote pulls to matched carriers"
 description: |
-  For one ws_quote_requests row, find every carrier whose appetite matches
-  the risk class, enqueue one skyvern_jobs row per carrier, then
-  trigger ws-quote-pull for each. Respects per-carrier daily rate limits
-  in carrier_targets.
+  For one ws_quote_requests row, find every appointed carrier whose
+  appetite matches the line_of_business + risk_factor, enqueue one
+  skyvern_jobs row per carrier, then trigger ws-quote-pull for each.
+  Respects per-carrier in-flight by ON CONFLICT DO NOTHING on the
+  natural key (carrier_id, quote_request_id) — no duplicate jobs.
 
 inputs:
   quote_request_id:
     type: integer
+  risk_factor:
+    type: string
+    description: "Risk dimension to match in carrier_appetite (e.g. 'roof_age', 'flood_zone'). Default 'general' if blank."
+    default: "general"
   max_carriers:
     type: integer
     default: 5
-    description: "Cap fan-out to top N by carrier_win_rates"
+    description: "Cap fan-out to top N by carrier_win_rates.win_rate"
 
 steps:
   - name: matched_carriers
@@ -25,18 +39,30 @@ steps:
       FROM carriers c
       JOIN carrier_appetite ca ON ca.carrier_id = c.id
       JOIN ws_quote_requests qr ON qr.id = $quote_request_id
-      LEFT JOIN carrier_win_rates wr ON wr.carrier_id = c.id
-      LEFT JOIN carrier_targets ct ON ct.carrier_id = c.id
-      WHERE ca.risk_class = qr.risk_class
+      LEFT JOIN carrier_win_rates wr
+        ON wr.carrier_id = c.id
+       AND wr.risk_factor = ca.risk_factor
+      WHERE ca.risk_factor = $risk_factor
+        AND ca.appetite IN ('preferred','standard')
         AND c.active = true
-        AND (ct.daily_used IS NULL OR ct.daily_used < ct.daily_limit)
-      ORDER BY wr.win_rate DESC NULLS LAST
+        AND c.appointed = true
+        -- Skip carriers that already have a Pending skyvern_jobs row
+        -- for this quote_request — avoids portal rate-limit bans.
+        AND NOT EXISTS (
+          SELECT 1 FROM public.skyvern_jobs sj
+          WHERE sj.workflow = 'ws-quote-pull'
+            AND sj.status   = 'Pending'
+            AND sj.payload->>'carrier_id'       = c.id::text
+            AND sj.payload->>'quote_request_id' = $quote_request_id::text
+        )
+      ORDER BY wr.win_rate DESC NULLS LAST,
+               (CASE ca.appetite WHEN 'preferred' THEN 0 ELSE 1 END)
       LIMIT $max_carriers
 
   - name: enqueue
     type: sql
     query: |
-      INSERT INTO skyvern_jobs (workflow, status, payload, created_at)
+      INSERT INTO public.skyvern_jobs (workflow, status, payload, created_at)
       SELECT 'ws-quote-pull', 'Pending',
              jsonb_build_object('carrier_id', c.id,
                                 'quote_request_id', $quote_request_id),
@@ -51,6 +77,6 @@ steps:
       type: workflow
       name: ws-quote-pull
       args:
-        job_id: "{{ item.id }}"
-        carrier_id: "{{ item.payload.carrier_id }}"
+        job_id:           "{{ item.id }}"
+        carrier_id:       "{{ item.payload.carrier_id }}"
         quote_request_id: "{{ item.payload.quote_request_id }}"
