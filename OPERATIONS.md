@@ -5,8 +5,13 @@ This file is the human counterpart to `hermes/skills/ziarem-status/SKILL.md`
 (machine-readable status query that returns the same picture).
 
 > Numbers below are from a live audit of Supabase project
-> `sfelhasepvaoianyuvxe`. Re-run with `npm run hermes:fleet-doctor`
-> on the VPS or `hermes -z "use ziarem-status"` from the CLI.
+> `sfelhasepvaoianyuvxe`. Re-run with
+> `hermes -z "use ziarem-status"` from the CLI or
+> `hermes -z "use hermes-doctor-deep"` for the full smoke test.
+
+> **Skill index:** see `hermes/skills/ziarem-stack-overview/SKILL.md` for
+> the full routing table — every skill, every cron job, every migration,
+> every registered app.
 
 ## Headline
 
