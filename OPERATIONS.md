@@ -124,6 +124,37 @@ Pending bring-up:
 Wolf Machine box. Compose's port bindings can be moved if those ports
 are taken.
 
+## Pre-existing security issue (flagging for your decision)
+
+The `public.credentials` table has two RLS policies that pre-date this work:
+
+| Policy | Roles | Effect |
+|---|---|---|
+| `admins_full_access` | `authenticated` | Any logged-in JWT can `SELECT api_key, api_secret` from every credential. |
+| `service_role_all` | PUBLIC | `polroles={-}` is `PUBLIC` — effectively unrestricted. |
+
+**Impact**: anyone with the anon or authenticated JWT can read every key
+the stack uses. Not introduced by Hermes but worth fixing before
+populating sensitive new keys (Vapi private, GitHub PATs, etc).
+
+**Recommended fix** (review before applying — could break the admin UI's
+read path until the UI is moved to `v_credentials_admin`):
+
+```sql
+DROP POLICY IF EXISTS admins_full_access ON public.credentials;
+DROP POLICY IF EXISTS service_role_all   ON public.credentials;
+
+CREATE POLICY service_role_all ON public.credentials
+  AS PERMISSIVE FOR ALL TO service_role
+  USING (true) WITH CHECK (true);
+
+GRANT SELECT ON public.v_credentials_admin TO authenticated;
+```
+
+Then update the admin UI to read `v_credentials_admin` (presence flags
+only) and write via a `SECURITY DEFINER` function so the JWT never
+holds direct UPDATE on `credentials`.
+
 ## Open issues / parked items
 
 These are real follow-ups that need either (a) a key from you or (b) an

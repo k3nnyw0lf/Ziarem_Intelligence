@@ -93,14 +93,21 @@ jobs:
           --health-retries 10
     steps:
       - uses: actions/checkout@v4
-      - name: Apply every migration in lexical order against fresh Postgres
+      - name: Apply every Hermes-era migration in lexical order against fresh Postgres
         env:
           PGPASSWORD: ci
         run: |
           set -e
-          # Only check the Hermes-owned migrations to avoid friction with
-          # legacy migrations that may rely on Supabase-only extensions.
-          for f in supabase/migrations/2026*hermes*.sql supabase/migrations/2026*fleet*.sql; do
+          # Pre-create the Supabase-managed roles so migrations that grant
+          # to service_role / authenticated / anon don't blow up.
+          for role in service_role authenticated anon; do
+            psql -h localhost -U ci -d ci -v ON_ERROR_STOP=1 \
+              -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='$role') THEN CREATE ROLE $role NOLOGIN; END IF; END \$\$;"
+          done
+          # Run every 2026-era migration. This catches credentials,
+          # rls-lockdown, and anything else we ship — not just *hermes* /
+          # *fleet* in the filename.
+          for f in supabase/migrations/2026*.sql; do
             [ -f "$f" ] || continue
             echo "→ applying $f"
             psql -h localhost -U ci -d ci -v ON_ERROR_STOP=1 -f "$f"
