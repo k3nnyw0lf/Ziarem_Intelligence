@@ -10,19 +10,23 @@ This file is the human counterpart to `hermes/skills/ziarem-status/SKILL.md`
 
 ## Headline
 
-Infrastructure is **configured but largely dormant**. 32 apps registered,
-57 credential slots catalogued, but the operational surfaces (Vapi calls,
-email blasts, cross-sell automation) aren't producing signal.
+Infrastructure **wired and now self-driving where possible**. 32 apps
+registered, 57 credential slots catalogued, **2 nightly cron jobs**
+filling the cross-sell pipeline (`hermes-dm-cross-sell-daily` 06:30 UTC,
+`hermes-vault-cross-sell-daily` 06:31 UTC). Operator surfaces (Vapi
+calls, email blasts) still need keys to come online.
 
 | Surface              | State     | Action                                         |
 | -------------------- | --------- | ---------------------------------------------- |
-| Marketing senders    | 27 active | Need a live campaign. See `marketing-revive`.  |
+| Marketing senders    | 27 active | Need a live campaign. See `marketing-revive` (diagnose) + `marketing-fire` (act). |
 | Marketing campaigns  | 1 active, 5 sent, 8 drafted | Activate one or revive cron. |
-| AI sales (Vapi)      | 0 calls / 7d | Verify `vault_ai_call_config` + Vapi webhook. |
-| Cross-sell pipeline  | 15 stuck at `identified` | See `cross-sell-unstick`. |
-| Lead intake          | 22 new (none qualified) | Lead scoring not advancing rows. |
-| Telegram             | 3 configs active, 0 msgs / 7d | Bot not connected, or quiet week. |
-| Skyvern (Wolf)       | Deployed at `10.1.10.42:8000` | 6 workflows ready; needs job queue rows. |
+| AI sales (Vapi)      | 0 calls / 7d | Populate `Vapi - AI Voice Calls` credentials row, verify webhook. |
+| Cross-sell pipeline  | 15 stuck at `identified` (legacy); new ones now auto-detected nightly | `cross-sell-unstick` for legacy; cron handles new |
+| Lead intake          | 22 new (none qualified) | Wire `hermes-onboarding` skill into Vapi/apply-form/Telegram entry points. |
+| Telegram             | 3 configs active, 0 msgs / 7d | Bot not connected — needs `Telegram Bot - Hermes Gateway` token. |
+| Skyvern (Wolf)       | Deployed at `10.1.10.42:8000` | 6 workflows ready (schema-fixed in PR #5); needs `skyvern_jobs` rows. |
+| Property Hunter      | 31/32 APIs enabled, 0 properties scraped | Scout cron not running. See `ph-property-hunter`. |
+| Cross-sell automation| `fn_detect_dm_cross_sells` + `fn_detect_vault_cross_sells` running nightly | Self-driving — no operator action needed |
 
 ## Apps roster (32 registered in `hermes/apps.yaml`)
 
@@ -123,6 +127,21 @@ Pending bring-up:
 `hermes/agents/install-global.sh` brings the rest up; or run on the same
 Wolf Machine box. Compose's port bindings can be moved if those ports
 are taken.
+
+## Live automation (running nightly via pg_cron)
+
+Already turned on, no action needed:
+
+| pg_cron job                       | Schedule       | Function                             |
+|-----------------------------------|----------------|--------------------------------------|
+| `hermes-dm-cross-sell-daily`      | `30 6 * * *`   | `fn_detect_dm_cross_sells()`         |
+| `hermes-vault-cross-sell-daily`   | `31 6 * * *`   | `fn_detect_vault_cross_sells()`      |
+
+Each function: SECURITY INVOKER, search_path pinned, EXECUTE granted to
+`service_role` only, idempotent via `NOT EXISTS` on
+`(client_id, missing_lobs)`, strict email-only client lookup (ambiguous
+matches skipped). Inspect via `SELECT * FROM v_dm_cross_sell_candidates`
+for a dry-run preview.
 
 ## Pre-existing security issue (flagging for your decision)
 
