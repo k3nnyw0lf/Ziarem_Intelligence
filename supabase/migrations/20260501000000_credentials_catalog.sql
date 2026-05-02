@@ -20,6 +20,23 @@
 -- After applying: the admin UI lists rows where api_key IS NULL/'' and
 -- prompts the operator to fill them.
 
+-- Defensive: this table already exists in every real Ziarem deploy
+-- (UNIQUE on service_name etc). The CREATE IF NOT EXISTS is here only
+-- so the SQL CI job can apply this migration against a fresh Postgres
+-- without first running 1,000 lines of legacy migrations.
+CREATE TABLE IF NOT EXISTS public.credentials (
+  id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  service_name text UNIQUE NOT NULL,
+  api_key      text,
+  api_secret   text,
+  base_url     text,
+  config       jsonb,
+  notes        text,
+  category     text,
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  updated_at   timestamptz NOT NULL DEFAULT now()
+);
+
 INSERT INTO public.credentials (service_name, category, base_url, notes) VALUES
 
 -- ─── AI services / LLM providers ──────────────────────────────────────────
