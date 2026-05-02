@@ -1,28 +1,56 @@
 # Skyvern workflow: pull renewal terms 60 days before policy expiry.
 # Triggered nightly by hermes cron at 02:00.
+#
+# Schema-verified against live Supabase:
+#   ws_policies   id, policy_number, client_id, carrier_id, carrier_name,
+#                 line_of_business, status, premium, premium_annual,
+#                 effective_date, expiration_date, ws_lead_id,
+#                 quote_request_id, ...
+#   carriers      id, name, short_code, portal_url, ...
+#   renewals      id, bind_id, client_id, carrier_id, policy_number,
+#                 line_of_business, current_premium, effective_date,
+#                 expiration_date, renewal_status, requote_requested,
+#                 requote_request_id, best_renewal_premium,
+#                 best_renewal_carrier, savings_amount, auto_renewed,
+#                 client_notified, agent_notified, notes, ...
+#   binds         id, quote_id, client_id, carrier_id, policy_number, ...
 
 title: "Wolf Insurance — renewal-term pull (T-60)"
 description: |
-  For every ws_policies row expiring within 60 days where renewals has
-  no row yet, log into the carrier portal, pull renewal premium and
-  any flagged endorsements, write to renewals.
+  For every Active ws_policies expiring within 60 days that doesn't yet
+  have a renewals row, log into the carrier portal, pull the renewal
+  premium + endorsements, write a renewals row keyed by the policy's
+  bind_id (renewals.bind_id is the natural key, not policy_id).
 
 steps:
   - name: due_for_renewal
     type: sql
     query: |
-      SELECT p.id AS policy_id, p.carrier_id, p.policy_number,
-             p.client_id, p.effective_date, p.expiry_date,
-             c.portal_url, c.naic_code
+      SELECT p.id              AS policy_id,
+             p.policy_number,
+             p.client_id,
+             p.carrier_id,
+             p.carrier_name,
+             p.line_of_business,
+             p.premium_annual  AS current_premium,
+             p.effective_date,
+             p.expiration_date,
+             c.portal_url,
+             c.short_code      AS carrier_short_code,
+             b.id              AS bind_id
       FROM ws_policies p
-      JOIN carriers c ON c.id = p.carrier_id
+      LEFT JOIN carriers c ON c.id = p.carrier_id
+      LEFT JOIN binds b
+        ON b.policy_number = p.policy_number
+       AND b.carrier_id    = p.carrier_id
       LEFT JOIN renewals r
-        ON r.policy_id = p.id
-       AND r.expiry_date = p.expiry_date
-      WHERE p.status = 'Active'
-        AND p.expiry_date BETWEEN now() AND now() + interval '60 days'
+        ON r.policy_number    = p.policy_number
+       AND r.expiration_date  = p.expiration_date
+      WHERE COALESCE(p.status, 'Active') ILIKE 'active%'
+        AND p.expiration_date BETWEEN now()::date AND (now() + interval '60 days')::date
         AND r.id IS NULL
-      ORDER BY p.expiry_date ASC
+        AND c.portal_url IS NOT NULL
+      ORDER BY p.expiration_date ASC
       LIMIT 50
 
   - name: per_policy
@@ -32,32 +60,49 @@ steps:
       - type: navigate
         url: "{{ item.portal_url }}/policies/{{ item.policy_number }}/renewal"
         auth_via: vault_api_configs
-        auth_name: "carrier_{{ item.naic_code }}"
+        auth_name: "carrier_{{ item.carrier_short_code or item.carrier_name }}"
 
       - type: extract
         schema:
-          renewal_premium:    { type: number,  required: true }
-          new_effective:      { type: string,  required: true }
-          new_expiry:         { type: string,  required: true }
-          flagged_endorsements: { type: array, items: { type: string } }
-          loss_runs_url:      { type: string,  required: false }
+          renewal_premium:      { type: number,  required: true }
+          new_effective_date:   { type: string,  required: true }
+          new_expiration_date:  { type: string,  required: true }
+          flagged_endorsements: { type: array, items: { type: string }, required: false }
+          loss_runs_url:        { type: string,  required: false }
+          non_renewable_reason: { type: string,  required: false }
 
       - type: sql
         query: |
           INSERT INTO renewals
-            (policy_id, client_id, carrier_id, expiry_date,
-             renewal_premium, new_effective, new_expiry,
-             flagged_endorsements, loss_runs_url, pulled_at, source)
+            (bind_id, client_id, carrier_id, policy_number, line_of_business,
+             current_premium, effective_date, expiration_date,
+             best_renewal_premium, renewal_status, notes)
           VALUES
-            ({{ item.policy_id }}, {{ item.client_id }},
-             {{ item.carrier_id }}, {{ item.expiry_date }},
-             {{ extract.renewal_premium }},
-             {{ extract.new_effective }},
-             {{ extract.new_expiry }},
-             {{ extract.flagged_endorsements | tojson }},
-             {{ extract.loss_runs_url }},
-             now(), 'skyvern')
+            ({{ item.bind_id }},
+             {{ item.client_id }},
+             {{ item.carrier_id }},
+             {{ item.policy_number }},
+             {{ item.line_of_business }},
+             {{ item.current_premium }},
+             {{ extract.new_effective_date }}::date,
+             {{ extract.new_expiration_date }}::date,
+             CASE WHEN {{ extract.non_renewable_reason }} IS NOT NULL
+                  THEN NULL
+                  ELSE {{ extract.renewal_premium }}
+             END,
+             CASE WHEN {{ extract.non_renewable_reason }} IS NOT NULL
+                  THEN 'non_renewable'
+                  ELSE 'pulled'
+             END,
+             COALESCE({{ extract.non_renewable_reason }},
+                      'endorsements: ' || COALESCE(
+                          {{ extract.flagged_endorsements | tojson }}::text, '[]') ||
+                      ' / loss_runs: ' || COALESCE({{ extract.loss_runs_url }}, 'n/a')))
 
 guards:
-  - "Don't re-pull a renewal if the same expiry_date already exists in renewals."
-  - "If the portal says 'non-renewable', set ws_policies.review_needed=true and write a renewals row with renewal_premium=null + reason."
+  - "Don't re-pull a renewal if a renewals row already exists for the same
+     policy_number + expiration_date — skip the policy."
+  - "If the portal says 'non-renewable', write the renewals row with
+     renewal_status='non_renewable' and renewal_premium=NULL — never null
+     out the existing policy."
+  - "Carrier portal credentials NEVER printed back into chat / logs."

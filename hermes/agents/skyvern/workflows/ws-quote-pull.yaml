@@ -1,12 +1,18 @@
 # Skyvern workflow: pull one Wolf Insurance quote from one carrier portal.
 # Triggered by a row in skyvern_jobs (status='Pending', workflow='ws-quote-pull').
 # Writes result to ws_carrier_quotes and flips the job row to 'Sent' or 'Failed'.
+#
+# Schema-verified against live Supabase (sfelhasepvaoianyuvxe):
+#   - carriers              (id, name, short_code, portal_url, ...)
+#   - ws_quote_requests     (id, client_id, line_of_business, raw_info, ...)
+#   - risk_profiles         (id, client_id, ...)  -- joined by client_id
+#   - ws_carrier_quotes     (premium_annual, coverage_a, deductible_aop, ...)
 
 title: "Wolf Insurance — single carrier quote pull"
 description: |
   Log into a carrier portal (credentials from vault_api_configs), fill the
-  quote form using the risk profile referenced by the queue row, capture
-  the returned premium and policy form numbers, write to ws_carrier_quotes.
+  quote form using the risk profile for the quote-request's client, capture
+  the returned premium + coverage, write to ws_carrier_quotes.
 
 inputs:
   job_id:
@@ -17,64 +23,88 @@ inputs:
     description: "carriers.id of the target portal"
   quote_request_id:
     type: integer
-    description: "ws_quote_requests.id whose risk profile to quote"
+    description: "ws_quote_requests.id whose client risk profile to quote"
 
 steps:
   - name: load_inputs
     type: sql
     query: |
       SELECT
-        c.name           AS carrier_name,
+        c.name        AS carrier_name,
+        c.short_code  AS carrier_short_code,
         c.portal_url,
-        c.naic_code,
-        qr.risk_data,
+        qr.line_of_business,
+        qr.raw_info   AS risk_data,
+        qr.client_id,
+        qr.property_address,
+        qr.year_built,
         rp.*
       FROM carriers c
       JOIN ws_quote_requests qr ON qr.id = $quote_request_id
-      LEFT JOIN risk_profiles rp ON rp.id = qr.risk_profile_id
+      LEFT JOIN risk_profiles rp ON rp.client_id = qr.client_id
       WHERE c.id = $carrier_id
 
   - name: login
     type: navigate
     url: "{{ load_inputs.portal_url }}"
     auth_via: vault_api_configs
-    auth_name: "carrier_{{ load_inputs.naic_code }}"
+    # Carrier portal credentials live in vault_api_configs keyed by carrier
+    # short_code (e.g. 'PROG', 'TRAV'). Fall back to id-based lookup if
+    # short_code is null in the carriers row.
+    auth_name: "carrier_{{ load_inputs.carrier_short_code or load_inputs.carrier_name }}"
 
   - name: start_quote
     type: agent
     instruction: |
-      Start a new commercial liability quote. The risk profile is:
+      Start a new {{ load_inputs.line_of_business }} quote. Risk profile:
       {{ load_inputs.risk_data | tojson }}.
-      Fill every required field. If the portal asks for a NAICS code that
-      isn't in the risk profile, derive it from `business_type`.
-      Do NOT submit yet.
+      Property: {{ load_inputs.property_address }} ({{ load_inputs.year_built }}).
+      Fill every required field. Do NOT submit if the portal demands a
+      bind step — capture the quote screen only.
 
+  # ws_carrier_quotes columns are line-of-business specific. We capture the
+  # superset and INSERT only the columns relevant to the LOB. Skyvern's
+  # extract type tolerates missing optional fields.
   - name: capture_premium
     type: extract
     schema:
-      annual_premium:    { type: number,  required: true }
-      effective_date:    { type: string,  required: true }
-      policy_form:       { type: string,  required: true }
-      coverage_limits:   { type: object,  required: true }
-      taxes_fees:        { type: number,  required: false }
-      quote_number:      { type: string,  required: true }
+      premium_annual:        { type: number,  required: true }
+      premium_monthly:       { type: number,  required: false }
+      coverage_a:            { type: number,  required: false }   # home/dwelling
+      deductible_aop:        { type: number,  required: false }
+      deductible_hurricane:  { type: number,  required: false }
+      liability_limit:       { type: number,  required: false }   # auto / GL
+      gl_per_occurrence:     { type: number,  required: false }   # commercial
+      gl_aggregate:          { type: number,  required: false }
+      effective_date:        { type: string,  required: false }
+      quote_number_external: { type: string,  required: false }   # carrier's quote#
 
   - name: persist
     type: sql
     query: |
       INSERT INTO ws_carrier_quotes
-        (quote_request_id, carrier_id, annual_premium, effective_date,
-         policy_form, coverage_limits, taxes_fees, quote_number,
-         pulled_at, source)
+        (quote_request_id, carrier_id, carrier_name, lob,
+         premium_annual, premium_monthly,
+         coverage_a, deductible_aop, deductible_hurricane,
+         liability_limit, gl_per_occurrence, gl_aggregate,
+         status, ai_reasoning)
       VALUES
         ($quote_request_id, $carrier_id,
-         {{ capture_premium.annual_premium }},
-         {{ capture_premium.effective_date }},
-         {{ capture_premium.policy_form }},
-         {{ capture_premium.coverage_limits | tojson }},
-         {{ capture_premium.taxes_fees }},
-         {{ capture_premium.quote_number }},
-         now(), 'skyvern')
+         {{ load_inputs.carrier_name }},
+         {{ load_inputs.line_of_business }},
+         {{ capture_premium.premium_annual }},
+         {{ capture_premium.premium_monthly }},
+         {{ capture_premium.coverage_a }},
+         {{ capture_premium.deductible_aop }},
+         {{ capture_premium.deductible_hurricane }},
+         {{ capture_premium.liability_limit }},
+         {{ capture_premium.gl_per_occurrence }},
+         {{ capture_premium.gl_aggregate }},
+         'pulled',
+         'Skyvern auto-pull. External quote#: ' ||
+            COALESCE({{ capture_premium.quote_number_external }}, 'n/a') ||
+            ', effective ' ||
+            COALESCE({{ capture_premium.effective_date }}, 'n/a'))
       RETURNING id
 
   - name: mark_done
@@ -94,6 +124,8 @@ on_failure:
       WHERE id = $job_id
 
 guards:
-  - "Never accept a quote with annual_premium <= 0 — flag for human review."
-  - "Never auto-bind from this workflow. Quote pull only."
+  - "Never accept a quote with premium_annual <= 0 — flag for human review."
+  - "Never auto-bind from this workflow. Quote pull only — bind goes
+     through ws-bind-submit."
   - "If the portal demands MFA, abort and write 'NeedsMFA' to error_message."
+  - "Carrier portal credentials NEVER printed back into chat / logs."
