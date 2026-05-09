@@ -195,6 +195,141 @@ router.get('/threads', async (req, res) => {
   }
 });
 
+/**
+ * POST /inbox/webhook/n8n
+ * Receives email payloads from n8n IMAP triggers (live monitors + backfill).
+ * Auth: shared secret in X-Webhook-Secret header (set N8N_WEBHOOK_SECRET in .env).
+ *
+ * Accepts both n8n native IMAP node fields AND the field-name variants the
+ * old Supabase edge function expected, so a single endpoint serves all workflows.
+ *
+ * Required body (any one shape works):
+ *   { from, subject, text|body, date, message_id, to, business_tag?, source? }
+ *   { from_email, from_name, subject, body_text, body_html, received_at, to_email, message_id, business_tag?, source? }
+ *
+ * source: 'live'|'backfill'|'master_router'  (default 'live')
+ */
+router.post('/webhook/n8n', express.json({ limit: '20mb' }), async (req, res) => {
+  try {
+    const secret = req.get('X-Webhook-Secret') || req.query.secret;
+    const expected = process.env.N8N_WEBHOOK_SECRET;
+    if (expected && secret !== expected) {
+      return res.status(401).json({ error: 'invalid webhook secret' });
+    }
+
+    const b = req.body || {};
+
+    // Normalize across the two shapes
+    const fromEmail = String(extractEmail(b.from_email || b.from || '')).toLowerCase().trim() || null;
+    const fromName  = String(b.from_name || extractName(b.from) || '').trim() || null;
+    const toEmail   = Array.isArray(b.to_email || b.to) ? (b.to_email || b.to)[0] : (b.to_email || b.to);
+    const toEmailNorm = String(extractEmail(toEmail || '')).toLowerCase().trim() || null;
+    const subject   = String(b.subject || '').slice(0, 1000);
+    const bodyText  = String(b.body_text || b.text || b.textPlain || '').slice(0, 200000);
+    const bodyHtml  = b.body_html || b.html || b.textHtml || null;
+    const receivedAt = b.received_at || b.date || new Date().toISOString();
+    const rfc822Id  = (b.message_id || b.rfc822_message_id || '').toString().replace(/[<>]/g, '') || null;
+    const inReplyTo = (b.in_reply_to || '').toString().replace(/[<>]/g, '') || null;
+    const refs      = Array.isArray(b.references) ? b.references.map((r) => String(r).replace(/[<>]/g, '')) : [];
+    const businessTag = b.business_tag || null;
+    const source    = b.source || 'live';
+    const attachments = Array.isArray(b.attachments) ? b.attachments : [];
+
+    // Resolve business_id: prefer explicit tag → match business_emails.business_tag.
+    // Fallback: match by domain of `to` address.
+    let businessId = null;
+    if (businessTag) {
+      const r = await pool.query(`SELECT id FROM business_emails WHERE business_tag = $1 LIMIT 1`, [businessTag]);
+      businessId = r.rows[0]?.id ?? null;
+    }
+    if (!businessId && toEmailNorm) {
+      const domain = toEmailNorm.split('@')[1];
+      if (domain) {
+        const r = await pool.query(
+          `SELECT id FROM business_emails WHERE LOWER(email_user) LIKE '%@' || $1 OR LOWER(email_user) = $2 LIMIT 1`,
+          [domain, toEmailNorm]
+        );
+        businessId = r.rows[0]?.id ?? null;
+      }
+    }
+    if (!businessId) {
+      return res.status(400).json({ error: 'unable to resolve business — provide business_tag or ensure to= matches a business_emails.email_user' });
+    }
+
+    // Match lead by sender email (cheap pre-pass).
+    const leadId = fromEmail
+      ? (await pool.query(`SELECT autoId_ui FROM leads WHERE LOWER(TRIM(email_addr)) = $1 LIMIT 1`, [fromEmail])).rows[0]?.autoid_ui ?? null
+      : null;
+
+    const threadKey = inReplyTo || refs[0] || rfc822Id || ('subj:' + subject.replace(/^(re:|fwd:|fw:)\s*/gi, '').trim().toLowerCase().slice(0, 120));
+
+    const ins = await pool.query(
+      `INSERT INTO communications
+        (lead_id, direction, subject, body_text, body_html, sent_at, business_id,
+         rfc822_message_id, in_reply_to, message_refs, thread_key,
+         from_addr, from_name, to_addrs, imap_uid,
+         size_bytes, has_attachments)
+       VALUES ($1, 'INBOUND', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+       ON CONFLICT (business_id, rfc822_message_id) WHERE rfc822_message_id IS NOT NULL DO NOTHING
+       RETURNING id`,
+      [
+        leadId, subject, bodyText, bodyHtml, receivedAt, businessId,
+        rfc822Id, inReplyTo, refs, threadKey,
+        fromEmail, fromName,
+        toEmailNorm ? [toEmailNorm] : [],
+        null, // imap_uid not provided by webhook
+        bodyText.length + (bodyHtml ? bodyHtml.length : 0),
+        attachments.length > 0,
+      ]
+    );
+
+    if (ins.rowCount === 0) {
+      return res.json({ accepted: true, deduped: true });
+    }
+
+    const commId = ins.rows[0].id;
+
+    for (const att of attachments) {
+      await pool.query(
+        `INSERT INTO email_attachments (comm_id, filename, content_type, size_bytes, storage_key, is_inline)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          commId,
+          att.filename || att.name || 'attachment',
+          att.content_type || att.mimeType || null,
+          att.size || null,
+          att.storage_key || `pending/${businessId}/${commId}/${att.filename || 'a'}`,
+          !!att.is_inline,
+        ]
+      );
+    }
+
+    return res.json({
+      accepted: true,
+      comm_id: commId,
+      lead_id: leadId,
+      business_id: businessId,
+      source,
+    });
+  } catch (err) {
+    console.error('POST /inbox/webhook/n8n', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+function extractEmail(s) {
+  if (!s) return '';
+  const m = String(s).match(/<([^>]+)>/);
+  if (m) return m[1];
+  const m2 = String(s).match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+  return m2 ? m2[0] : '';
+}
+
+function extractName(s) {
+  if (!s) return '';
+  return String(s).replace(/<[^>]+>/, '').replace(/"/g, '').trim();
+}
+
 router.get('/search', async (req, res) => {
   try {
     const q = String(req.query.q || '').trim();
