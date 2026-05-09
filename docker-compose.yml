@@ -1,0 +1,46 @@
+# Ziarem Intelligence — drop-in compose for VPS1 (alongside n8n + Cypht).
+# Place at /docker/ziarem/docker-compose.yml on VPS1.
+# Assumes Traefik on the `traefik-public` external network (same as n8n).
+
+version: "3.9"
+
+services:
+  ziarem-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ziarem-intelligence:latest
+    container_name: ziarem-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+    networks:
+      - traefik-public
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ziarem.rule=Host(`ziarem-api.srv1257040.hstgr.cloud`)
+      - traefik.http.routers.ziarem.entrypoints=websecure
+      - traefik.http.routers.ziarem.tls.certresolver=letsencrypt
+      - traefik.http.services.ziarem.loadbalancer.server.port=3001
+
+  ziarem-ai-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ziarem-intelligence:latest
+    container_name: ziarem-ai-worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    networks:
+      - traefik-public
+    command: ["node", "ai_worker.js", "--loop", "--concurrency", "2"]
+    depends_on:
+      - ziarem-api
+
+networks:
+  traefik-public:
+    external: true
