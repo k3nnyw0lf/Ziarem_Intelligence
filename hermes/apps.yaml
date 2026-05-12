@@ -64,7 +64,7 @@ ziarem:
   prefix: "ziarem"
   vertical: "creator"
   anchor: false
-  notes: "Avatar/video pipeline + creator CRM. ziarem_video_jobs (~50), ziarem_brands (~7)."
+  notes: "Avatar/video pipeline + creator CRM. ziarem_video_jobs (~55), ziarem_brands (~7), ziarem_topic_queue (~20). Driven by 12 upsosi-* pg_cron jobs + 9 Edge Functions (content-orchestrator, news-scanner, kling-generator, podcast-generator, hashtag-optimizer, etc). See `upsosi-pipeline` skill."
 
 ph:
   name: "Property Hunter"
