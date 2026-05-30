@@ -162,7 +162,7 @@ async function fetchWalkScore(address, lat, lon) {
 }
 
 // Walk Score color helper
-const wsColor = s => s>=90?"#10b981":s>=70?"#6366f1":s>=50?"#f59e0b":s>=25?"#ef4444":"#555";
+const wsColor = s => s>=90?"#10b981":s>=70?"#15e0c8":s>=50?"#f59e0b":s>=25?"#ef4444":"#555";
 
 // ── FREE APIs (no keys needed) ──────────────────────────────────────────────
 
@@ -368,16 +368,16 @@ async function getCrossSellOpportunities(contact, businesses, existingDeals) {
 const ago = d => { if(!d) return "—"; const s=Math.floor((Date.now()-new Date(d))/1000); if(s<60)return"just now"; if(s<3600)return`${Math.floor(s/60)}m ago`; if(s<86400)return`${Math.floor(s/3600)}h ago`; return`${Math.floor(s/86400)}d ago`; };
 const fmt = d => d?new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}):"—";
 const fmtShort = d => d?new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—";
-const fmtDue = d => { if(!d) return null; const diff=Math.floor((new Date(d)-Date.now())/86400000); if(diff<0) return{label:`${Math.abs(diff)}d overdue`,color:"#ef4444"}; if(diff===0) return{label:"Today",color:"#f59e0b"}; if(diff===1) return{label:"Tomorrow",color:"#f59e0b"}; return{label:`in ${diff}d`,color:"#6366f1"}; };
+const fmtDue = d => { if(!d) return null; const diff=Math.floor((new Date(d)-Date.now())/86400000); if(diff<0) return{label:`${Math.abs(diff)}d overdue`,color:"#ef4444"}; if(diff===0) return{label:"Today",color:"#f59e0b"}; if(diff===1) return{label:"Tomorrow",color:"#f59e0b"}; return{label:`in ${diff}d`,color:"#15e0c8"}; };
 const usd = n => n?`$${Number(n).toLocaleString()}`:"—";
 const pct = (a,b) => b?`${Math.round((a/b)*100)}%`:"0%";
 
 // ─── CONFIGS ──────────────────────────────────────────────────────────────────
-const STAGE_CFG = { lead:{c:"#6366f1",l:"Lead"}, prequalify:{c:"#8b5cf6",l:"Pre-Qual"}, application:{c:"#3b82f6",l:"Application"}, processing:{c:"#f59e0b",l:"Processing"}, underwriting:{c:"#ef4444",l:"Underwriting"}, clear_to_close:{c:"#10b981",l:"Clear to Close"}, closed:{c:"#d4af37",l:"Closed"} };
+const STAGE_CFG = { lead:{c:"#15e0c8",l:"Lead"}, prequalify:{c:"#8b5cf6",l:"Pre-Qual"}, application:{c:"#3b82f6",l:"Application"}, processing:{c:"#f59e0b",l:"Processing"}, underwriting:{c:"#ef4444",l:"Underwriting"}, clear_to_close:{c:"#10b981",l:"Clear to Close"}, closed:{c:"#ff2e88",l:"Closed"} };
 const PRIORITY_CFG = { low:{c:"#555",l:"Low"}, medium:{c:"#3b82f6",l:"Med"}, high:{c:"#f59e0b",l:"High"}, urgent:{c:"#ef4444",l:"Urgent"} };
 const TASK_ICONS = { task:"☑", call:"📞", email:"✉", meeting:"📅", follow_up:"↩", deadline:"⏰" };
-const CAT_COLORS = { contract:"#d4af37", invoice:"#f59e0b", rate_sheet:"#10b981", loan_app:"#3b82f6", disclosure:"#8b5cf6", policy:"#ef4444", compliance:"#8b5cf6", report:"#6366f1", correspondence:"#555", general:"#444", other:"#333" };
-const LEAD_STATUS_CFG = { new:{c:"#6366f1",l:"New"}, contacted:{c:"#3b82f6",l:"Contacted"}, qualified:{c:"#f59e0b",l:"Qualified"}, proposal:{c:"#8b5cf6",l:"Proposal"}, negotiation:{c:"#ef4444",l:"Negotiation"}, won:{c:"#10b981",l:"Won"}, lost:{c:"#444",l:"Lost"}, nurture:{c:"#555",l:"Nurture"} };
+const CAT_COLORS = { contract:"#ff2e88", invoice:"#f59e0b", rate_sheet:"#10b981", loan_app:"#3b82f6", disclosure:"#8b5cf6", policy:"#ef4444", compliance:"#8b5cf6", report:"#15e0c8", correspondence:"#555", general:"#444", other:"#333" };
+const LEAD_STATUS_CFG = { new:{c:"#15e0c8",l:"New"}, contacted:{c:"#3b82f6",l:"Contacted"}, qualified:{c:"#f59e0b",l:"Qualified"}, proposal:{c:"#8b5cf6",l:"Proposal"}, negotiation:{c:"#ef4444",l:"Negotiation"}, won:{c:"#10b981",l:"Won"}, lost:{c:"#444",l:"Lost"}, nurture:{c:"#555",l:"Nurture"} };
 
 // Lead scoring — deterministic, no AI call
 function scoreContact(contact, deals, activities) {
@@ -423,7 +423,7 @@ class ErrorBoundary extends Component {
         <div style={{fontSize:36,marginBottom:12}}>⚠</div>
         <div style={{fontSize:14,marginBottom:8}}>Something went wrong</div>
         <div style={{fontSize:10,color:"#555",marginBottom:20,maxWidth:400}}>{this.state.error.message}</div>
-        <button onClick={()=>this.setState({error:null})} style={{background:"#d4af37",color:"#000",border:"none",borderRadius:4,padding:"8px 20px",cursor:"pointer",fontSize:11}}>RETRY</button>
+        <button onClick={()=>this.setState({error:null})} style={{background:"#ff2e88",color:"#000",border:"none",borderRadius:4,padding:"8px 20px",cursor:"pointer",fontSize:11}}>RETRY</button>
       </div>
     );
     return this.props.children;
@@ -433,7 +433,7 @@ class ErrorBoundary extends Component {
 // ══════════════════════════════════════════════════════════════════
 //  BASE UI COMPONENTS
 // ══════════════════════════════════════════════════════════════════
-function Av({ name, color="#d4af37", size=32 }) {
+function Av({ name, color="#ff2e88", size=32 }) {
   return <div style={{ width:size,height:size,borderRadius:"50%",background:`${color}22`,border:`1px solid ${color}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.4,color,fontWeight:"600",flexShrink:0 }}>{(name||"?").charAt(0).toUpperCase()}</div>;
 }
 function Bd({ label, color="#555", bg }) {
@@ -444,7 +444,7 @@ function Modal({ onClose, title, width="500px", children }) {
     <div onClick={e=>e.target===e.currentTarget&&onClose()} style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:16 }}>
       <div style={{ width:`min(${width},96vw)`,maxHeight:"92vh",background:"#0b0b16",border:"1px solid #2a2a48",borderRadius:8,display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:"0 0 100px rgba(0,0,0,0.7)" }} className="fi">
         <div style={{ display:"flex",alignItems:"center",padding:"12px 18px",borderBottom:"1px solid #181828",flexShrink:0 }}>
-          <span style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:".2em",color:"#d4af37" }}>{title}</span>
+          <span style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:17,letterSpacing:".2em",color:"#ff2e88" }}>{title}</span>
           <div style={{ flex:1 }} />
           <button onClick={onClose} style={{ background:"none",border:"none",color:"#444",cursor:"pointer",fontSize:18 }}>✕</button>
         </div>
@@ -465,7 +465,7 @@ function Sel({ value, onChange, options, children, style={} }) {
   </select>;
 }
 function Btn({ onClick, children, variant="default", disabled, style={} }) {
-  const V = { default:{background:"none",border:"1px solid #1e1e2e",color:"#666"}, gold:{background:"linear-gradient(135deg,#d4af37,#8b6914)",border:"none",color:"#000",fontWeight:"600"}, red:{background:"none",border:"1px solid #ef444466",color:"#ef4444"}, purple:{background:"rgba(139,92,246,.1)",border:"1px solid rgba(139,92,246,.4)",color:"#a78bfa"}, green:{background:"rgba(16,185,129,.1)",border:"1px solid rgba(16,185,129,.4)",color:"#10b981"}, blue:{background:"rgba(59,130,246,.1)",border:"1px solid rgba(59,130,246,.4)",color:"#60a5fa"} };
+  const V = { default:{background:"none",border:"1px solid #1e1e2e",color:"#666"}, gold:{background:"linear-gradient(135deg,#ff2e88,#8b6914)",border:"none",color:"#000",fontWeight:"600"}, red:{background:"none",border:"1px solid #ef444466",color:"#ef4444"}, purple:{background:"rgba(139,92,246,.1)",border:"1px solid rgba(139,92,246,.4)",color:"#a78bfa"}, green:{background:"rgba(16,185,129,.1)",border:"1px solid rgba(16,185,129,.4)",color:"#10b981"}, blue:{background:"rgba(59,130,246,.1)",border:"1px solid rgba(59,130,246,.4)",color:"#60a5fa"} };
   return <button onClick={onClick} disabled={disabled} style={{ fontFamily:"inherit",fontSize:10,letterSpacing:".08em",padding:"6px 14px",borderRadius:3,cursor:"pointer",...(V[variant]||V.default),...style }}>{children}</button>;
 }
 function ScorePill({ score }) {
@@ -695,7 +695,7 @@ function CampaignModal({ onClose, contacts, onSave }) {
         {dripSteps.map((step,i)=>(
           <div key={i} style={{background:"#0a0a14",border:`1px solid ${step.type==="email"?"#3b82f622":"#10b98122"}`,borderRadius:4,padding:"10px 12px",marginBottom:8}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-              <span style={{fontSize:10,color:"#d4af37",fontWeight:600}}>Step {i+1}</span>
+              <span style={{fontSize:10,color:"#ff2e88",fontWeight:600}}>Step {i+1}</span>
               <span style={{fontSize:8,color:step.type==="email"?"#3b82f6":"#10b981",background:step.type==="email"?"rgba(59,130,246,.1)":"rgba(16,185,129,.1)",padding:"1px 6px",borderRadius:2,textTransform:"uppercase"}}>{step.type}</span>
               <span style={{fontSize:8,color:"#555"}}>Day {step.delay_days}</span>
               <div style={{flex:1}} />
@@ -797,7 +797,7 @@ Be specific, data-driven, and actionable. Use bullet points for lists. Suggest c
 
   return (
     <div style={{ position:"fixed",bottom:80,right:20,width:420,height:560,background:"#08080f",border:"1px solid #2a2a48",borderRadius:10,display:"flex",flexDirection:"column",zIndex:250,boxShadow:"0 0 80px rgba(99,102,241,0.18)",overflow:"hidden" }} className="fi">
-      <div style={{ padding:"10px 14px",borderBottom:"1px solid #1a1a28",display:"flex",alignItems:"center",gap:8,background:"#07070e",flexShrink:0 }}>
+      <div style={{ padding:"10px 14px",borderBottom:"1px solid #1a1a28",display:"flex",alignItems:"center",gap:8,background:"#0a0010",flexShrink:0 }}>
         <div style={{ width:28,height:28,borderRadius:"50%",background:"rgba(139,92,246,.2)",border:"1px solid rgba(139,92,246,.4)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13 }}>⬡</div>
         <div>
           <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:".15em",color:"#a78bfa" }}>VAULT AI ADVISOR</div>
@@ -809,9 +809,9 @@ Be specific, data-driven, and actionable. Use bullet points for lists. Suggest c
       <div style={{ flex:1,overflowY:"auto",padding:"12px 14px",display:"flex",flexDirection:"column",gap:10 }}>
         {messages.map((m,i)=>(
           <div key={i} style={{ display:"flex",gap:8,alignItems:"flex-start",flexDirection:m.role==="user"?"row-reverse":"row" }}>
-            <div style={{ width:24,height:24,borderRadius:"50%",background:m.role==="user"?"rgba(212,175,55,.2)":"rgba(139,92,246,.2)",border:`1px solid ${m.role==="user"?"rgba(212,175,55,.3)":"rgba(139,92,246,.3)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,flexShrink:0 }}>{m.role==="user"?"U":"⬡"}</div>
-            <div style={{ maxWidth:"82%",background:m.role==="user"?"rgba(212,175,55,.05)":"rgba(139,92,246,.04)",border:`1px solid ${m.role==="user"?"rgba(212,175,55,.12)":"rgba(139,92,246,.12)"}`,borderRadius:6,padding:"8px 11px" }}>
-              <pre style={{ fontSize:11,color:m.role==="user"?"#d4af37":"#c4c0d8",lineHeight:1.75,whiteSpace:"pre-wrap",fontFamily:"inherit",margin:0 }}>{m.text}</pre>
+            <div style={{ width:24,height:24,borderRadius:"50%",background:m.role==="user"?"rgba(255,46,136,.2)":"rgba(139,92,246,.2)",border:`1px solid ${m.role==="user"?"rgba(255,46,136,.3)":"rgba(139,92,246,.3)"}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,flexShrink:0 }}>{m.role==="user"?"U":"⬡"}</div>
+            <div style={{ maxWidth:"82%",background:m.role==="user"?"rgba(255,46,136,.05)":"rgba(139,92,246,.04)",border:`1px solid ${m.role==="user"?"rgba(255,46,136,.12)":"rgba(139,92,246,.12)"}`,borderRadius:6,padding:"8px 11px" }}>
+              <pre style={{ fontSize:11,color:m.role==="user"?"#ff2e88":"#c4c0d8",lineHeight:1.75,whiteSpace:"pre-wrap",fontFamily:"inherit",margin:0 }}>{m.text}</pre>
             </div>
           </div>
         ))}
@@ -826,7 +826,7 @@ Be specific, data-driven, and actionable. Use bullet points for lists. Suggest c
       {messages.length<=1&&(
         <div style={{ padding:"6px 14px",display:"flex",flexWrap:"wrap",gap:4,flexShrink:0,maxHeight:120,overflowY:"auto" }}>
           {QUICK.map((q,i)=>(
-            <button key={i} onClick={()=>setInput(q)} style={{ background:"rgba(99,102,241,.06)",border:"1px solid rgba(99,102,241,.2)",color:"#6366f1",fontFamily:"inherit",fontSize:8,padding:"3px 8px",borderRadius:3,cursor:"pointer" }}>{q}</button>
+            <button key={i} onClick={()=>setInput(q)} style={{ background:"rgba(99,102,241,.06)",border:"1px solid rgba(99,102,241,.2)",color:"#15e0c8",fontFamily:"inherit",fontSize:8,padding:"3px 8px",borderRadius:3,cursor:"pointer" }}>{q}</button>
           ))}
         </div>
       )}
@@ -944,9 +944,9 @@ function Dashboard({ contacts, deals, tasks, activities, businesses, intelligenc
   };
 
   const KPI = [
-    { label:"PIPELINE VALUE", value:usd(pipeline), sub:`${open.length} open deals`, color:"#d4af37", nav:["crm","pipeline"] },
+    { label:"PIPELINE VALUE", value:usd(pipeline), sub:`${open.length} open deals`, color:"#ff2e88", nav:["crm","pipeline"] },
     { label:"WEIGHTED VALUE", value:usd(Math.round(weighted)), sub:"probability-adjusted", color:"#10b981", nav:["crm","pipeline"] },
-    { label:"WIN RATE", value:`${winRate}%`, sub:`${won.length} won / ${deals.length} total`, color:"#6366f1", nav:["crm","deals"] },
+    { label:"WIN RATE", value:`${winRate}%`, sub:`${won.length} won / ${deals.length} total`, color:"#15e0c8", nav:["crm","deals"] },
     { label:"TASKS TODAY", value:todayTasks.length, sub:`${overdue.length} overdue`, color:overdue.length?"#ef4444":"#f59e0b", nav:["crm","tasks"] },
     { label:"CONTACTS", value:contacts.length, sub:`${contacts.filter(c=>c.lead_status==="qualified").length} qualified`, color:"#3b82f6", nav:["crm","contacts"] },
     { label:"CAMPAIGNS SENT", value:sentCampaigns.length, sub:`${sentCampaigns.reduce((s,c)=>s+(c.recipient_count||0),0)} total reaches`, color:"#a78bfa", nav:["marketing"] },
@@ -957,7 +957,7 @@ function Dashboard({ contacts, deals, tasks, activities, businesses, intelligenc
       {/* Header */}
       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between" }}>
         <div>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#d4af37" }}>COMMAND CENTER</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#ff2e88" }}>COMMAND CENTER</div>
           <div style={{ fontSize:8,color:"#333",letterSpacing:".1em" }}>{new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"}).toUpperCase()}</div>
         </div>
         <div style={{ display:"flex",gap:8 }}>
@@ -998,7 +998,7 @@ function Dashboard({ contacts, deals, tasks, activities, businesses, intelligenc
               <BarChart data={stageData} margin={{top:0,right:0,bottom:0,left:-20}}>
                 <XAxis dataKey="name" tick={{fill:"#555",fontSize:7,fontFamily:"DM Mono"}} axisLine={false} tickLine={false} />
                 <YAxis tick={{fill:"#555",fontSize:8,fontFamily:"DM Mono"}} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={{background:"#0b0b16",border:"1px solid #2a2a3a",borderRadius:4,fontFamily:"DM Mono",fontSize:10}} labelStyle={{color:"#d4af37"}} itemStyle={{color:"#888"}} />
+                <Tooltip contentStyle={{background:"#0b0b16",border:"1px solid #2a2a3a",borderRadius:4,fontFamily:"DM Mono",fontSize:10}} labelStyle={{color:"#ff2e88"}} itemStyle={{color:"#888"}} />
                 <Bar dataKey="count" radius={[2,2,0,0]}>{stageData.map((d,i)=><Cell key={i} fill={d.color} fillOpacity={0.8}/>)}</Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -1008,11 +1008,11 @@ function Dashboard({ contacts, deals, tasks, activities, businesses, intelligenc
           <div style={{ fontSize:8,color:"#444",letterSpacing:".12em",marginBottom:12 }}>ACTIVITY (14 DAYS)</div>
           <ResponsiveContainer width="100%" height={160}>
             <AreaChart data={activityData} margin={{top:4,right:0,bottom:0,left:-20}}>
-              <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/><stop offset="95%" stopColor="#6366f1" stopOpacity={0}/></linearGradient></defs>
+              <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#15e0c8" stopOpacity={0.3}/><stop offset="95%" stopColor="#15e0c8" stopOpacity={0}/></linearGradient></defs>
               <XAxis dataKey="label" tick={{fill:"#555",fontSize:7,fontFamily:"DM Mono"}} axisLine={false} tickLine={false} interval={3}/>
               <YAxis tick={{fill:"#555",fontSize:8,fontFamily:"DM Mono"}} axisLine={false} tickLine={false} allowDecimals={false}/>
-              <Tooltip contentStyle={{background:"#0b0b16",border:"1px solid #2a2a3a",borderRadius:4,fontFamily:"DM Mono",fontSize:10}} labelStyle={{color:"#6366f1"}} itemStyle={{color:"#888"}}/>
-              <Area type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={1.5} fill="url(#ag)" dot={false}/>
+              <Tooltip contentStyle={{background:"#0b0b16",border:"1px solid #2a2a3a",borderRadius:4,fontFamily:"DM Mono",fontSize:10}} labelStyle={{color:"#15e0c8"}} itemStyle={{color:"#888"}}/>
+              <Area type="monotone" dataKey="count" stroke="#15e0c8" strokeWidth={1.5} fill="url(#ag)" dot={false}/>
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -1023,7 +1023,7 @@ function Dashboard({ contacts, deals, tasks, activities, businesses, intelligenc
         <div style={{ background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:6,padding:"14px 16px" }}>
           <div style={{ display:"flex",justifyContent:"space-between",marginBottom:10 }}>
             <span style={{ fontSize:8,color:"#444",letterSpacing:".12em" }}>TOP OPEN DEALS</span>
-            <button onClick={()=>onNav("crm","pipeline")} style={{ background:"none",border:"none",color:"#d4af37",fontFamily:"inherit",fontSize:8,cursor:"pointer" }}>VIEW ALL →</button>
+            <button onClick={()=>onNav("crm","pipeline")} style={{ background:"none",border:"none",color:"#ff2e88",fontFamily:"inherit",fontSize:8,cursor:"pointer" }}>VIEW ALL →</button>
           </div>
           {topDeals.length===0&&<div style={{fontSize:10,color:"#1e1e2e",padding:"12px 0"}}>No open deals</div>}
           {topDeals.map((d,i)=>{ const cfg=STAGE_CFG[d.stage]||{c:"#555",l:d.stage}; return (
@@ -1038,7 +1038,7 @@ function Dashboard({ contacts, deals, tasks, activities, businesses, intelligenc
         <div style={{ background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:6,padding:"14px 16px" }}>
           <div style={{ display:"flex",justifyContent:"space-between",marginBottom:10 }}>
             <span style={{ fontSize:8,color:"#444",letterSpacing:".12em" }}>TASKS DUE</span>
-            <button onClick={()=>onNav("crm","tasks")} style={{ background:"none",border:"none",color:"#d4af37",fontFamily:"inherit",fontSize:8,cursor:"pointer" }}>VIEW ALL →</button>
+            <button onClick={()=>onNav("crm","tasks")} style={{ background:"none",border:"none",color:"#ff2e88",fontFamily:"inherit",fontSize:8,cursor:"pointer" }}>VIEW ALL →</button>
           </div>
           {pending.slice(0,6).map(t=>{ const due=fmtDue(t.due_at); return (
             <div key={t.id} style={{display:"flex",alignItems:"flex-start",gap:8,padding:"6px 0",borderBottom:"1px solid #111120"}}>
@@ -1099,7 +1099,7 @@ function MarketingView({ contacts, campaigns, setCampaigns, showToast }) {
       {showCreate&&<CampaignModal contacts={contacts} onClose={()=>setShowCreate(false)} onSave={(c,st)=>{ setCampaigns(p=>[c,...p]); showToast(st==="sent"?`Launched to ${c.recipient_count} recipients`:"Draft saved"); }} />}
       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18 }}>
         <div>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#d4af37" }}>MARKETING HQ</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#ff2e88" }}>MARKETING HQ</div>
           <div style={{ fontSize:9,color:"#444",letterSpacing:".08em" }}>EMAIL · SMS · PHONE · DRIP SEQUENCES</div>
         </div>
         <Btn onClick={()=>setShowCreate(true)} variant="gold" style={{ letterSpacing:".1em" }}>+ NEW CAMPAIGN</Btn>
@@ -1108,7 +1108,7 @@ function MarketingView({ contacts, campaigns, setCampaigns, showToast }) {
       {/* Stats row */}
       <div style={{ display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:8,marginBottom:16 }}>
         {[
-          {l:"TOTAL SENT", v:campaigns.filter(c=>c.status==="sent").length, color:"#d4af37"},
+          {l:"TOTAL SENT", v:campaigns.filter(c=>c.status==="sent").length, color:"#ff2e88"},
           {l:"TOTAL REACHES", v:totalSent.toLocaleString(), color:"#e0dcd0"},
           {l:"EMAIL", v:emailCamps, color:"#3b82f6", icon:"✉"},
           {l:"SMS", v:smsCamps, color:"#10b981", icon:"💬"},
@@ -1125,12 +1125,12 @@ function MarketingView({ contacts, campaigns, setCampaigns, showToast }) {
       {/* Filter tabs */}
       <div style={{ display:"flex",gap:6,marginBottom:10 }}>
         {["all","sent","draft","active","paused"].map(f=>(
-          <button key={f} onClick={()=>setFilter(f)} style={{ background:filter===f?"rgba(212,175,55,.1)":"none",border:`1px solid ${filter===f?"rgba(212,175,55,.4)":"#1a1a28"}`,color:filter===f?"#d4af37":"#555",fontFamily:"inherit",fontSize:9,padding:"4px 12px",borderRadius:3,cursor:"pointer",textTransform:"uppercase",letterSpacing:".08em" }}>{f}</button>
+          <button key={f} onClick={()=>setFilter(f)} style={{ background:filter===f?"rgba(255,46,136,.1)":"none",border:`1px solid ${filter===f?"rgba(255,46,136,.4)":"#1a1a28"}`,color:filter===f?"#ff2e88":"#555",fontFamily:"inherit",fontSize:9,padding:"4px 12px",borderRadius:3,cursor:"pointer",textTransform:"uppercase",letterSpacing:".08em" }}>{f}</button>
         ))}
       </div>
       <div style={{ display:"flex",gap:6,marginBottom:14 }}>
         {["all","email","sms","phone","drip"].map(t=>(
-          <button key={t} onClick={()=>setTypeFilter(t)} style={{ background:typeFilter===t?`${typeColors[t]||"#d4af37"}15`:"none",border:`1px solid ${typeFilter===t?(typeColors[t]||"#d4af37")+"44":"#1a1a28"}`,color:typeFilter===t?(typeColors[t]||"#d4af37"):"#444",fontFamily:"inherit",fontSize:8,padding:"3px 10px",borderRadius:3,cursor:"pointer",textTransform:"uppercase",letterSpacing:".06em" }}>{t==="all"?"All Types":t}</button>
+          <button key={t} onClick={()=>setTypeFilter(t)} style={{ background:typeFilter===t?`${typeColors[t]||"#ff2e88"}15`:"none",border:`1px solid ${typeFilter===t?(typeColors[t]||"#ff2e88")+"44":"#1a1a28"}`,color:typeFilter===t?(typeColors[t]||"#ff2e88"):"#444",fontFamily:"inherit",fontSize:8,padding:"3px 10px",borderRadius:3,cursor:"pointer",textTransform:"uppercase",letterSpacing:".06em" }}>{t==="all"?"All Types":t}</button>
         ))}
       </div>
 
@@ -1880,11 +1880,11 @@ NEVER say "credit repair". Only "credit optimization" or "credit strategy".`;
       {step==="drop"&&(
         <div onDragOver={e=>{e.preventDefault();setDragOver(true);}} onDragLeave={()=>setDragOver(false)} onDrop={onDrop}
           onClick={()=>fileRef.current?.click()}
-          style={{border:`2px dashed ${dragOver?"#d4af37":"#1e1e28"}`,borderRadius:8,padding:"60px 40px",textAlign:"center",cursor:"pointer",
-            background:dragOver?"rgba(212,175,55,.04)":"#0a0a14",transition:"all .3s"}}>
+          style={{border:`2px dashed ${dragOver?"#ff2e88":"#1e1e28"}`,borderRadius:8,padding:"60px 40px",textAlign:"center",cursor:"pointer",
+            background:dragOver?"rgba(255,46,136,.04)":"#0a0a14",transition:"all .3s"}}>
           <input ref={fileRef} type="file" accept=".csv,.tsv,.txt" style={{display:"none"}} onChange={e=>handleFile(e.target.files[0])} />
           <div style={{fontSize:48,marginBottom:16,opacity:.3}}>📋</div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#d4af37",marginBottom:8}}>DROP YOUR LEAD LIST</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#ff2e88",marginBottom:8}}>DROP YOUR LEAD LIST</div>
           <div style={{fontSize:11,color:"#555",lineHeight:1.8,maxWidth:500,margin:"0 auto"}}>
             Drag & drop a CSV, TSV, or text file with your lead list.<br/>
             Auto-detects mortgage refi lists, property records, DNC-scrubbed lists, and any column layout.<br/>
@@ -1904,7 +1904,7 @@ NEVER say "credit repair". Only "credit optimization" or "credit strategy".`;
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
             <div>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".15em",color:"#d4af37"}}>COLUMN MAPPING</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".15em",color:"#ff2e88"}}>COLUMN MAPPING</div>
                 <span style={{fontSize:8,color:listTypeColors[listType],background:`${listTypeColors[listType]}15`,border:`1px solid ${listTypeColors[listType]}30`,padding:"2px 8px",borderRadius:3,fontWeight:600}}>{listTypeLabels[listType]} LIST DETECTED</span>
               </div>
               <div style={{fontSize:9,color:"#555"}}>{rawRows.length} rows — {Object.values(colMap).filter(v=>v!=="skip").length} of {headers.length} columns mapped</div>
@@ -1921,8 +1921,8 @@ NEVER say "credit repair". Only "credit optimization" or "credit strategy".`;
                 <div key={i} style={{padding:"8px 10px",borderRight:"1px solid #0e0e18"}}>
                   <div style={{fontSize:8,color:"#888",marginBottom:4,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}} title={h}>{h}</div>
                   <select value={colMap[i]||"skip"} onChange={e=>setColMap(p=>({...p,[i]:e.target.value}))}
-                    style={{width:"100%",background:"#0d0d18",border:`1px solid ${colMap[i]&&colMap[i]!=="skip"?"rgba(212,175,55,.3)":"#1e1e28"}`,
-                      color:colMap[i]&&colMap[i]!=="skip"?"#d4af37":"#555",fontFamily:"inherit",fontSize:8,padding:"4px 6px",borderRadius:2}}>
+                    style={{width:"100%",background:"#0d0d18",border:`1px solid ${colMap[i]&&colMap[i]!=="skip"?"rgba(255,46,136,.3)":"#1e1e28"}`,
+                      color:colMap[i]&&colMap[i]!=="skip"?"#ff2e88":"#555",fontFamily:"inherit",fontSize:8,padding:"4px 6px",borderRadius:2}}>
                     {FIELDS.map(f=><option key={f.key} value={f.key}>{f.group!=="skip"?`[${f.group.toUpperCase()}] `:""}{f.label}</option>)}
                   </select>
                 </div>
@@ -1943,11 +1943,11 @@ NEVER say "credit repair". Only "credit optimization" or "credit strategy".`;
       {step==="analyzing"&&(
         <div style={{textAlign:"center",padding:"80px 40px"}}>
           <div style={{fontSize:48,marginBottom:16}} className="pulse">🧠</div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#d4af37",marginBottom:4}}>AI ANALYZING {listTypeLabels[listType]} LEADS</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#ff2e88",marginBottom:4}}>AI ANALYZING {listTypeLabels[listType]} LEADS</div>
           <div style={{fontSize:9,color:listTypeColors[listType],marginBottom:12}}>Scoring, strategizing, and finding profit opportunities...</div>
           <div style={{fontSize:11,color:"#555",marginBottom:16}}>{progress||"Processing..."}</div>
           <div style={{width:240,height:4,background:"#1a1a28",borderRadius:2,margin:"0 auto",overflow:"hidden"}}>
-            <div className="pulse" style={{height:"100%",background:"#d4af37",borderRadius:2,width:"60%"}} />
+            <div className="pulse" style={{height:"100%",background:"#ff2e88",borderRadius:2,width:"60%"}} />
           </div>
         </div>
       )}
@@ -1957,13 +1957,13 @@ NEVER say "credit repair". Only "credit optimization" or "credit strategy".`;
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
             <div>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".15em",color:"#d4af37"}}>ANALYSIS COMPLETE</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".15em",color:"#ff2e88"}}>ANALYSIS COMPLETE</div>
                 <span style={{fontSize:8,color:listTypeColors[listType],background:`${listTypeColors[listType]}15`,border:`1px solid ${listTypeColors[listType]}30`,padding:"2px 8px",borderRadius:3}}>{listTypeLabels[listType]}</span>
               </div>
               <div style={{fontSize:9,color:"#555"}}>{analyzed.length.toLocaleString()} leads scored — est. pipeline: <span style={{color:"#10b981",fontWeight:600}}>${Math.round(totalEstRevenue).toLocaleString()}</span></div>
             </div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              <Btn onClick={()=>setShowStrategies(!showStrategies)} style={{fontSize:8,color:showStrategies?"#d4af37":"#888"}}>{showStrategies?"HIDE":"SHOW"} STRATEGIES</Btn>
+              <Btn onClick={()=>setShowStrategies(!showStrategies)} style={{fontSize:8,color:showStrategies?"#ff2e88":"#888"}}>{showStrategies?"HIDE":"SHOW"} STRATEGIES</Btn>
               <Btn onClick={()=>{setStep("drop");setAnalyzed([]);setMapped([]);setStrategies(null);setRawRows([]);}} style={{fontSize:8}}>NEW IMPORT</Btn>
               {importing&&<Btn onClick={()=>{cancelRef.current=true;}} style={{fontSize:8,color:"#ef4444",borderColor:"#ef4444"}}>CANCEL</Btn>}
               <Btn onClick={importAll} variant="gold" disabled={importing} style={{fontSize:9}}>
@@ -1975,7 +1975,7 @@ NEVER say "credit repair". Only "credit optimization" or "credit strategy".`;
           {/* Stats row */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))",gap:6,marginBottom:14}}>
             {[
-              {l:"Total Leads",v:analyzed.length,c:"#d4af37"},
+              {l:"Total Leads",v:analyzed.length,c:"#ff2e88"},
               {l:"Hot",v:analyzed.filter(l=>l.status==="hot").length,c:"#ef4444"},
               {l:"Warm",v:analyzed.filter(l=>l.status==="warm").length,c:"#f59e0b"},
               {l:"Cold",v:analyzed.filter(l=>l.status==="cold").length,c:"#3b82f6"},
@@ -1994,9 +1994,9 @@ NEVER say "credit repair". Only "credit optimization" or "credit strategy".`;
           {showStrategies&&strategies&&(
             <div style={{background:"linear-gradient(135deg,#0d1a0d,#0a0a14)",border:"1px solid rgba(16,185,129,.2)",borderRadius:6,padding:"16px 18px",marginBottom:14}}>
               <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:".15em",color:"#10b981",marginBottom:4}}>PROFIT STRATEGIES</div>
-              {strategies.key_insight&&<div style={{fontSize:10,color:"#d4af37",marginBottom:8,fontStyle:"italic"}}>"{strategies.key_insight}"</div>}
+              {strategies.key_insight&&<div style={{fontSize:10,color:"#ff2e88",marginBottom:8,fontStyle:"italic"}}>"{strategies.key_insight}"</div>}
               {strategies.total_pipeline_value&&<div style={{fontSize:9,color:"#10b981",marginBottom:10}}>Total Pipeline Value: <b>{strategies.total_pipeline_value}</b></div>}
-              {strategies.quick_wins&&<div style={{fontSize:9,color:"#888",marginBottom:12,padding:"8px 12px",background:"rgba(212,175,55,.04)",border:"1px solid rgba(212,175,55,.1)",borderRadius:4}}>QUICK WINS: {strategies.quick_wins}</div>}
+              {strategies.quick_wins&&<div style={{fontSize:9,color:"#888",marginBottom:12,padding:"8px 12px",background:"rgba(255,46,136,.04)",border:"1px solid rgba(255,46,136,.1)",borderRadius:4}}>QUICK WINS: {strategies.quick_wins}</div>}
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:8}}>
                 {(strategies.strategies||[]).map((s,i)=>(
                   <div key={i} style={{background:"#0a0a14",border:`1px solid ${s.priority==="high"?"rgba(239,68,68,.2)":s.priority==="medium"?"rgba(245,158,11,.2)":"rgba(59,130,246,.15)"}`,borderRadius:4,padding:"10px 14px"}}>
@@ -2020,7 +2020,7 @@ NEVER say "credit repair". Only "credit optimization" or "credit strategy".`;
               <div style={{fontSize:8,color:"#444",letterSpacing:".06em",marginBottom:6}}>SERVICE DISTRIBUTION</div>
               <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
                 {Object.entries(analyzed.reduce((m,l)=>{m[l.best_service||"Unknown"]=(m[l.best_service||"Unknown"]||0)+1;return m;},{})).sort((a,b)=>b[1]-a[1]).map(([svc,count])=>(
-                  <span key={svc} style={{fontSize:8,color:"#d4af37",background:"rgba(212,175,55,.06)",border:"1px solid rgba(212,175,55,.15)",padding:"2px 6px",borderRadius:3}}>{svc}: {count}</span>
+                  <span key={svc} style={{fontSize:8,color:"#ff2e88",background:"rgba(255,46,136,.06)",border:"1px solid rgba(255,46,136,.15)",padding:"2px 6px",borderRadius:3}}>{svc}: {count}</span>
                 ))}
               </div>
             </div>
@@ -2039,9 +2039,9 @@ NEVER say "credit repair". Only "credit optimization" or "credit strategy".`;
           <div style={{display:"flex",gap:4,marginBottom:8}}>
             {["all","hot","warm","cold"].map(f=>(
               <span key={f} onClick={()=>setFilterStatus(f)} style={{fontSize:8,padding:"3px 10px",borderRadius:3,cursor:"pointer",fontWeight:600,letterSpacing:".05em",
-                color:filterStatus===f?(f==="all"?"#d4af37":statusColors[f]):"#444",
-                background:filterStatus===f?`${f==="all"?"#d4af37":statusColors[f]}15`:"transparent",
-                border:`1px solid ${filterStatus===f?(f==="all"?"#d4af37":statusColors[f])+"40":"transparent"}`
+                color:filterStatus===f?(f==="all"?"#ff2e88":statusColors[f]):"#444",
+                background:filterStatus===f?`${f==="all"?"#ff2e88":statusColors[f]}15`:"transparent",
+                border:`1px solid ${filterStatus===f?(f==="all"?"#ff2e88":statusColors[f])+"40":"transparent"}`
               }}>{f.toUpperCase()} ({f==="all"?analyzed.length:analyzed.filter(l=>l.status===f).length})</span>
             ))}
           </div>
@@ -2077,7 +2077,7 @@ NEVER say "credit repair". Only "credit optimization" or "credit strategy".`;
                         {lead.current_rate&&<span style={{fontSize:7,color:"#f59e0b"}}>Rate: {lead.current_rate}</span>}
                         {lead.current_balance&&<span style={{fontSize:7,color:"#8b5cf6"}}>Bal: {lead.current_balance}</span>}
                         {lead.monthly_savings&&<span style={{fontSize:7,color:"#10b981",fontWeight:600}}>Saves: {lead.monthly_savings}/mo</span>}
-                        {lead.available_equity&&<span style={{fontSize:7,color:"#d4af37"}}>Equity: {lead.available_equity}</span>}
+                        {lead.available_equity&&<span style={{fontSize:7,color:"#ff2e88"}}>Equity: {lead.available_equity}</span>}
                         {lead.current_ltv&&<span style={{fontSize:7,color:"#06b6d4"}}>LTV: {lead.current_ltv}</span>}
                         {lead.property_value&&<span style={{fontSize:7,color:"#a855f7"}}>Value: {lead.property_value}</span>}
                       </div>
@@ -2096,7 +2096,7 @@ NEVER say "credit repair". Only "credit optimization" or "credit strategy".`;
                     {lead.tags?.length>0&&<div style={{display:"flex",gap:3,marginTop:2,flexWrap:"wrap"}}>{lead.tags.map((t,j)=><span key={j} style={{fontSize:6,color:"#555",background:"#0a0a14",padding:"1px 4px",borderRadius:2}}>{t}</span>)}</div>}
                   </div>
                   <div style={{textAlign:"right",flexShrink:0}}>
-                    <div style={{fontSize:9,color:"#d4af37",fontWeight:500}}>{lead.best_service}</div>
+                    <div style={{fontSize:9,color:"#ff2e88",fontWeight:500}}>{lead.best_service}</div>
                     {lead.second_service&&lead.second_service!=="null"&&<div style={{fontSize:7,color:"#888"}}>+ {lead.second_service}</div>}
                     {lead.third_service&&lead.third_service!=="null"&&<div style={{fontSize:7,color:"#555"}}>+ {lead.third_service}</div>}
                     {lead.est_revenue>0&&<div style={{fontSize:8,color:"#10b981",fontWeight:600,marginTop:2}}>${Math.round(lead.est_revenue).toLocaleString()}</div>}
@@ -2189,7 +2189,7 @@ function LeadsView({
     <div style={{ flex:1,overflow:"auto",padding:"18px 20px",display:"flex",flexDirection:"column",gap:14 }}>
       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8 }}>
         <div>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#d4af37" }}>LEAD ENGINE</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#ff2e88" }}>LEAD ENGINE</div>
           <div style={{ fontSize:9,color:"#444",letterSpacing:".08em" }}>{hotLeads.length} HOT · {nurture.length} NURTURE · {coldLeads.length} COLD · {medicareLeads.length} MEDICARE · {hhaLeads.length} HHA</div>
         </div>
         <div style={{ display:"flex",gap:6,flexWrap:"wrap" }}>
@@ -2212,7 +2212,7 @@ function LeadsView({
           {id:"cold",l:"❄ COLD",c:coldLeads.length,color:"#3b82f6"},
           {id:"medicare",l:"🏥 MEDICARE ELIGIBLE",c:medicareLeads.length,color:"#10b981"},
           {id:"hha",l:"🏥 HHA LEADS",c:hhaLeads.length,color:"#06b6d4"},
-          {id:"crosssell",l:"🔁 CROSS-SELL",c:bulkScanResults.reduce((s,r)=>s+r.opps.length,0),color:"#d4af37"},
+          {id:"crosssell",l:"🔁 CROSS-SELL",c:bulkScanResults.reduce((s,r)=>s+r.opps.length,0),color:"#ff2e88"},
           {id:"prospects",l:"🎯 PROSPECT FINDER",c:0,color:"#8b5cf6"},
           {id:"import",l:"📋 SMART IMPORT",c:0,color:"#f59e0b"},
         ].map(t=>(
@@ -2241,11 +2241,11 @@ function LeadsView({
                     </div>
                     <ScorePill score={c.score}/>
                     {c.age&&<span style={{fontSize:8,padding:"1px 6px",borderRadius:8,background:c.age>=65?"rgba(16,185,129,.15)":"rgba(59,130,246,.08)",border:`1px solid ${c.age>=65?"rgba(16,185,129,.4)":"rgba(59,130,246,.2)"}`,color:c.age>=65?"#10b981":"#60a5fa"}}>{c.age}yo{c.age>=65?" ✓":""}</span>}
-                    {hasCross&&<Bd label={`🔁 ${crossSellResults[c.id].length}`} color="#d4af37"/>}
+                    {hasCross&&<Bd label={`🔁 ${crossSellResults[c.id].length}`} color="#ff2e88"/>}
                     <Bd label={statusCfg.l} color={statusCfg.c}/>
                     <div style={{display:"flex",gap:3}}>
                       <button onClick={()=>getOutreachScript(c)} title="AI Script" style={{ background:"rgba(139,92,246,.1)",border:"1px solid rgba(139,92,246,.3)",color:"#a78bfa",cursor:"pointer",borderRadius:3,padding:"3px 7px",fontSize:9,fontFamily:"inherit" }}>✍</button>
-                      <button onClick={()=>runCrossSell(c)} title="Cross-sell" style={{ background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.25)",color:"#d4af37",cursor:"pointer",borderRadius:3,padding:"3px 7px",fontSize:9,fontFamily:"inherit" }}>🔁</button>
+                      <button onClick={()=>runCrossSell(c)} title="Cross-sell" style={{ background:"rgba(255,46,136,.08)",border:"1px solid rgba(255,46,136,.25)",color:"#ff2e88",cursor:"pointer",borderRadius:3,padding:"3px 7px",fontSize:9,fontFamily:"inherit" }}>🔁</button>
                     </div>
                   </div>
                 );
@@ -2266,12 +2266,12 @@ function LeadsView({
               </div>
             )}
             {crossSellContact&&(
-              <div style={{ background:"rgba(212,175,55,.04)",border:"1px solid rgba(212,175,55,.2)",borderRadius:6,padding:"14px 16px" }} className="fi">
+              <div style={{ background:"rgba(255,46,136,.04)",border:"1px solid rgba(255,46,136,.2)",borderRadius:6,padding:"14px 16px" }} className="fi">
                 <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8 }}>
-                  <span style={{ fontSize:9,color:"#d4af37",letterSpacing:".1em" }}>🔁 CROSS-SELL — {crossSellContact.full_name.toUpperCase()}</span>
+                  <span style={{ fontSize:9,color:"#ff2e88",letterSpacing:".1em" }}>🔁 CROSS-SELL — {crossSellContact.full_name.toUpperCase()}</span>
                   <button onClick={()=>setCrossSellContact&&setCrossSellContact(null)} style={{background:"none",border:"none",color:"#444",cursor:"pointer",fontSize:11}}>✕</button>
                 </div>
-                {crossSellLoading?<div className="pulse" style={{fontSize:10,color:"#d4af37"}}>🧠 analyzing opportunities…</div>
+                {crossSellLoading?<div className="pulse" style={{fontSize:10,color:"#ff2e88"}}>🧠 analyzing opportunities…</div>
                   :(crossSellResults[crossSellContact.id]||[]).length===0
                     ?<div style={{fontSize:10,color:"#444"}}>No cross-sell opportunities found for this contact.</div>
                     :(crossSellResults[crossSellContact.id]||[]).map((opp,i)=>{
@@ -2284,7 +2284,7 @@ function LeadsView({
                             <Bd label={opp.priority} color={pc}/>
                           </div>
                           <div style={{fontSize:9,color:"#666",lineHeight:1.6,marginBottom:4}}>{opp.reason}</div>
-                          <div style={{fontSize:9,color:"#d4af37",borderLeft:"2px solid rgba(212,175,55,.3)",paddingLeft:8}}>▶ {opp.action}</div>
+                          <div style={{fontSize:9,color:"#ff2e88",borderLeft:"2px solid rgba(255,46,136,.3)",paddingLeft:8}}>▶ {opp.action}</div>
                         </div>
                       );
                     })}
@@ -2316,7 +2316,7 @@ function LeadsView({
             <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                 <div style={{fontSize:9,color:"#888"}}>
-                  <span style={{color:"#d4af37",fontWeight:600}}>{bulkScanResults.reduce((s,r)=>s+r.opps.length,0)} opportunities</span> across <span style={{color:"#d4af37",fontWeight:600}}>{bulkScanResults.length} contacts</span>
+                  <span style={{color:"#ff2e88",fontWeight:600}}>{bulkScanResults.reduce((s,r)=>s+r.opps.length,0)} opportunities</span> across <span style={{color:"#ff2e88",fontWeight:600}}>{bulkScanResults.length} contacts</span>
                 </div>
                 <Btn onClick={runBulkCrossScan} disabled={bulkScanLoading} style={{fontSize:8,padding:"3px 10px"}}>🔄 RE-SCAN</Btn>
               </div>
@@ -2324,14 +2324,14 @@ function LeadsView({
                 {bulkScanResults.map(({contact:c, opps})=>(
                   <div key={c.id} style={{background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:6,overflow:"hidden"}} className="fi">
                     {/* Contact header */}
-                    <div style={{padding:"10px 14px",borderBottom:"1px solid #131320",display:"flex",gap:10,alignItems:"center",background:"rgba(212,175,55,.03)"}}>
-                      <Av name={c.full_name} color="#d4af37" size={28}/>
+                    <div style={{padding:"10px 14px",borderBottom:"1px solid #131320",display:"flex",gap:10,alignItems:"center",background:"rgba(255,46,136,.03)"}}>
+                      <Av name={c.full_name} color="#ff2e88" size={28}/>
                       <div style={{flex:1}}>
                         <div style={{fontSize:10,color:"#e0dcd0"}}>{c.full_name}</div>
                         <div style={{fontSize:8,color:"#555"}}>{c.company||c.email||"—"}</div>
                       </div>
                       <ScorePill score={c.score}/>
-                      <Bd label={`${opps.length} opps`} color="#d4af37"/>
+                      <Bd label={`${opps.length} opps`} color="#ff2e88"/>
                     </div>
                     {/* Opportunity cards */}
                     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:1,padding:1}}>
@@ -2345,7 +2345,7 @@ function LeadsView({
                               <Bd label={opp.priority} color={pc}/>
                             </div>
                             <div style={{fontSize:9,color:"#666",lineHeight:1.55,marginBottom:5}}>{opp.reason}</div>
-                            <div style={{fontSize:9,color:"#d4af37",borderLeft:"2px solid rgba(212,175,55,.25)",paddingLeft:7,lineHeight:1.5}}>▶ {opp.action}</div>
+                            <div style={{fontSize:9,color:"#ff2e88",borderLeft:"2px solid rgba(255,46,136,.25)",paddingLeft:7,lineHeight:1.5}}>▶ {opp.action}</div>
                           </div>
                         );
                       })}
@@ -2454,7 +2454,7 @@ function AnalyticsView({ contacts, deals, activities, campaigns, intelligence, s
     <div style={{ flex:1,overflow:"auto",padding:"18px 20px",display:"flex",flexDirection:"column",gap:14 }}>
       <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4 }}>
         <div>
-          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#d4af37" }}>ANALYTICS & GROWTH</div>
+          <div style={{ fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#ff2e88" }}>ANALYTICS & GROWTH</div>
           <div style={{ fontSize:9,color:"#444",letterSpacing:".08em" }}>PERFORMANCE · PIPELINE · TRENDS</div>
         </div>
         <Btn onClick={getGrowthReport} variant="purple" disabled={reportLoading} style={{ fontSize:9 }}>
@@ -2475,9 +2475,9 @@ function AnalyticsView({ contacts, deals, activities, campaigns, intelligence, s
       {/* KPI row */}
       <div style={{ display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10 }}>
         {[
-          {l:"TOTAL WON",v:usd(totalWon),c:"#d4af37"},
+          {l:"TOTAL WON",v:usd(totalWon),c:"#ff2e88"},
           {l:"PIPELINE",v:usd(pipeline),c:"#10b981"},
-          {l:"WIN RATE",v:`${convRate}%`,c:"#6366f1"},
+          {l:"WIN RATE",v:`${convRate}%`,c:"#15e0c8"},
           {l:"AVG DEAL SIZE",v:usd(avgDeal),c:"#3b82f6"},
           {l:"LOST DEALS",v:lost.length,c:"#ef4444"},
         ].map(s=>(
@@ -2497,8 +2497,8 @@ function AnalyticsView({ contacts, deals, activities, campaigns, intelligence, s
               <BarChart data={revenueByMonth} margin={{top:0,right:0,bottom:0,left:-10}}>
                 <XAxis dataKey="label" tick={{fill:"#555",fontSize:7,fontFamily:"DM Mono"}} axisLine={false} tickLine={false}/>
                 <YAxis tick={{fill:"#555",fontSize:7,fontFamily:"DM Mono"}} axisLine={false} tickLine={false} tickFormatter={v=>`$${(v/1000).toFixed(0)}k`}/>
-                <Tooltip contentStyle={{background:"#0b0b16",border:"1px solid #2a2a3a",borderRadius:4,fontFamily:"DM Mono",fontSize:10}} formatter={v=>[`$${Number(v).toLocaleString()}`,"Revenue"]} labelStyle={{color:"#d4af37"}}/>
-                <Bar dataKey="value" fill="#d4af37" fillOpacity={0.7} radius={[2,2,0,0]}/>
+                <Tooltip contentStyle={{background:"#0b0b16",border:"1px solid #2a2a3a",borderRadius:4,fontFamily:"DM Mono",fontSize:10}} formatter={v=>[`$${Number(v).toLocaleString()}`,"Revenue"]} labelStyle={{color:"#ff2e88"}}/>
+                <Bar dataKey="value" fill="#ff2e88" fillOpacity={0.7} radius={[2,2,0,0]}/>
               </BarChart>
             </ResponsiveContainer>
           ):<div style={{height:170,display:"flex",alignItems:"center",justifyContent:"center",color:"#1e1e2e",fontSize:10}}>No closed deals with value yet</div>}
@@ -2545,7 +2545,7 @@ function AnalyticsView({ contacts, deals, activities, campaigns, intelligence, s
           {actByType.length>0?(
             actByType.map((a,i)=>{
               const maxV = actByType[0]?.count||1;
-              const colors=["#d4af37","#3b82f6","#10b981","#8b5cf6","#f59e0b","#ef4444"];
+              const colors=["#ff2e88","#3b82f6","#10b981","#8b5cf6","#f59e0b","#ef4444"];
               const icons={call:"📞",email:"✉",meeting:"📅",note:"📝",task:"☑",sms:"💬"};
               return (
                 <div key={i} style={{ marginBottom:7 }}>
@@ -2800,20 +2800,20 @@ function PDFLeadImporter({ businesses, onClose, onImport }) {
     onImport(saved);
   };
 
-  const SEGMENT_COLORS = {"first-time buyer":"#6366f1","investor":"#d4af37","refinance":"#10b981","self-employed":"#f59e0b","commercial":"#3b82f6","agent":"#8b5cf6","other":"#555"};
+  const SEGMENT_COLORS = {"first-time buyer":"#15e0c8","investor":"#ff2e88","refinance":"#10b981","self-employed":"#f59e0b","commercial":"#3b82f6","agent":"#8b5cf6","other":"#555"};
 
   return (
     <Modal onClose={onClose} title="📄 PDF LEAD IMPORT" width="780px">
       {step==="upload"&&(
         <div>
-          <div style={{background:"rgba(212,175,55,.04)",border:"1px dashed rgba(212,175,55,.3)",borderRadius:6,padding:"28px 20px",textAlign:"center",marginBottom:16}}>
+          <div style={{background:"rgba(255,46,136,.04)",border:"1px dashed rgba(255,46,136,.3)",borderRadius:6,padding:"28px 20px",textAlign:"center",marginBottom:16}}>
             <div style={{fontSize:32,marginBottom:8}}>📄</div>
             <div style={{fontSize:12,color:"#888",marginBottom:4}}>Drop any PDF with contacts, leads, lists, or rosters</div>
             <div style={{fontSize:9,color:"#444",marginBottom:14}}>Rate sheets, referral lists, open house sign-ins, investor rosters, event attendee lists...</div>
             <input type="file" accept=".pdf" onChange={e=>setFile(e.target.files[0])}
               style={{background:"#0f0f1a",border:"1px solid #1e1e2e",color:"#888",fontFamily:"inherit",fontSize:11,padding:"6px 12px",borderRadius:3,cursor:"pointer"}}/>
           </div>
-          {file&&<div style={{fontSize:10,color:"#d4af37",marginBottom:12}}>📎 {file.name} ({(file.size/1024).toFixed(0)} KB)</div>}
+          {file&&<div style={{fontSize:10,color:"#ff2e88",marginBottom:12}}>📎 {file.name} ({(file.size/1024).toFixed(0)} KB)</div>}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
             <Fld label="ASSIGN TO BUSINESS (OPTIONAL)">
               <Sel value={targetBiz} onChange={setTargetBiz} options={[{value:"",label:"General / Unassigned"},...businesses.map(b=>({value:b.id,label:b.name}))]}/>
@@ -2833,7 +2833,7 @@ function PDFLeadImporter({ businesses, onClose, onImport }) {
         <div>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
             <div>
-              <div style={{fontSize:12,color:"#e0dcd0"}}>Found <span style={{color:"#d4af37",fontWeight:600}}>{extracted.length}</span> leads in "{file?.name}"</div>
+              <div style={{fontSize:12,color:"#e0dcd0"}}>Found <span style={{color:"#ff2e88",fontWeight:600}}>{extracted.length}</span> leads in "{file?.name}"</div>
               <div style={{fontSize:9,color:"#555"}}>Review and deselect any you don't want to import</div>
             </div>
             <div style={{display:"flex",gap:6}}>
@@ -2845,8 +2845,8 @@ function PDFLeadImporter({ businesses, onClose, onImport }) {
             {extracted.length===0&&<div style={{textAlign:"center",padding:30,color:"#333",fontSize:10}}>No contacts found in this PDF</div>}
             {extracted.map((l,i)=>(
               <div key={l._id} onClick={()=>setExtracted(p=>p.map((x,j)=>j===i?{...x,_sel:!x._sel}:x))}
-                style={{background:l._sel?"rgba(212,175,55,.06)":"#0a0a12",border:`1px solid ${l._sel?"rgba(212,175,55,.25)":"#1a1a28"}`,borderRadius:4,padding:"10px 12px",cursor:"pointer",display:"flex",gap:12,alignItems:"flex-start",transition:"all .1s"}}>
-                <div style={{width:16,height:16,borderRadius:3,border:`1px solid ${l._sel?"#d4af37":"#333"}`,background:l._sel?"#d4af37":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0,marginTop:1}}>
+                style={{background:l._sel?"rgba(255,46,136,.06)":"#0a0a12",border:`1px solid ${l._sel?"rgba(255,46,136,.25)":"#1a1a28"}`,borderRadius:4,padding:"10px 12px",cursor:"pointer",display:"flex",gap:12,alignItems:"flex-start",transition:"all .1s"}}>
+                <div style={{width:16,height:16,borderRadius:3,border:`1px solid ${l._sel?"#ff2e88":"#333"}`,background:l._sel?"#ff2e88":"transparent",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,flexShrink:0,marginTop:1}}>
                   {l._sel&&"✓"}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
@@ -2857,7 +2857,7 @@ function PDFLeadImporter({ businesses, onClose, onImport }) {
                     {l.segment&&<Bd label={l.segment} color={SEGMENT_COLORS[l.segment]||"#555"}/>}
                   </div>
                   <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-                    {l.email&&<span style={{fontSize:9,color:"#6366f1"}}>✉ {l.email}</span>}
+                    {l.email&&<span style={{fontSize:9,color:"#15e0c8"}}>✉ {l.email}</span>}
                     {l.phone&&<span style={{fontSize:9,color:"#10b981"}}>📞 {l.phone}</span>}
                   </div>
                   {l.notes&&<div style={{fontSize:9,color:"#555",marginTop:3,lineHeight:1.5}}>{l.notes}</div>}
@@ -2865,8 +2865,8 @@ function PDFLeadImporter({ businesses, onClose, onImport }) {
               </div>
             ))}
           </div>
-          <div style={{background:"rgba(212,175,55,.04)",border:"1px solid rgba(212,175,55,.15)",borderRadius:4,padding:"8px 12px",marginBottom:14,fontSize:9,color:"#888"}}>
-            <span style={{color:"#d4af37",fontWeight:600}}>{extracted.filter(l=>l._sel).length}</span> leads selected → will be added as contacts with status <span style={{color:"#555"}}>NURTURE</span>{targetBiz?` linked to ${businesses.find(b=>b.id===targetBiz)?.name}`:""}
+          <div style={{background:"rgba(255,46,136,.04)",border:"1px solid rgba(255,46,136,.15)",borderRadius:4,padding:"8px 12px",marginBottom:14,fontSize:9,color:"#888"}}>
+            <span style={{color:"#ff2e88",fontWeight:600}}>{extracted.filter(l=>l._sel).length}</span> leads selected → will be added as contacts with status <span style={{color:"#555"}}>NURTURE</span>{targetBiz?` linked to ${businesses.find(b=>b.id===targetBiz)?.name}`:""}
           </div>
           {progress&&<div className={importing?"pulse":""} style={{fontSize:10,color:"#10b981",marginBottom:10}}>{progress}</div>}
           <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
@@ -2881,7 +2881,7 @@ function PDFLeadImporter({ businesses, onClose, onImport }) {
       {step==="done"&&(
         <div style={{textAlign:"center",padding:"30px 0"}}>
           <div style={{fontSize:40,marginBottom:12}}>✅</div>
-          <div style={{fontSize:14,color:"#d4af37",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:".2em",marginBottom:6}}>IMPORT COMPLETE</div>
+          <div style={{fontSize:14,color:"#ff2e88",fontFamily:"'Bebas Neue',sans-serif",letterSpacing:".2em",marginBottom:6}}>IMPORT COMPLETE</div>
           <div style={{fontSize:11,color:"#888",marginBottom:20}}>{extracted.filter(l=>l._sel).length} contacts added with status <span style={{color:"#f59e0b"}}>NURTURE</span></div>
           <Btn onClick={onClose} variant="gold" style={{padding:"8px 24px"}}>DONE</Btn>
         </div>
@@ -2974,8 +2974,8 @@ function NurtureSequenceModal({ contacts, businesses, onClose, onSave, showToast
               placeholder="e.g. Nurture new leads from PDF import — educate about mortgage options, build trust, and guide them toward a pre-approval call. Mix of educational emails and soft check-ins."
               style={{width:"100%",background:"#0f0f1a",border:"1px solid #1e1e2e",color:"#e8e4d9",fontFamily:"inherit",fontSize:12,padding:"10px 12px",borderRadius:3,resize:"vertical",lineHeight:1.7}}/>
           </Fld>
-          <div style={{background:"rgba(212,175,55,.04)",border:"1px solid rgba(212,175,55,.15)",borderRadius:4,padding:"8px 12px",marginBottom:14,fontSize:9,color:"#888"}}>
-            This sequence will target <span style={{color:"#d4af37",fontWeight:600}}>{targetContacts.length} contacts</span>. Claude will generate 5-7 steps with email drafts and call scripts.
+          <div style={{background:"rgba(255,46,136,.04)",border:"1px solid rgba(255,46,136,.15)",borderRadius:4,padding:"8px 12px",marginBottom:14,fontSize:9,color:"#888"}}>
+            This sequence will target <span style={{color:"#ff2e88",fontWeight:600}}>{targetContacts.length} contacts</span>. Claude will generate 5-7 steps with email drafts and call scripts.
           </div>
           <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
             <Btn onClick={onClose}>CANCEL</Btn>
@@ -2988,10 +2988,10 @@ function NurtureSequenceModal({ contacts, businesses, onClose, onSave, showToast
 
       {step==="preview"&&(
         <div>
-          <div style={{fontSize:11,color:"#888",marginBottom:14}}>AI generated <span style={{color:"#d4af37"}}>{steps.length} steps</span> for <span style={{color:"#d4af37"}}>{f.name}</span>. Review and assign.</div>
+          <div style={{fontSize:11,color:"#888",marginBottom:14}}>AI generated <span style={{color:"#ff2e88"}}>{steps.length} steps</span> for <span style={{color:"#ff2e88"}}>{f.name}</span>. Review and assign.</div>
           <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14,maxHeight:340,overflowY:"auto"}}>
             {steps.map((s,i)=>{
-              const typeColors={email:"#6366f1",call:"#10b981",sms:"#f59e0b",task:"#8b5cf6"};
+              const typeColors={email:"#15e0c8",call:"#10b981",sms:"#f59e0b",task:"#8b5cf6"};
               const icons={email:"✉",call:"📞",sms:"💬",task:"☑"};
               return (
                 <div key={i} style={{background:"#0d0d18",border:`1px solid ${typeColors[s.type]||"#1e1e28"}22`,borderRadius:4,padding:"10px 12px",display:"flex",gap:12}}>
@@ -3086,7 +3086,7 @@ function RateTicker() {
   if (!rates) return <div className="sh" style={{width:180,height:12,borderRadius:2}}/>;
   return (
     <div style={{display:"flex",gap:6,alignItems:"center",padding:"0 8px",borderLeft:"1px solid #1a1a28",borderRight:"1px solid #1a1a28",flexShrink:0}}>
-      {[{l:"30Y",d:rates.r30,c:"#d4af37"},{l:"15Y",d:rates.r15,c:"#10b981"},{l:"10T",d:rates.t10,c:"#6366f1"}]
+      {[{l:"30Y",d:rates.r30,c:"#ff2e88"},{l:"15Y",d:rates.r15,c:"#10b981"},{l:"10T",d:rates.t10,c:"#15e0c8"}]
         .filter(s=>s.d).map(s=>(
         <div key={s.l} style={{display:"flex",gap:3,alignItems:"center"}}>
           <span style={{fontSize:7,color:"#333"}}>{s.l}</span>
@@ -3100,9 +3100,9 @@ function RateTicker() {
 
 // ─── MARKET INTEL VIEW ────────────────────────────────────────────
 const FRED_SERIES = [
-  {id:"MORTGAGE30US",label:"30-Yr Fixed",  labelEs:"Fijo 30 Años",  color:"#d4af37",unit:"%"},
+  {id:"MORTGAGE30US",label:"30-Yr Fixed",  labelEs:"Fijo 30 Años",  color:"#ff2e88",unit:"%"},
   {id:"MORTGAGE15US",label:"15-Yr Fixed",  labelEs:"Fijo 15 Años",  color:"#10b981",unit:"%"},
-  {id:"MORTGAGE5US", label:"5/1 ARM",      labelEs:"5/1 ARM",       color:"#6366f1",unit:"%"},
+  {id:"MORTGAGE5US", label:"5/1 ARM",      labelEs:"5/1 ARM",       color:"#15e0c8",unit:"%"},
   {id:"DGS10",       label:"10-Yr Treasury",labelEs:"Tesoro 10 Años",color:"#3b82f6",unit:"%"},
   {id:"FEDFUNDS",    label:"Fed Funds",    labelEs:"Fondos Fed",    color:"#8b5cf6",unit:"%"},
   {id:"CSUSHPINSA",  label:"Case-Shiller HPI",labelEs:"Índice Case-Shiller",color:"#f59e0b",unit:""},
@@ -3388,7 +3388,7 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
 
   const fmtDate = (d) => d?new Date(d).toLocaleDateString(lang==="es"?"es-ES":"en-US",{month:"short",day:"numeric",year:"numeric"}):"—";
 
-  const auditColor = a => ({created:"#3b82f6",sent:"#d4af37",viewed:"#f59e0b",signed:"#10b981",declined:"#ef4444",reminder_sent:"#8b5cf6"}[a]||"#555");
+  const auditColor = a => ({created:"#3b82f6",sent:"#ff2e88",viewed:"#f59e0b",signed:"#10b981",declined:"#ef4444",reminder_sent:"#8b5cf6"}[a]||"#555");
 
   const sendPack = async () => {
     if (!packContact || !selPack) return;
@@ -3468,20 +3468,20 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
       {showNew && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setShowNew(false)}>
           <div style={{background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:8,padding:24,width:580,maxHeight:"85vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>
-            <div style={{fontSize:14,fontWeight:700,color:"#d4af37",letterSpacing:".15em",marginBottom:16}}>{L.newEnvelope}</div>
+            <div style={{fontSize:14,fontWeight:700,color:"#ff2e88",letterSpacing:".15em",marginBottom:16}}>{L.newEnvelope}</div>
             {/* Template Selector */}
             <div style={{marginBottom:12}}>
-              <div style={{fontSize:8,color:"#d4af37",letterSpacing:".1em",marginBottom:6}}>{L.selectTemplate||"SELECCIONAR PLANTILLA"}</div>
+              <div style={{fontSize:8,color:"#ff2e88",letterSpacing:".1em",marginBottom:6}}>{L.selectTemplate||"SELECCIONAR PLANTILLA"}</div>
               <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:8}}>
                 {["all","real_estate","mortgage","hha","insurance","construction","general"].map(bt=>(
-                  <button key={bt} onClick={()=>setTplFilter(bt)} style={{background:tplFilter===bt?"rgba(212,175,55,.1)":"#0a0a14",border:`1px solid ${tplFilter===bt?"rgba(212,175,55,.3)":"#1a1a28"}`,color:tplFilter===bt?"#d4af37":"#555",fontSize:8,padding:"3px 8px",borderRadius:2,cursor:"pointer",fontFamily:"inherit"}}>
+                  <button key={bt} onClick={()=>setTplFilter(bt)} style={{background:tplFilter===bt?"rgba(255,46,136,.1)":"#0a0a14",border:`1px solid ${tplFilter===bt?"rgba(255,46,136,.3)":"#1a1a28"}`,color:tplFilter===bt?"#ff2e88":"#555",fontSize:8,padding:"3px 8px",borderRadius:2,cursor:"pointer",fontFamily:"inherit"}}>
                     {bt==="all"?"Todos":bt==="real_estate"?"Bienes Raices":bt==="mortgage"?"Hipoteca":bt==="hha"?"HHA":bt==="insurance"?"Seguros":bt==="construction"?"Construccion":"General"}
                   </button>
                 ))}
               </div>
               <div style={{maxHeight:150,overflowY:"auto",border:"1px solid #1a1a28",borderRadius:4,background:"#0a0a14"}}>
                 {sysTemplates.filter(t=>tplFilter==="all"||t.business_type===tplFilter).map(t=>(
-                  <div key={t.id} onClick={()=>selectTemplate(t)} style={{padding:"6px 10px",borderBottom:"1px solid #0e0e18",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(212,175,55,.05)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <div key={t.id} onClick={()=>selectTemplate(t)} style={{padding:"6px 10px",borderBottom:"1px solid #0e0e18",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,46,136,.05)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                     <div>
                       <div style={{fontSize:10,color:"#e0dcd0"}}>{t.name}</div>
                       <div style={{fontSize:8,color:"#444"}}>{t.business_type} · {t.category}</div>
@@ -3521,7 +3521,7 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
             <div style={{marginBottom:14}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                 <div style={sLbl}>{lang==="es"?"CAMPOS DE FIRMA":"SIGNATURE FIELDS"}</div>
-                <button onClick={addField} style={{background:"none",border:"1px dashed #1e1e28",color:"#d4af37",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"3px 10px",borderRadius:3}}>{L.addField}</button>
+                <button onClick={addField} style={{background:"none",border:"1px dashed #1e1e28",color:"#ff2e88",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"3px 10px",borderRadius:3}}>{L.addField}</button>
               </div>
               {form.fields.map((f,i)=>(
                 <div key={i} style={{display:"grid",gridTemplateColumns:"2fr 3fr auto auto",gap:8,marginBottom:6,alignItems:"center"}}>
@@ -3539,7 +3539,7 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
             <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
               <button onClick={()=>setShowNew(false)} style={{background:"none",border:"1px solid #1e1e28",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"7px 16px",borderRadius:4}}>{L.cancel}</button>
               <button onClick={()=>handleCreate(true)} disabled={saving} style={{background:"none",border:"1px solid #1e1e28",color:"#e0dcd0",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"7px 16px",borderRadius:4}}>{saving?L.saving:L.saveDraft}</button>
-              <button onClick={()=>handleCreate(false)} disabled={saving||!form.title.trim()} style={{background:"#d4af37",border:"none",color:"#0a0a12",cursor:"pointer",fontFamily:"inherit",fontSize:9,fontWeight:700,padding:"7px 20px",borderRadius:4,letterSpacing:".05em"}}>{saving?L.saving:L.createSend}</button>
+              <button onClick={()=>handleCreate(false)} disabled={saving||!form.title.trim()} style={{background:"#ff2e88",border:"none",color:"#0a0a12",cursor:"pointer",fontFamily:"inherit",fontSize:9,fontWeight:700,padding:"7px 20px",borderRadius:4,letterSpacing:".05em"}}>{saving?L.saving:L.createSend}</button>
             </div>
           </div>
         </div>
@@ -3549,7 +3549,7 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
       {showTemplates && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setShowTemplates(false)}>
           <div style={{background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:8,padding:24,width:500,maxHeight:"70vh",overflow:"auto"}} onClick={e=>e.stopPropagation()}>
-            <div style={{fontSize:14,fontWeight:700,color:"#d4af37",letterSpacing:".15em",marginBottom:16}}>{L.templates}</div>
+            <div style={{fontSize:14,fontWeight:700,color:"#ff2e88",letterSpacing:".15em",marginBottom:16}}>{L.templates}</div>
             {templates.length===0&&<div style={{textAlign:"center",padding:30,color:"#333",fontSize:10}}>{L.noTemplates}</div>}
             {templates.map(t=>(
               <div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",background:"#0a0a12",border:"1px solid #1e1e28",borderRadius:5,marginBottom:6}}>
@@ -3557,7 +3557,7 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
                   <div style={{fontSize:10,fontWeight:600,color:"#e0dcd0"}}>{t.name}</div>
                   <div style={{fontSize:8,color:"#555"}}>{t.document_name||"—"} · {(t.fields||[]).length} fields</div>
                 </div>
-                <button onClick={()=>useTemplate(t)} style={{background:"#d4af37",border:"none",color:"#0a0a12",cursor:"pointer",fontFamily:"inherit",fontSize:8,fontWeight:700,padding:"4px 12px",borderRadius:3}}>{L.useTemplate}</button>
+                <button onClick={()=>useTemplate(t)} style={{background:"#ff2e88",border:"none",color:"#0a0a12",cursor:"pointer",fontFamily:"inherit",fontSize:8,fontWeight:700,padding:"4px 12px",borderRadius:3}}>{L.useTemplate}</button>
               </div>
             ))}
             <div style={{textAlign:"right",marginTop:12}}>
@@ -3571,7 +3571,7 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
       {sigView && (
         <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setSigView(null)}>
           <div style={{background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:8,padding:24,width:480}} onClick={e=>e.stopPropagation()}>
-            <div style={{fontSize:13,fontWeight:700,color:"#d4af37",letterSpacing:".15em",marginBottom:14}}>{L.signaturePreview}</div>
+            <div style={{fontSize:13,fontWeight:700,color:"#ff2e88",letterSpacing:".15em",marginBottom:14}}>{L.signaturePreview}</div>
             {sigView.signature_data ? (
               <div style={{background:"#fff",borderRadius:6,padding:16,textAlign:"center",marginBottom:14}}>
                 <img src={sigView.signature_data} alt="Signature" style={{maxWidth:"100%",maxHeight:200}} />
@@ -3585,7 +3585,7 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
               <div><span style={{color:"#555"}}>{lang==="es"?"Firmado":"Signed"}:</span> <span style={{color:"#e0dcd0"}}>{fmtDate(sigView.signed_at)}</span></div>
             </div>
             {sigView.signed_document_url && (
-              <a href={sigView.signed_document_url} target="_blank" rel="noreferrer" style={{display:"inline-block",background:"#d4af37",color:"#0a0a12",fontFamily:"inherit",fontSize:9,fontWeight:700,padding:"6px 16px",borderRadius:4,textDecoration:"none",marginBottom:10}}>Download</a>
+              <a href={sigView.signed_document_url} target="_blank" rel="noreferrer" style={{display:"inline-block",background:"#ff2e88",color:"#0a0a12",fontFamily:"inherit",fontSize:9,fontWeight:700,padding:"6px 16px",borderRadius:4,textDecoration:"none",marginBottom:10}}>Download</a>
             )}
             <div style={{textAlign:"right"}}><button onClick={()=>setSigView(null)} style={{background:"none",border:"1px solid #1e1e28",color:"#888",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"6px 16px",borderRadius:4}}>{L.cancel}</button></div>
           </div>
@@ -3601,13 +3601,13 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
                 const tpls = sysTemplates.filter(t => (p.template_ids||[]).includes(t.id));
                 const typeLabels = {real_estate:"Bienes Raices",mortgage:"Hipoteca",hha:"HHA",insurance:"Seguros",construction:"Construccion",general:"General"};
                 return (
-                  <div key={p.id} onClick={()=>setSelPack(p)} style={{background:"#0a0a14",border:"1px solid #1a1a28",borderRadius:4,padding:"12px 14px",marginBottom:8,cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(212,175,55,.2)"} onMouseLeave={e=>e.currentTarget.style.borderColor="#1a1a28"}>
+                  <div key={p.id} onClick={()=>setSelPack(p)} style={{background:"#0a0a14",border:"1px solid #1a1a28",borderRadius:4,padding:"12px 14px",marginBottom:8,cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(255,46,136,.2)"} onMouseLeave={e=>e.currentTarget.style.borderColor="#1a1a28"}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <div>
                         <div style={{fontSize:11,color:"#e0dcd0"}}>{p.name}</div>
                         <div style={{fontSize:9,color:"#555",marginTop:2}}>{p.description}</div>
                       </div>
-                      <span style={{fontSize:8,color:"#d4af37",background:"rgba(212,175,55,.1)",padding:"2px 8px",borderRadius:8}}>{typeLabels[p.business_type]||p.business_type}</span>
+                      <span style={{fontSize:8,color:"#ff2e88",background:"rgba(255,46,136,.1)",padding:"2px 8px",borderRadius:8}}>{typeLabels[p.business_type]||p.business_type}</span>
                     </div>
                     <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>
                       {tpls.map(t=><span key={t.id} style={{fontSize:7,color:"#888",background:"#0d0d18",border:"1px solid #1e1e28",padding:"1px 6px",borderRadius:2}}>{t.name}</span>)}
@@ -3619,7 +3619,7 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
             </div>
           ) : (
             <div>
-              <button onClick={()=>setSelPack(null)} style={{background:"none",border:"none",color:"#d4af37",cursor:"pointer",fontSize:9,marginBottom:10,fontFamily:"inherit"}}>&#8592; Volver a paquetes</button>
+              <button onClick={()=>setSelPack(null)} style={{background:"none",border:"none",color:"#ff2e88",cursor:"pointer",fontSize:9,marginBottom:10,fontFamily:"inherit"}}>&#8592; Volver a paquetes</button>
               <div style={{fontSize:14,color:"#e0dcd0",marginBottom:4}}>{selPack.name}</div>
               <div style={{fontSize:9,color:"#555",marginBottom:12}}>{selPack.description}</div>
               <Fld label="CONTACTO / FIRMANTE">
@@ -3638,7 +3638,7 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
                   <button onClick={()=>setFormPreview(t)} style={{background:"none",border:"1px solid #1e1e28",color:"#888",fontSize:7,padding:"2px 6px",borderRadius:2,cursor:"pointer",fontFamily:"inherit"}}>Vista previa</button>
                 </div>
               ))}
-              <button onClick={()=>sendPack()} disabled={packSending||!packContact} style={{width:"100%",marginTop:12,padding:"10px 0",background:packSending||!packContact?"#333":"linear-gradient(135deg,#d4af37,#8b6914)",border:"none",color:packSending||!packContact?"#888":"#000",borderRadius:4,cursor:packSending?"wait":"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600,letterSpacing:".1em"}}>
+              <button onClick={()=>sendPack()} disabled={packSending||!packContact} style={{width:"100%",marginTop:12,padding:"10px 0",background:packSending||!packContact?"#333":"linear-gradient(135deg,#ff2e88,#8b6914)",border:"none",color:packSending||!packContact?"#888":"#000",borderRadius:4,cursor:packSending?"wait":"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600,letterSpacing:".1em"}}>
                 {packSending?"ENVIANDO...":"ENVIAR PAQUETE COMPLETO"}
               </button>
             </div>
@@ -3660,14 +3660,14 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
       {/* TOP BAR */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#d4af37"}}>{L.title}</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#ff2e88"}}>{L.title}</div>
           <div style={{fontSize:9,color:"#444"}}>{L.sub}</div>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <button onClick={()=>setLang(l=>l==="es"?"en":"es")} style={{background:"none",border:"1px solid #1e1e28",color:"#d4af37",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"5px 10px",borderRadius:4}}>{lang==="es"?"EN":"ES"}</button>
+          <button onClick={()=>setLang(l=>l==="es"?"en":"es")} style={{background:"none",border:"1px solid #1e1e28",color:"#ff2e88",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"5px 10px",borderRadius:4}}>{lang==="es"?"EN":"ES"}</button>
           <button onClick={()=>{loadTemplates();setShowTemplates(true);}} style={{background:"none",border:"1px solid #1e1e28",color:"#e0dcd0",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"5px 12px",borderRadius:4}}>{L.templates}</button>
           <button onClick={()=>setShowPacks(true)} style={{background:"none",border:"1px solid #1e1e28",color:"#e0dcd0",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"5px 12px",borderRadius:4}}>{"PAQUETES"}</button>
-          <button onClick={()=>setShowNew(true)} style={{background:"#d4af37",border:"none",color:"#0a0a12",cursor:"pointer",fontFamily:"inherit",fontSize:9,fontWeight:700,padding:"6px 14px",borderRadius:4,letterSpacing:".05em"}}>{L.newEnvelope}</button>
+          <button onClick={()=>setShowNew(true)} style={{background:"#ff2e88",border:"none",color:"#0a0a12",cursor:"pointer",fontFamily:"inherit",fontSize:9,fontWeight:700,padding:"6px 14px",borderRadius:4,letterSpacing:".05em"}}>{L.newEnvelope}</button>
         </div>
       </div>
 
@@ -3684,7 +3684,7 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
       {/* TABS */}
       <div style={{display:"flex",gap:4,marginBottom:16,borderBottom:"1px solid #1e1e28",paddingBottom:8}}>
         {TABS.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{background:tab===t.id?"rgba(212,175,55,.1)":"none",border:`1px solid ${tab===t.id?"rgba(212,175,55,.35)":"transparent"}`,color:tab===t.id?"#d4af37":"#555",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"5px 12px",borderRadius:3,letterSpacing:".05em"}}>{t.l}</button>
+          <button key={t.id} onClick={()=>setTab(t.id)} style={{background:tab===t.id?"rgba(255,46,136,.1)":"none",border:`1px solid ${tab===t.id?"rgba(255,46,136,.35)":"transparent"}`,color:tab===t.id?"#ff2e88":"#555",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"5px 12px",borderRadius:3,letterSpacing:".05em"}}>{t.l}</button>
         ))}
       </div>
 
@@ -3698,10 +3698,10 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
           {filtered.map(env=>(
             <div key={env.id}>
               <div onClick={()=>setExpandedId(expandedId===env.id?null:env.id)} style={{background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:6,padding:"12px 14px",cursor:"pointer",transition:"border-color .15s"}}
-                onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(212,175,55,.2)"} onMouseLeave={e=>e.currentTarget.style.borderColor="#1e1e28"}>
+                onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(255,46,136,.2)"} onMouseLeave={e=>e.currentTarget.style.borderColor="#1e1e28"}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div style={{display:"flex",alignItems:"center",gap:12,flex:1}}>
-                    <div style={{width:36,height:36,borderRadius:"50%",background:"rgba(212,175,55,.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>✍</div>
+                    <div style={{width:36,height:36,borderRadius:"50%",background:"rgba(255,46,136,.08)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>✍</div>
                     <div style={{flex:1}}>
                       <div style={{fontSize:11,fontWeight:600,color:"#e0dcd0"}}>{env.title||"Untitled"}</div>
                       <div style={{fontSize:8,color:"#555"}}>{L.to}: {env.signer_name||"—"} · {env.signer_email||""}</div>
@@ -3730,14 +3730,14 @@ function ESignatureView({ user, contacts, businesses, showToast }) {
                     {(env.status==="sent"||env.status==="viewed")&&<button onClick={e=>{e.stopPropagation();sendReminder(env);}} style={{background:"none",border:"1px solid #1e1e28",color:"#f59e0b",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"4px 10px",borderRadius:3}}>{L.sendReminder}{env.reminder_count?` (${env.reminder_count})`:""}</button>}
                     {env.signature_data&&<button onClick={e=>{e.stopPropagation();setSigView(env);}} style={{background:"none",border:"1px solid #1e1e28",color:"#10b981",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"4px 10px",borderRadius:3}}>{L.viewSig}</button>}
                     <button onClick={e=>{e.stopPropagation();viewAudit(env.id);}} style={{background:"none",border:"1px solid #1e1e28",color:"#8b5cf6",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"4px 10px",borderRadius:3}}>{L.viewAudit}</button>
-                    <button onClick={e=>{e.stopPropagation();saveAsTemplate(env);}} style={{background:"none",border:"1px solid #1e1e28",color:"#d4af37",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"4px 10px",borderRadius:3}}>{L.saveTemplate}</button>
+                    <button onClick={e=>{e.stopPropagation();saveAsTemplate(env);}} style={{background:"none",border:"1px solid #1e1e28",color:"#ff2e88",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"4px 10px",borderRadius:3}}>{L.saveTemplate}</button>
                     <button onClick={e=>{e.stopPropagation();deleteEnvelope(env.id);}} style={{background:"none",border:"1px solid #1e1e28",color:"#ef4444",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"4px 10px",borderRadius:3}}>{L.delete}</button>
                   </div>
 
                   {/* AUDIT TRAIL */}
                   {auditId===env.id && (
                     <div style={{marginTop:12,borderTop:"1px solid #1e1e28",paddingTop:10}}>
-                      <div style={{fontSize:9,fontWeight:600,color:"#d4af37",letterSpacing:".1em",marginBottom:8}}>{L.auditTrail}</div>
+                      <div style={{fontSize:9,fontWeight:600,color:"#ff2e88",letterSpacing:".1em",marginBottom:8}}>{L.auditTrail}</div>
                       {auditData.length===0 ? <div style={{fontSize:9,color:"#333"}}>No audit entries</div> : (
                         <div style={{display:"flex",flexDirection:"column",gap:4}}>
                           {auditData.map(a=>(
@@ -3932,8 +3932,8 @@ function ToolboxView({ showToast, contacts }) {
 
   const tbCard = { background:"#0d0d18", border:"1px solid #1e1e28", borderRadius:8, padding:16, marginBottom:12 };
   const tbInput = { background:"#0e0e1a", border:"1px solid #1a1a28", borderRadius:6, padding:"8px 12px", color:"#e0dcd0", fontFamily:"inherit", fontSize:12, width:"100%", outline:"none" };
-  const tbBtn = { background:"#d4af37", color:"#000", border:"none", borderRadius:6, padding:"8px 16px", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:600 };
-  const tbBtnSec = { ...tbBtn, background:"transparent", border:"1px solid #d4af37", color:"#d4af37" };
+  const tbBtn = { background:"#ff2e88", color:"#000", border:"none", borderRadius:6, padding:"8px 16px", cursor:"pointer", fontFamily:"inherit", fontSize:12, fontWeight:600 };
+  const tbBtnSec = { ...tbBtn, background:"transparent", border:"1px solid #ff2e88", color:"#ff2e88" };
   const tbLabel = { fontSize:10, color:"#888", textTransform:"uppercase", letterSpacing:1, marginBottom:4, display:"block" };
   const tbGrid = { display:"grid", gap:12 };
 
@@ -4145,7 +4145,7 @@ function ToolboxView({ showToast, contacts }) {
   // ─── TOOL PANELS ────────────────────────────────────────────
   const WeatherPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Weather Forecast</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Weather Forecast</h3>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         <input style={{...tbInput,flex:1}} placeholder="City name..." value={wxQuery} onChange={e=>setWxQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doWeatherSearch()} />
         <button style={tbBtn} onClick={doWeatherSearch} disabled={wxLoading}>{wxLoading?"...":"Search"}</button>
@@ -4156,7 +4156,7 @@ function ToolboxView({ showToast, contacts }) {
           <div style={{display:"flex",gap:24,flexWrap:"wrap",alignItems:"center"}}>
             <span style={{fontSize:36}}>{wxCodeIcon(wxResults.current.weather_code)}</span>
             <div>
-              <div style={{fontSize:28,fontWeight:700,color:"#d4af37"}}>{Math.round(wxResults.current.temperature_2m)}\u00b0F</div>
+              <div style={{fontSize:28,fontWeight:700,color:"#ff2e88"}}>{Math.round(wxResults.current.temperature_2m)}\u00b0F</div>
               <div style={{fontSize:11,color:"#888"}}>Humidity: {wxResults.current.relative_humidity_2m}% | Wind: {Math.round(wxResults.current.wind_speed_10m)} mph</div>
             </div>
           </div>
@@ -4170,7 +4170,7 @@ function ToolboxView({ showToast, contacts }) {
               <div style={{fontSize:24,margin:"4px 0"}}>{wxCodeIcon(wxResults.daily.weather_code[i])}</div>
               <div style={{fontSize:13,fontWeight:600}}>{Math.round(wxResults.daily.temperature_2m_max[i])}\u00b0</div>
               <div style={{fontSize:11,color:"#888"}}>{Math.round(wxResults.daily.temperature_2m_min[i])}\u00b0</div>
-              <div style={{fontSize:10,color:"#6366f1"}}>{wxResults.daily.precipitation_probability_max[i]}% rain</div>
+              <div style={{fontSize:10,color:"#15e0c8"}}>{wxResults.daily.precipitation_probability_max[i]}% rain</div>
             </div>
           ))}
         </div>
@@ -4181,7 +4181,7 @@ function ToolboxView({ showToast, contacts }) {
 
   const CurrencyPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Currency Converter</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Currency Converter</h3>
       <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap",alignItems:"flex-end"}}>
         <div style={{flex:"0 0 120px"}}>
           <label style={tbLabel}>Base</label>
@@ -4206,7 +4206,7 @@ function ToolboxView({ showToast, contacts }) {
           {curTargets.filter(c=>curRates.rates[c]).map(c=>(
             <div key={c} style={{...tbCard,padding:12}}>
               <div style={{fontSize:10,color:"#888"}}>{c}</div>
-              <div style={{fontSize:18,fontWeight:700,color:"#d4af37"}}>{(curAmt*curRates.rates[c]).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+              <div style={{fontSize:18,fontWeight:700,color:"#ff2e88"}}>{(curAmt*curRates.rates[c]).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
               <div style={{fontSize:10,color:"#555"}}>1 {curBase} = {curRates.rates[c].toFixed(4)} {c}</div>
             </div>
           ))}
@@ -4224,7 +4224,7 @@ function ToolboxView({ showToast, contacts }) {
     })() : qrText;
     return (
       <div>
-        <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>QR Code Generator</h3>
+        <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>QR Code Generator</h3>
         <div style={{...tbCard}}>
           <label style={tbLabel}>Text or URL</label>
           <input style={{...tbInput,marginBottom:12}} placeholder="Enter text, URL, or select a contact..." value={qrText} onChange={e=>{setQrText(e.target.value);setQrContact("");}} />
@@ -4258,14 +4258,14 @@ function ToolboxView({ showToast, contacts }) {
 
   const URLShortPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>URL Shortener</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>URL Shortener</h3>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         <input style={{...tbInput,flex:1}} placeholder="https://example.com/long-url..." value={urlInput} onChange={e=>setUrlInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doShorten()} />
         <button style={tbBtn} onClick={doShorten} disabled={urlLoading}>{urlLoading?"...":"Shorten"}</button>
       </div>
       {urlResult && (
         <div style={{...tbCard,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <a href={urlResult} target="_blank" rel="noreferrer" style={{color:"#d4af37",fontSize:14}}>{urlResult}</a>
+          <a href={urlResult} target="_blank" rel="noreferrer" style={{color:"#ff2e88",fontSize:14}}>{urlResult}</a>
           <button style={tbBtnSec} onClick={()=>copyText(urlResult)}>Copy</button>
         </div>
       )}
@@ -4276,7 +4276,7 @@ function ToolboxView({ showToast, contacts }) {
             <div key={i} style={{...tbCard,padding:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:10,color:"#555",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{h.original}</div>
-                <div style={{fontSize:12,color:"#d4af37"}}>{h.short}</div>
+                <div style={{fontSize:12,color:"#ff2e88"}}>{h.short}</div>
               </div>
               <button style={{...tbBtnSec,padding:"4px 8px",fontSize:10}} onClick={()=>copyText(h.short)}>Copy</button>
             </div>
@@ -4288,7 +4288,7 @@ function ToolboxView({ showToast, contacts }) {
 
   const MortgagePanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Mortgage Calculator</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Mortgage Calculator</h3>
       <div style={{...tbCard}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           <div>
@@ -4324,15 +4324,15 @@ function ToolboxView({ showToast, contacts }) {
       </div>
       <div style={{...tbCard}}>
         <div style={{fontSize:12,color:"#888",marginBottom:8}}>MONTHLY PAYMENT BREAKDOWN</div>
-        <div style={{fontSize:32,fontWeight:700,color:"#d4af37",marginBottom:12}}>{fmt$(mtg.total)}<span style={{fontSize:12,color:"#888"}}>/mo</span></div>
+        <div style={{fontSize:32,fontWeight:700,color:"#ff2e88",marginBottom:12}}>{fmt$(mtg.total)}<span style={{fontSize:12,color:"#888"}}>/mo</span></div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          <div style={{fontSize:11}}>Principal & Interest: <span style={{color:"#d4af37"}}>{fmt$(mtg.pi)}</span></div>
-          <div style={{fontSize:11}}>Property Tax: <span style={{color:"#6366f1"}}>{fmt$(mtg.tax)}</span></div>
+          <div style={{fontSize:11}}>Principal & Interest: <span style={{color:"#ff2e88"}}>{fmt$(mtg.pi)}</span></div>
+          <div style={{fontSize:11}}>Property Tax: <span style={{color:"#15e0c8"}}>{fmt$(mtg.tax)}</span></div>
           <div style={{fontSize:11}}>Insurance: <span style={{color:"#10b981"}}>{fmt$(mtg.ins)}</span></div>
           <div style={{fontSize:11}}>PMI: <span style={{color:mtg.pmi>0?"#ef4444":"#555"}}>{mtg.pmi>0?fmt$(mtg.pmi):"N/A"}</span></div>
         </div>
         <div style={{borderTop:"1px solid #1e1e28",marginTop:12,paddingTop:12,display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-          <div><div style={tbLabel}>Loan Amount</div><div style={{fontSize:13,color:"#d4af37"}}>{fmt$(mtg.loan)}</div></div>
+          <div><div style={tbLabel}>Loan Amount</div><div style={{fontSize:13,color:"#ff2e88"}}>{fmt$(mtg.loan)}</div></div>
           <div><div style={tbLabel}>Down Payment</div><div style={{fontSize:13}}>{fmt$(mtg.downAmt)} ({((mtg.downAmt/mtgPrice)*100).toFixed(1)}%)</div></div>
           <div><div style={tbLabel}>Total Interest</div><div style={{fontSize:13,color:"#ef4444"}}>{fmt$(mtg.totalInterest)}</div></div>
         </div>
@@ -4366,7 +4366,7 @@ function ToolboxView({ showToast, contacts }) {
   ];
   const TimezonePanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>World Clocks</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>World Clocks</h3>
       <div style={{...tbGrid,gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",marginBottom:20}}>
         {TZ_CITIES.map(c=>{
           let t;
@@ -4376,7 +4376,7 @@ function ToolboxView({ showToast, contacts }) {
           return (
             <div key={c.name} style={{...tbCard,textAlign:"center",padding:12}}>
               <div style={{fontSize:10,color:"#888"}}>{c.name}</div>
-              <div style={{fontSize:18,fontWeight:700,color:"#d4af37",fontVariantNumeric:"tabular-nums"}}>{t}</div>
+              <div style={{fontSize:18,fontWeight:700,color:"#ff2e88",fontVariantNumeric:"tabular-nums"}}>{t}</div>
               <div style={{fontSize:10,color:"#555"}}>{d}</div>
             </div>
           );
@@ -4404,7 +4404,7 @@ function ToolboxView({ showToast, contacts }) {
         </div>
         {tzInput && (
           <div style={{marginTop:12,fontSize:14}}>
-            {tzInput} in {TZ_CITIES.find(c=>c.tz===tzFrom)?.name||tzFrom} = <span style={{color:"#d4af37",fontWeight:700}}>
+            {tzInput} in {TZ_CITIES.find(c=>c.tz===tzFrom)?.name||tzFrom} = <span style={{color:"#ff2e88",fontWeight:700}}>
             {(()=>{
               try {
                 const [h,m] = tzInput.split(":").map(Number);
@@ -4423,7 +4423,7 @@ function ToolboxView({ showToast, contacts }) {
 
   const CryptoPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Crypto Prices</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Crypto Prices</h3>
       <button style={{...tbBtn,marginBottom:16}} onClick={doCryptoFetch} disabled={cryptoLoading}>{cryptoLoading?"Loading...":"Fetch Prices"}</button>
       {cryptoData && (
         <div style={{...tbGrid,gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))"}}>
@@ -4432,7 +4432,7 @@ function ToolboxView({ showToast, contacts }) {
             return (
               <div key={coin} style={tbCard}>
                 <div style={{fontSize:14,fontWeight:600,textTransform:"capitalize",marginBottom:8}}>{coin}</div>
-                <div style={{fontSize:24,fontWeight:700,color:"#d4af37"}}>${data.usd?.toLocaleString()}</div>
+                <div style={{fontSize:24,fontWeight:700,color:"#ff2e88"}}>${data.usd?.toLocaleString()}</div>
                 <div style={{fontSize:12,color:change>=0?"#10b981":"#ef4444",marginTop:4}}>{change>=0?"\u25b2":"\u25bc"} {Math.abs(change||0).toFixed(2)}% (24h)</div>
                 <div style={{fontSize:10,color:"#555",marginTop:4}}>MCap: ${(data.usd_market_cap/1e9).toFixed(2)}B</div>
               </div>
@@ -4450,7 +4450,7 @@ function ToolboxView({ showToast, contacts }) {
   ];
   const HolidaysPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Public Holidays</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Public Holidays</h3>
       <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
         <select style={{...tbInput,width:80}} value={holYear} onChange={e=>setHolYear(Number(e.target.value))}>
           {[2024,2025,2026,2027].map(y=><option key={y} value={y}>{y}</option>)}
@@ -4467,9 +4467,9 @@ function ToolboxView({ showToast, contacts }) {
             const isToday = h.date===today;
             const isPast = h.date<today;
             return (
-              <div key={i} style={{...tbCard,padding:10,display:"flex",justifyContent:"space-between",alignItems:"center",opacity:isPast?0.5:1,borderLeft:isToday?"3px solid #d4af37":"none"}}>
+              <div key={i} style={{...tbCard,padding:10,display:"flex",justifyContent:"space-between",alignItems:"center",opacity:isPast?0.5:1,borderLeft:isToday?"3px solid #ff2e88":"none"}}>
                 <div>
-                  <div style={{fontSize:13,fontWeight:isToday?700:400,color:isToday?"#d4af37":"#e0dcd0"}}>{h.localName||h.name}</div>
+                  <div style={{fontSize:13,fontWeight:isToday?700:400,color:isToday?"#ff2e88":"#e0dcd0"}}>{h.localName||h.name}</div>
                   <div style={{fontSize:10,color:"#555"}}>{h.name!==h.localName?h.name:""}</div>
                 </div>
                 <div style={{fontSize:11,color:"#888"}}>{new Date(h.date+"T12:00").toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})}</div>
@@ -4483,7 +4483,7 @@ function ToolboxView({ showToast, contacts }) {
 
   const RatesPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Exchange Rates (vs USD)</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Exchange Rates (vs USD)</h3>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         <input style={{...tbInput,flex:1}} placeholder="Filter currencies..." value={ratesFilter} onChange={e=>setRatesFilter(e.target.value)} />
         <button style={tbBtn} onClick={doRatesFetch} disabled={ratesLoading}>{ratesLoading?"...":"Load Rates"}</button>
@@ -4496,7 +4496,7 @@ function ToolboxView({ showToast, contacts }) {
               {Object.entries(ratesData.rates).filter(([k])=>!ratesFilter||k.toLowerCase().includes(ratesFilter.toLowerCase())).map(([code,rate])=>(
                 <tr key={code} style={{borderTop:"1px solid #1a1a22"}} className="rh">
                   <td style={{padding:6,fontWeight:500}}>{code}</td>
-                  <td style={{textAlign:"right",padding:6,color:"#d4af37"}}>{rate.toFixed(4)}</td>
+                  <td style={{textAlign:"right",padding:6,color:"#ff2e88"}}>{rate.toFixed(4)}</td>
                   <td style={{textAlign:"right",padding:6,color:"#888"}}>{rate.toFixed(2)} {code}</td>
                 </tr>
               ))}
@@ -4509,7 +4509,7 @@ function ToolboxView({ showToast, contacts }) {
 
   const WikiPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Wikipedia Lookup</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Wikipedia Lookup</h3>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         <input style={{...tbInput,flex:1}} placeholder="Search Wikipedia..." value={wikiQuery} onChange={e=>setWikiQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doWikiSearch()} />
         <button style={tbBtn} onClick={doWikiSearch} disabled={wikiLoading}>{wikiLoading?"...":"Search"}</button>
@@ -4519,10 +4519,10 @@ function ToolboxView({ showToast, contacts }) {
           <div style={{display:"flex",gap:16}}>
             {wikiResult.thumbnail?.source && <img src={wikiResult.thumbnail.source} alt="" style={{width:120,height:120,objectFit:"cover",borderRadius:8,flexShrink:0}} />}
             <div>
-              <div style={{fontSize:16,fontWeight:700,color:"#d4af37",marginBottom:8}}>{wikiResult.title}</div>
+              <div style={{fontSize:16,fontWeight:700,color:"#ff2e88",marginBottom:8}}>{wikiResult.title}</div>
               <div style={{fontSize:12,lineHeight:1.6,color:"#ccc"}}>{wikiResult.extract}</div>
               {wikiResult.content_urls?.desktop?.page && (
-                <a href={wikiResult.content_urls.desktop.page} target="_blank" rel="noreferrer" style={{color:"#6366f1",fontSize:11,marginTop:8,display:"inline-block"}}>Read full article \u2192</a>
+                <a href={wikiResult.content_urls.desktop.page} target="_blank" rel="noreferrer" style={{color:"#15e0c8",fontSize:11,marginTop:8,display:"inline-block"}}>Read full article \u2192</a>
               )}
             </div>
           </div>
@@ -4534,7 +4534,7 @@ function ToolboxView({ showToast, contacts }) {
 
   const ZIPPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>ZIP Code Lookup</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>ZIP Code Lookup</h3>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         <input style={{...tbInput,flex:1,maxWidth:200}} placeholder="Enter ZIP code..." value={zipInput} onChange={e=>setZipInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doZipLookup()} />
         <button style={tbBtn} onClick={doZipLookup} disabled={zipLoading}>{zipLoading?"...":"Lookup"}</button>
@@ -4543,7 +4543,7 @@ function ToolboxView({ showToast, contacts }) {
         <div style={tbCard}>
           {zipData.places.map((p,i)=>(
             <div key={i} style={{marginBottom:i<zipData.places.length-1?16:0}}>
-              <div style={{fontSize:18,fontWeight:700,color:"#d4af37",marginBottom:8}}>{p["place name"]}, {p["state abbreviation"]}</div>
+              <div style={{fontSize:18,fontWeight:700,color:"#ff2e88",marginBottom:8}}>{p["place name"]}, {p["state abbreviation"]}</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                 <div><span style={tbLabel}>State</span><div style={{fontSize:13}}>{p.state}</div></div>
                 <div><span style={tbLabel}>ZIP</span><div style={{fontSize:13}}>{zipData["post code"]}</div></div>
@@ -4560,7 +4560,7 @@ function ToolboxView({ showToast, contacts }) {
 
   const CountryPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Country Info</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Country Info</h3>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         <input style={{...tbInput,flex:1}} placeholder="Country name..." value={countryQuery} onChange={e=>setCountryQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doCountrySearch()} />
         <button style={tbBtn} onClick={doCountrySearch} disabled={countryLoading}>{countryLoading?"...":"Search"}</button>
@@ -4570,7 +4570,7 @@ function ToolboxView({ showToast, contacts }) {
           <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:16}}>
             <span style={{fontSize:48}}>{countryData.flag}</span>
             <div>
-              <div style={{fontSize:20,fontWeight:700,color:"#d4af37"}}>{countryData.name?.common}</div>
+              <div style={{fontSize:20,fontWeight:700,color:"#ff2e88"}}>{countryData.name?.common}</div>
               <div style={{fontSize:12,color:"#888"}}>{countryData.name?.official}</div>
             </div>
           </div>
@@ -4592,7 +4592,7 @@ function ToolboxView({ showToast, contacts }) {
 
   const BooksPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Book Search</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Book Search</h3>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         <input style={{...tbInput,flex:1}} placeholder="Search books..." value={bookQuery} onChange={e=>setBookQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&doBookSearch()} />
         <button style={tbBtn} onClick={doBookSearch} disabled={bookLoading}>{bookLoading?"...":"Search"}</button>
@@ -4616,7 +4616,7 @@ function ToolboxView({ showToast, contacts }) {
   const LANGS = ["English","Spanish","French","Portuguese","German","Italian","Chinese","Japanese","Korean","Arabic"];
   const TranslatePanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>AI Translate</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>AI Translate</h3>
       <div style={{display:"flex",gap:8,marginBottom:12}}>
         <div style={{flex:1}}>
           <label style={tbLabel}>From</label>
@@ -4649,7 +4649,7 @@ function ToolboxView({ showToast, contacts }) {
   const AI_TONES = ["Professional","Casual","Formal","Friendly","Persuasive"];
   const AIWriterPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>AI Writer</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>AI Writer</h3>
       <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
         <div style={{flex:1,minWidth:150}}>
           <label style={tbLabel}>Template</label>
@@ -4681,7 +4681,7 @@ function ToolboxView({ showToast, contacts }) {
   const EM_TYPES = ["Follow-up","Introduction","Thank You","Cold Outreach","Appointment Confirmation","Review Request","Quote Follow-up"];
   const EmailGenPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Email Generator</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Email Generator</h3>
       <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
         <div style={{flex:1,minWidth:150}}>
           <label style={tbLabel}>Email Type</label>
@@ -4716,7 +4716,7 @@ function ToolboxView({ showToast, contacts }) {
 
   const SummarizePanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>AI Summarizer</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>AI Summarizer</h3>
       <textarea style={{...tbInput,height:180,resize:"vertical",marginBottom:8}} placeholder="Paste text to summarize..." value={sumText} onChange={e=>setSumText(e.target.value)} />
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <span style={{fontSize:10,color:"#555"}}>{sumText.split(/\s+/).filter(Boolean).length} words</span>
@@ -4736,11 +4736,11 @@ function ToolboxView({ showToast, contacts }) {
 
   const QuotePanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Inspirational Quote</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Inspirational Quote</h3>
       <button style={{...tbBtn,marginBottom:16}} onClick={doQuoteFetch} disabled={quoteLoading}>{quoteLoading?"...":quoteData?"New Quote":"Get Quote"}</button>
       {quoteData && (
         <div style={{...tbCard,textAlign:"center",padding:32}}>
-          <div style={{fontSize:48,color:"#d4af37",lineHeight:1,marginBottom:12}}>\u201c</div>
+          <div style={{fontSize:48,color:"#ff2e88",lineHeight:1,marginBottom:12}}>\u201c</div>
           <div style={{fontSize:16,fontStyle:"italic",lineHeight:1.8,color:"#e0dcd0",maxWidth:500,margin:"0 auto"}}>{quoteData.quote}</div>
           {quoteData.author && <div style={{fontSize:12,color:"#888",marginTop:16}}>\u2014 {quoteData.author}</div>}
           <div style={{marginTop:16}}>
@@ -4753,7 +4753,7 @@ function ToolboxView({ showToast, contacts }) {
 
   const DogPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Random Dog Pics</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Random Dog Pics</h3>
       <button style={{...tbBtn,marginBottom:16}} onClick={doDogFetch} disabled={dogLoading}>{dogLoading?"...":"New Dog"}</button>
       {dogUrl && (
         <div style={{...tbCard,textAlign:"center"}}>
@@ -4777,14 +4777,14 @@ function ToolboxView({ showToast, contacts }) {
 
   const NumFactPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Number Facts</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Number Facts</h3>
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         <input style={{...tbInput,maxWidth:150}} type="number" value={numInput} onChange={e=>setNumInput(Number(e.target.value))} onKeyDown={e=>e.key==="Enter"&&doNumFact()} />
         <button style={tbBtn} onClick={doNumFact} disabled={numLoading}>{numLoading?"...":"Get Fact"}</button>
       </div>
       {numFact && (
         <div style={{...tbCard,padding:24}}>
-          <div style={{fontSize:36,fontWeight:700,color:"#d4af37",marginBottom:12}}>{numInput}</div>
+          <div style={{fontSize:36,fontWeight:700,color:"#ff2e88",marginBottom:12}}>{numInput}</div>
           <div style={{fontSize:14,lineHeight:1.7}}>{numFact}</div>
         </div>
       )}
@@ -4793,11 +4793,11 @@ function ToolboxView({ showToast, contacts }) {
 
   const ActivityPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Random Activity</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Random Activity</h3>
       <button style={{...tbBtn,marginBottom:16}} onClick={doActivityFetch} disabled={actLoading}>{actLoading?"...":"New Activity"}</button>
       {actData && (
         <div style={{...tbCard,padding:24}}>
-          <div style={{fontSize:18,fontWeight:600,color:"#d4af37",marginBottom:12}}>{actData.activity}</div>
+          <div style={{fontSize:18,fontWeight:600,color:"#ff2e88",marginBottom:12}}>{actData.activity}</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
             <div><span style={tbLabel}>Type</span><div style={{fontSize:13,textTransform:"capitalize"}}>{actData.type}</div></div>
             <div><span style={tbLabel}>Participants</span><div style={{fontSize:13}}>{actData.participants}</div></div>
@@ -4811,7 +4811,7 @@ function ToolboxView({ showToast, contacts }) {
 
   const PhotosPanel = () => (
     <div>
-      <h3 style={{color:"#d4af37",margin:"0 0 12px",fontSize:16}}>Stock Photos</h3>
+      <h3 style={{color:"#ff2e88",margin:"0 0 12px",fontSize:16}}>Stock Photos</h3>
       <div style={{display:"flex",gap:8,marginBottom:16,alignItems:"flex-end"}}>
         <div style={{flex:"0 0 120px"}}>
           <label style={tbLabel}>Photo ID</label>
@@ -4851,15 +4851,15 @@ function ToolboxView({ showToast, contacts }) {
       <div style={{width:200,background:"#0b0b13",borderRight:"1px solid #1e1e28",overflowY:"auto",flexShrink:0}}>
         {TOOLS.map(cat=>(
           <div key={cat.cat}>
-            <div style={{fontSize:9,fontWeight:700,color:"#d4af37",padding:"12px 16px 4px",letterSpacing:2}}>{cat.cat}</div>
+            <div style={{fontSize:9,fontWeight:700,color:"#ff2e88",padding:"12px 16px 4px",letterSpacing:2}}>{cat.cat}</div>
             {cat.items.map(item=>(
               <div key={item.id}
                 onClick={()=>setActiveTool(item.id)}
                 style={{
                   padding:"8px 16px",fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",gap:8,
-                  background:activeTool===item.id?"rgba(212,175,55,.1)":"transparent",
-                  borderLeft:activeTool===item.id?"3px solid #d4af37":"3px solid transparent",
-                  color:activeTool===item.id?"#d4af37":"#888",
+                  background:activeTool===item.id?"rgba(255,46,136,.1)":"transparent",
+                  borderLeft:activeTool===item.id?"3px solid #ff2e88":"3px solid transparent",
+                  color:activeTool===item.id?"#ff2e88":"#888",
                 }}
                 className="rh"
               >
@@ -4978,14 +4978,14 @@ function MarketIntelView({ showToast }) {
     <div style={{flex:1,overflow:"auto",padding:"18px 20px",display:"flex",flexDirection:"column",gap:14}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#d4af37"}}>{L.title}</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#ff2e88"}}>{L.title}</div>
           <div style={{fontSize:8,color:"#444",letterSpacing:".08em"}}>
             {L.sub}
             {refreshed&&<span style={{color:"#333",marginLeft:8}}>{L.updated} {refreshed.toLocaleTimeString()}</span>}
           </div>
         </div>
         <div style={{display:"flex",gap:6}}>
-          <button onClick={()=>setMktLang(mktLang==="en"?"es":"en")} style={{background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.2)",color:"#d4af37",fontFamily:"inherit",fontSize:9,padding:"4px 10px",borderRadius:4,cursor:"pointer",letterSpacing:".05em"}}>{mktLang==="en"?"🇪🇸 ESP":"🇺🇸 ENG"}</button>
+          <button onClick={()=>setMktLang(mktLang==="en"?"es":"en")} style={{background:"rgba(255,46,136,.08)",border:"1px solid rgba(255,46,136,.2)",color:"#ff2e88",fontFamily:"inherit",fontSize:9,padding:"4px 10px",borderRadius:4,cursor:"pointer",letterSpacing:".05em"}}>{mktLang==="en"?"🇪🇸 ESP":"🇺🇸 ENG"}</button>
           <Btn onClick={loadFRED} disabled={fredLoad} style={{fontSize:9}}>{fredLoad?<span className="pulse">{L.loading}</span>:L.refresh}</Btn>
         </div>
       </div>
@@ -4996,7 +4996,7 @@ function MarketIntelView({ showToast }) {
           const d=fredData[s.id]; const up=d&&d.change>=0;
           return (
             <div key={s.id} onClick={()=>setSelSeries(s.id)}
-              style={{background:selSeries===s.id?"rgba(212,175,55,.05)":"#0d0d18",border:`1px solid ${selSeries===s.id?"rgba(212,175,55,.35)":"#1e1e28"}`,borderRadius:6,padding:"10px 12px",cursor:"pointer"}} className="card">
+              style={{background:selSeries===s.id?"rgba(255,46,136,.05)":"#0d0d18",border:`1px solid ${selSeries===s.id?"rgba(255,46,136,.35)":"#1e1e28"}`,borderRadius:6,padding:"10px 12px",cursor:"pointer"}} className="card">
               <div style={{fontSize:7,color:"#444",letterSpacing:".1em",marginBottom:4}}>{sl(s)}</div>
               {fredLoad||!d
                 ?<div className="sh" style={{height:20,borderRadius:2,width:"60%"}}/>
@@ -5020,7 +5020,7 @@ function MarketIntelView({ showToast }) {
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           <div style={{background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:6,padding:"14px 16px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,gap:6,flexWrap:"wrap"}}>
-              <div style={{fontSize:9,color:sd?.color||"#d4af37",letterSpacing:".1em"}}>{sd?sl(sd):""} {L.trend}</div>
+              <div style={{fontSize:9,color:sd?.color||"#ff2e88",letterSpacing:".1em"}}>{sd?sl(sd):""} {L.trend}</div>
               <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
                 {FRED_SERIES.map(s=>(
                   <button key={s.id} onClick={()=>setSelSeries(s.id)} style={{background:selSeries===s.id?`${s.color}18`:"none",border:`1px solid ${selSeries===s.id?s.color+"44":"#1a1a28"}`,color:selSeries===s.id?s.color:"#333",fontFamily:"inherit",fontSize:7,padding:"2px 5px",borderRadius:2,cursor:"pointer"}}>{sl(s)}</button>
@@ -5031,13 +5031,13 @@ function MarketIntelView({ showToast }) {
               ?<ResponsiveContainer width="100%" height={180}>
                 <AreaChart data={sf.history} margin={{top:4,right:0,bottom:0,left:-15}}>
                   <defs><linearGradient id="mg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={sd?.color||"#d4af37"} stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor={sd?.color||"#d4af37"} stopOpacity={0}/>
+                    <stop offset="5%" stopColor={sd?.color||"#ff2e88"} stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor={sd?.color||"#ff2e88"} stopOpacity={0}/>
                   </linearGradient></defs>
                   <XAxis dataKey="date" tick={{fill:"#333",fontSize:7}} axisLine={false} tickLine={false} interval={Math.floor((sf.history.length-1)/5)}/>
                   <YAxis tick={{fill:"#555",fontSize:7}} axisLine={false} tickLine={false} domain={["auto","auto"]}/>
-                  <Tooltip contentStyle={{background:"#0b0b16",border:`1px solid ${sd?.color||"#d4af37"}44`,borderRadius:4,fontFamily:"DM Mono",fontSize:10}} labelStyle={{color:sd?.color}} itemStyle={{color:"#888"}} formatter={v=>[`${v}${sd?.unit&&sd.unit!=="$"?sd.unit:""}`]}/>
-                  <Area type="monotone" dataKey="value" stroke={sd?.color||"#d4af37"} strokeWidth={1.5} fill="url(#mg)" dot={false}/>
+                  <Tooltip contentStyle={{background:"#0b0b16",border:`1px solid ${sd?.color||"#ff2e88"}44`,borderRadius:4,fontFamily:"DM Mono",fontSize:10}} labelStyle={{color:sd?.color}} itemStyle={{color:"#888"}} formatter={v=>[`${v}${sd?.unit&&sd.unit!=="$"?sd.unit:""}`]}/>
+                  <Area type="monotone" dataKey="value" stroke={sd?.color||"#ff2e88"} strokeWidth={1.5} fill="url(#mg)" dot={false}/>
                 </AreaChart>
               </ResponsiveContainer>
               :<div style={{height:180,display:"flex",alignItems:"center",justifyContent:"center",color:"#1e1e2e",fontSize:10}}>{fredLoad?L.loadingText:L.selectSeries}</div>
@@ -5064,7 +5064,7 @@ function MarketIntelView({ showToast }) {
           <div style={{display:"flex",borderBottom:"1px solid #131320",overflowX:"auto",flexShrink:0}}>
             {NEWS_TOPICS.map(t=>(
               <button key={t.id} onClick={()=>setNewsTopic(t.id)}
-                style={{background:newsTopic===t.id?"rgba(212,175,55,.06)":"none",border:"none",borderBottom:newsTopic===t.id?"2px solid #d4af37":"2px solid transparent",color:newsTopic===t.id?"#d4af37":"#555",fontFamily:"inherit",fontSize:8,padding:"8px 10px",cursor:"pointer",whiteSpace:"nowrap"}}>
+                style={{background:newsTopic===t.id?"rgba(255,46,136,.06)":"none",border:"none",borderBottom:newsTopic===t.id?"2px solid #ff2e88":"2px solid transparent",color:newsTopic===t.id?"#ff2e88":"#555",fontFamily:"inherit",fontSize:8,padding:"8px 10px",cursor:"pointer",whiteSpace:"nowrap"}}>
                 {sl(t)}
               </button>
             ))}
@@ -5133,14 +5133,14 @@ function LandingPage({ onGoLogin }) {
             {["Services","About","Contact"].map(s=>(
               <button key={s} onClick={()=>scrollTo(s.toLowerCase())} style={{background:"none",border:"none",color:"#777",cursor:"pointer",fontFamily:F,fontSize:11,letterSpacing:".08em"}}>{s.toUpperCase()}</button>
             ))}
-            <button onClick={onGoLogin} style={{background:"#d4af37",color:"#000",border:"none",borderRadius:4,padding:"8px 20px",cursor:"pointer",fontFamily:F,fontSize:10,fontWeight:600,letterSpacing:".15em"}}>LOGIN</button>
+            <button onClick={onGoLogin} style={{background:"#ff2e88",color:"#000",border:"none",borderRadius:4,padding:"8px 20px",cursor:"pointer",fontFamily:F,fontSize:10,fontWeight:600,letterSpacing:".15em"}}>LOGIN</button>
           </div>
         </div>
       </nav>
 
       {/* ── HERO ── */}
       <section style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",textAlign:"center",padding:"120px 24px 80px",position:"relative",overflow:"hidden"}}>
-        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle,rgba(212,175,55,.06) 0%,transparent 70%)",pointerEvents:"none"}} />
+        <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:600,height:600,borderRadius:"50%",background:"radial-gradient(circle,rgba(255,46,136,.06) 0%,transparent 70%)",pointerEvents:"none"}} />
         <div style={{position:"relative",maxWidth:700}}>
           <img src="/logo.svg" alt="Ziarem" style={{width:"min(480px,80vw)",marginBottom:16}} />
           <div style={{fontSize:13,color:"#888",letterSpacing:".2em",marginBottom:32,lineHeight:1.8}}>
@@ -5151,8 +5151,8 @@ function LandingPage({ onGoLogin }) {
             A unified business ecosystem built to serve every stage of the homeownership journey &mdash; from credit optimization to closing and beyond.
           </p>
           <div style={{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap"}}>
-            <button onClick={()=>scrollTo("services")} style={{background:"transparent",border:"1px solid #d4af37",color:"#d4af37",borderRadius:4,padding:"12px 32px",cursor:"pointer",fontFamily:F,fontSize:11,fontWeight:500,letterSpacing:".15em"}}>OUR SERVICES</button>
-            <button onClick={onGoLogin} style={{background:"#d4af37",color:"#000",border:"1px solid #d4af37",borderRadius:4,padding:"12px 32px",cursor:"pointer",fontFamily:F,fontSize:11,fontWeight:600,letterSpacing:".15em"}}>VAULT LOGIN</button>
+            <button onClick={()=>scrollTo("services")} style={{background:"transparent",border:"1px solid #ff2e88",color:"#ff2e88",borderRadius:4,padding:"12px 32px",cursor:"pointer",fontFamily:F,fontSize:11,fontWeight:500,letterSpacing:".15em"}}>OUR SERVICES</button>
+            <button onClick={onGoLogin} style={{background:"#ff2e88",color:"#000",border:"1px solid #ff2e88",borderRadius:4,padding:"12px 32px",cursor:"pointer",fontFamily:F,fontSize:11,fontWeight:600,letterSpacing:".15em"}}>VAULT LOGIN</button>
           </div>
         </div>
       </section>
@@ -5160,17 +5160,17 @@ function LandingPage({ onGoLogin }) {
       {/* ── SERVICES ── */}
       <section id="services" style={{maxWidth:1100,margin:"0 auto",padding:"80px 24px"}}>
         <div style={{textAlign:"center",marginBottom:56}}>
-          <div style={{fontSize:9,color:"#d4af37",letterSpacing:".3em",marginBottom:8}}>WHAT WE DO</div>
+          <div style={{fontSize:9,color:"#ff2e88",letterSpacing:".3em",marginBottom:8}}>WHAT WE DO</div>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:38,letterSpacing:".15em",color:"#e0dcd0"}}>OUR SERVICES</div>
-          <div style={{width:60,height:1,background:"#d4af37",margin:"16px auto 0"}} />
+          <div style={{width:60,height:1,background:"#ff2e88",margin:"16px auto 0"}} />
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:20}}>
           {ZIAREM_SERVICES.map(s=>(
             <div key={s.name} style={{background:"#0a0a16",border:"1px solid #1a1a28",borderRadius:6,padding:"28px 24px",transition:"border-color .3s,transform .3s"}}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(212,175,55,.35)";e.currentTarget.style.transform="translateY(-2px)";}}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor="rgba(255,46,136,.35)";e.currentTarget.style.transform="translateY(-2px)";}}
               onMouseLeave={e=>{e.currentTarget.style.borderColor="#1a1a28";e.currentTarget.style.transform="translateY(0)";}}>
               <div style={{fontSize:28,marginBottom:12}}>{s.icon}</div>
-              <div style={{fontSize:13,color:"#d4af37",letterSpacing:".1em",marginBottom:8,fontWeight:600}}>{s.name.toUpperCase()}</div>
+              <div style={{fontSize:13,color:"#ff2e88",letterSpacing:".1em",marginBottom:8,fontWeight:600}}>{s.name.toUpperCase()}</div>
               <div style={{fontSize:12,color:"#666",lineHeight:1.7}}>{s.desc}</div>
             </div>
           ))}
@@ -5180,7 +5180,7 @@ function LandingPage({ onGoLogin }) {
       {/* ── ABOUT ── */}
       <section id="about" style={{background:"#08080f",borderTop:"1px solid #12121e",borderBottom:"1px solid #12121e"}}>
         <div style={{maxWidth:800,margin:"0 auto",padding:"80px 24px",textAlign:"center"}}>
-          <div style={{fontSize:9,color:"#d4af37",letterSpacing:".3em",marginBottom:8}}>LEADERSHIP</div>
+          <div style={{fontSize:9,color:"#ff2e88",letterSpacing:".3em",marginBottom:8}}>LEADERSHIP</div>
           <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:38,letterSpacing:".15em",color:"#e0dcd0",marginBottom:8}}>KEN WOLF</div>
           <div style={{fontSize:11,color:"#555",letterSpacing:".15em",marginBottom:32}}>FOUNDER & CEO</div>
           <p style={{fontSize:14,color:"#888",lineHeight:1.9,maxWidth:600,margin:"0 auto 24px",fontWeight:300}}>
@@ -5194,7 +5194,7 @@ function LandingPage({ onGoLogin }) {
 
       {/* ── CONTACT ── */}
       <section id="contact" style={{maxWidth:800,margin:"0 auto",padding:"80px 24px",textAlign:"center"}}>
-        <div style={{fontSize:9,color:"#d4af37",letterSpacing:".3em",marginBottom:8}}>GET IN TOUCH</div>
+        <div style={{fontSize:9,color:"#ff2e88",letterSpacing:".3em",marginBottom:8}}>GET IN TOUCH</div>
         <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:38,letterSpacing:".15em",color:"#e0dcd0",marginBottom:32}}>CONTACT</div>
         <div style={{display:"flex",justifyContent:"center",gap:40,flexWrap:"wrap",marginBottom:40}}>
           {[
@@ -5208,7 +5208,7 @@ function LandingPage({ onGoLogin }) {
             </div>
           ))}
         </div>
-        <button onClick={onGoLogin} style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.3)",color:"#d4af37",borderRadius:4,padding:"12px 32px",cursor:"pointer",fontFamily:F,fontSize:11,fontWeight:500,letterSpacing:".15em"}}>ACCESS VAULT CRM</button>
+        <button onClick={onGoLogin} style={{background:"rgba(255,46,136,.1)",border:"1px solid rgba(255,46,136,.3)",color:"#ff2e88",borderRadius:4,padding:"12px 32px",cursor:"pointer",fontFamily:F,fontSize:11,fontWeight:500,letterSpacing:".15em"}}>ACCESS VAULT CRM</button>
       </section>
 
       {/* ── FOOTER ── */}
@@ -5241,7 +5241,7 @@ function LoginScreen({ onLogin, onBack }) {
       <form onSubmit={handleSubmit} style={{width:340,padding:40,background:"#0a0a16",border:"1px solid #1a1a28",borderRadius:8}}>
         <div style={{textAlign:"center",marginBottom:28}}>
           <img src="/favicon.svg" alt="Vault" style={{width:48,height:48,marginBottom:8}} />
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,letterSpacing:".3em",color:"#d4af37",marginBottom:4}}>VAULT</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,letterSpacing:".3em",color:"#ff2e88",marginBottom:4}}>VAULT</div>
           <div style={{fontSize:10,color:"#444",letterSpacing:".15em"}}>ZIAREM BUSINESS PLATFORM</div>
         </div>
         {err&&<div style={{background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.25)",color:"#ef4444",fontSize:10,padding:"8px 12px",borderRadius:4,marginBottom:14,textAlign:"center"}}>{err}</div>}
@@ -5253,7 +5253,7 @@ function LoginScreen({ onLogin, onBack }) {
           <label style={{display:"block",fontSize:8,color:"#555",letterSpacing:".1em",marginBottom:4}}>PASSWORD</label>
           <input type="password" value={pw} onChange={e=>setPw(e.target.value)} required style={{width:"100%",padding:"10px 12px",background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:4,color:"#e0dcd0",fontFamily:"inherit",fontSize:12,outline:"none"}} placeholder="••••••••" />
         </div>
-        <button type="submit" disabled={loading} style={{width:"100%",padding:"11px 0",background:loading?"#444":"#d4af37",color:"#000",border:"none",borderRadius:4,cursor:loading?"wait":"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600,letterSpacing:".15em",marginBottom:12}}>{loading?"SIGNING IN…":"SIGN IN"}</button>
+        <button type="submit" disabled={loading} style={{width:"100%",padding:"11px 0",background:loading?"#444":"#ff2e88",color:"#000",border:"none",borderRadius:4,cursor:loading?"wait":"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600,letterSpacing:".15em",marginBottom:12}}>{loading?"SIGNING IN…":"SIGN IN"}</button>
         {onBack&&<button type="button" onClick={onBack} style={{width:"100%",padding:"9px 0",background:"none",border:"1px solid #1e1e28",color:"#555",borderRadius:4,cursor:"pointer",fontFamily:"inherit",fontSize:10,letterSpacing:".1em"}}>BACK TO HOME</button>}
       </form>
     </div>
@@ -5356,7 +5356,7 @@ const CALL_LANG = {
 const DISPOSITION_CFG = {
   interested:{c:"#10b981",l:"Interested",lEs:"Interesado"},callback:{c:"#3b82f6",l:"Callback",lEs:"Callback"},
   not_interested:{c:"#ef4444",l:"Not Interested",lEs:"No Interesado"},no_answer:{c:"#6b7280",l:"No Answer",lEs:"Sin Respuesta"},
-  wrong_number:{c:"#f59e0b",l:"Wrong #",lEs:"# Equivocado"},qualified:{c:"#8b5cf6",l:"Qualified",lEs:"Calificado"},closed:{c:"#d4af37",l:"Closed",lEs:"Cerrado"},
+  wrong_number:{c:"#f59e0b",l:"Wrong #",lEs:"# Equivocado"},qualified:{c:"#8b5cf6",l:"Qualified",lEs:"Calificado"},closed:{c:"#ff2e88",l:"Closed",lEs:"Cerrado"},
 };
 
 function CallCenterView({ user, teamProfile, isAdmin, calls, setCalls, callParticipants, setCallParts, callNotifs, setCallNotifs, selCall, setSelCall, showNewCall, setShowNewCall, callFilter, setCallFilter, callSearch, setCallSearch, contacts, setCon, deals, businesses, showToast, onNav }) {
@@ -5399,14 +5399,14 @@ function CallCenterView({ user, teamProfile, isAdmin, calls, setCalls, callParti
       <div style={{width:300,borderRight:"1px solid #0e0e18",display:"flex",flexDirection:"column",flexShrink:0}}>
         <div style={{padding:"10px 12px",borderBottom:"1px solid #0e0e18"}}>
           <div style={{display:"flex",gap:4,marginBottom:6}}>
-            <button onClick={()=>setCcLang(ccLang==="es"?"en":"es")} style={{flex:1,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.2)",color:"#d4af37",fontFamily:"inherit",fontSize:9,padding:"4px 0",borderRadius:3,cursor:"pointer",letterSpacing:".05em"}}>{ccLang==="es"?"🇺🇸 English":"🇪🇸 Español"}</button>
+            <button onClick={()=>setCcLang(ccLang==="es"?"en":"es")} style={{flex:1,background:"rgba(255,46,136,.08)",border:"1px solid rgba(255,46,136,.2)",color:"#ff2e88",fontFamily:"inherit",fontSize:9,padding:"4px 0",borderRadius:3,cursor:"pointer",letterSpacing:".05em"}}>{ccLang==="es"?"🇺🇸 English":"🇪🇸 Español"}</button>
           </div>
-          <button onClick={()=>setShowNewCall(true)} style={{width:"100%",padding:"8px 0",background:"linear-gradient(135deg,#d4af37,#8b6914)",border:"none",color:"#000",borderRadius:4,cursor:"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:".12em",marginBottom:8}}>{L.newCall}</button>
+          <button onClick={()=>setShowNewCall(true)} style={{width:"100%",padding:"8px 0",background:"linear-gradient(135deg,#ff2e88,#8b6914)",border:"none",color:"#000",borderRadius:4,cursor:"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:".12em",marginBottom:8}}>{L.newCall}</button>
           <input value={callSearch} onChange={e=>setCallSearch(e.target.value)} placeholder={L.searchCalls} style={{width:"100%",padding:"6px 10px",background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:3,color:"#e0dcd0",fontFamily:"inherit",fontSize:10,outline:"none"}} />
         </div>
         <div style={{display:"flex",gap:2,padding:"6px 10px",borderBottom:"1px solid #0e0e18",flexWrap:"wrap"}}>
           {[{id:"all",l:L.all},{id:"today",l:L.today},{id:"mine",l:L.myCalls},{id:"referred",l:L.referred},{id:"active",l:L.active}].map(f=>(
-            <button key={f.id} onClick={()=>setCallFilter(f.id)} style={{background:callFilter===f.id?"rgba(212,175,55,.1)":"none",border:`1px solid ${callFilter===f.id?"rgba(212,175,55,.3)":"transparent"}`,color:callFilter===f.id?"#d4af37":"#555",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"2px 7px",borderRadius:2,letterSpacing:".06em"}}>{f.l}</button>
+            <button key={f.id} onClick={()=>setCallFilter(f.id)} style={{background:callFilter===f.id?"rgba(255,46,136,.1)":"none",border:`1px solid ${callFilter===f.id?"rgba(255,46,136,.3)":"transparent"}`,color:callFilter===f.id?"#ff2e88":"#555",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"2px 7px",borderRadius:2,letterSpacing:".06em"}}>{f.l}</button>
           ))}
         </div>
         <div style={{flex:1,overflow:"auto"}}>
@@ -5415,12 +5415,12 @@ function CallCenterView({ user, teamProfile, isAdmin, calls, setCalls, callParti
             const mainP=parts[0];
             const disp=DISPOSITION_CFG[c.disposition];
             return (
-              <div key={c.id} onClick={()=>setSelCall(c)} style={{padding:"8px 12px",borderBottom:"1px solid #0a0a14",cursor:"pointer",background:selCall?.id===c.id?"rgba(212,175,55,.06)":"none"}}>
+              <div key={c.id} onClick={()=>setSelCall(c)} style={{padding:"8px 12px",borderBottom:"1px solid #0a0a14",cursor:"pointer",background:selCall?.id===c.id?"rgba(255,46,136,.06)":"none"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:2}}>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
                     <span style={{fontSize:12}}>{c.direction==="inbound"?"↙":"↗"}</span>
                     <span style={{fontSize:10,color:"#e0dcd0",fontWeight:500}}>{mainP?.name||contactName(mainP?.contact_id)||"Unknown"}</span>
-                    {parts.length>1&&<span style={{fontSize:7,color:"#6366f1",background:"rgba(99,102,241,.1)",padding:"0 4px",borderRadius:2}}>+{parts.length-1}</span>}
+                    {parts.length>1&&<span style={{fontSize:7,color:"#15e0c8",background:"rgba(99,102,241,.1)",padding:"0 4px",borderRadius:2}}>+{parts.length-1}</span>}
                   </div>
                   <span style={{fontSize:7,color:"#333"}}>{timeAgo(c.started_at)}</span>
                 </div>
@@ -5439,8 +5439,8 @@ function CallCenterView({ user, teamProfile, isAdmin, calls, setCalls, callParti
           {filtered.length===0&&<div style={{textAlign:"center",padding:40,color:"#1e1e2e"}}><div style={{fontSize:28,marginBottom:8}}>☎</div><div style={{fontSize:10}}>{L.noCalls}</div></div>}
         </div>
         {/* Admin stats footer */}
-        {isAdmin&&<div style={{borderTop:"1px solid #0e0e18",padding:"8px 12px",background:"#07070e"}}>
-          <div style={{fontSize:7,color:"#d4af37",letterSpacing:".1em",marginBottom:4}}>{L.today2}</div>
+        {isAdmin&&<div style={{borderTop:"1px solid #0e0e18",padding:"8px 12px",background:"#0a0010"}}>
+          <div style={{fontSize:7,color:"#ff2e88",letterSpacing:".1em",marginBottom:4}}>{L.today2}</div>
           <div style={{display:"flex",gap:10,fontSize:9}}>
             <span style={{color:"#555"}}>{todayCalls.length} {L.calls}</span>
             <span style={{color:"#555"}}>{L.avg} {fmtDur(avgDur)}</span>
@@ -5464,7 +5464,7 @@ function CallCenterView({ user, teamProfile, isAdmin, calls, setCalls, callParti
               <div>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                   <span style={{fontSize:16}}>{selCall.direction==="inbound"?"↙":"↗"}</span>
-                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#d4af37",letterSpacing:".15em"}}>{selCall.direction==="inbound"?L.inboundCall:L.outboundCall}</span>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:"#ff2e88",letterSpacing:".15em"}}>{selCall.direction==="inbound"?L.inboundCall:L.outboundCall}</span>
                   <Bd label={selCall.status} color={selCall.status==="active"?"#10b981":"#555"} />
                   {DISPOSITION_CFG[selCall.disposition]&&<Bd label={ccLang==="es"?(DISPOSITION_CFG[selCall.disposition].lEs||DISPOSITION_CFG[selCall.disposition].l):DISPOSITION_CFG[selCall.disposition].l} color={DISPOSITION_CFG[selCall.disposition].c} />}
                 </div>
@@ -5485,13 +5485,13 @@ function CallCenterView({ user, teamProfile, isAdmin, calls, setCalls, callParti
                   return (
                     <div key={p.id} style={{background:"#0a0a14",border:"1px solid #1a1a28",borderRadius:4,padding:"8px 12px",minWidth:160}}>
                       <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
-                        <Av name={p.name||con?.full_name||"?"} size={22} color={p.role==="primary"?"#d4af37":"#6366f1"} />
+                        <Av name={p.name||con?.full_name||"?"} size={22} color={p.role==="primary"?"#ff2e88":"#15e0c8"} />
                         <div>
                           <div style={{fontSize:10,color:"#e0dcd0"}}>{p.name||con?.full_name||"Unknown"}</div>
                           <div style={{fontSize:7,color:"#444"}}>{p.phone||con?.phone||""} · {p.role}</div>
                         </div>
                       </div>
-                      {con?.is_partner&&<Bd label={L.partner} color="#d4af37" />}
+                      {con?.is_partner&&<Bd label={L.partner} color="#ff2e88" />}
                       {p.is_new_lead&&<Bd label={L.newLead} color="#10b981" />}
                       {p.contact_id&&<button onClick={()=>{onNav("crm","contacts");}} style={{fontSize:7,color:"#3b82f6",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,marginTop:2}}>{L.viewContact}</button>}
                     </div>
@@ -5747,7 +5747,7 @@ function NewCallModal({ user, contacts, setCon, team, calls, setCalls, setCallPa
         <Fld label={L.direction}>
           <div style={{display:"flex",gap:6}}>
             {["outbound","inbound"].map(d=>(
-              <button key={d} onClick={()=>setDirection(d)} style={{flex:1,padding:"7px 0",background:direction===d?"rgba(212,175,55,.1)":"#0d0d18",border:`1px solid ${direction===d?"rgba(212,175,55,.3)":"#1e1e28"}`,color:direction===d?"#d4af37":"#555",borderRadius:3,cursor:"pointer",fontFamily:"inherit",fontSize:10,letterSpacing:".08em"}}>{d==="outbound"?"↗ "+L.outbound:"↙ "+L.inbound}</button>
+              <button key={d} onClick={()=>setDirection(d)} style={{flex:1,padding:"7px 0",background:direction===d?"rgba(255,46,136,.1)":"#0d0d18",border:`1px solid ${direction===d?"rgba(255,46,136,.3)":"#1e1e28"}`,color:direction===d?"#ff2e88":"#555",borderRadius:3,cursor:"pointer",fontFamily:"inherit",fontSize:10,letterSpacing:".08em"}}>{d==="outbound"?"↗ "+L.outbound:"↙ "+L.inbound}</button>
             ))}
           </div>
         </Fld>
@@ -5764,7 +5764,7 @@ function NewCallModal({ user, contacts, setCon, team, calls, setCalls, setCallPa
       {participants.map((p,i)=>(
         <div key={i} style={{background:"#0a0a14",border:"1px solid #1a1a28",borderRadius:4,padding:"8px 10px",marginBottom:6}}>
           <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:4}}>
-            <span style={{fontSize:7,color:"#d4af37",minWidth:50}}>{p.role==="primary"?L.primary:L.secondary}</span>
+            <span style={{fontSize:7,color:"#ff2e88",minWidth:50}}>{p.role==="primary"?L.primary:L.secondary}</span>
             <select value={p.contact_id} onChange={e=>{if(e.target.value) linkContact(i,e.target.value); else updatePart(i,"contact_id","");}} style={{flex:1,background:"#0d0d18",border:"1px solid #1e1e28",color:"#e0dcd0",fontFamily:"inherit",fontSize:10,padding:"5px 8px",borderRadius:3}}>
               <option value="">{L.newSearch}</option>
               {contacts.map(c=><option key={c.id} value={c.id}>{c.full_name} {c.phone?`(${c.phone})`:""}</option>)}
@@ -5774,7 +5774,7 @@ function NewCallModal({ user, contacts, setCon, team, calls, setCalls, setCallPa
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:6}}>
             <input value={p.name} onChange={e=>updatePart(i,"name",e.target.value)} placeholder={L.name} style={{background:"#0d0d18",border:"1px solid #1e1e28",color:"#e0dcd0",fontFamily:"inherit",fontSize:10,padding:"5px 8px",borderRadius:3}} />
             <input value={p.phone} onChange={e=>updatePart(i,"phone",e.target.value)} placeholder={L.phone} style={{background:"#0d0d18",border:"1px solid #1e1e28",color:"#e0dcd0",fontFamily:"inherit",fontSize:10,padding:"5px 8px",borderRadius:3}} />
-            <label style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:p.is_partner?"#d4af37":"#444",cursor:"pointer"}}>
+            <label style={{display:"flex",alignItems:"center",gap:3,fontSize:8,color:p.is_partner?"#ff2e88":"#444",cursor:"pointer"}}>
               <input type="checkbox" checked={p.is_partner} onChange={e=>updatePart(i,"is_partner",e.target.checked)} /> {L.partner}
             </label>
           </div>
@@ -5820,7 +5820,7 @@ function NewCallModal({ user, contacts, setCon, team, calls, setCalls, setCallPa
       </div>
 
       <div style={{display:"flex",gap:8,marginTop:8}}>
-        <button onClick={handleSave} disabled={saving} style={{background:saving?"#333":"linear-gradient(135deg,#d4af37,#8b6914)",color:"#000",border:"none",borderRadius:4,padding:"9px 24px",cursor:saving?"wait":"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600,letterSpacing:".12em"}}>{saving?L.saving:L.saveCall}</button>
+        <button onClick={handleSave} disabled={saving} style={{background:saving?"#333":"linear-gradient(135deg,#ff2e88,#8b6914)",color:"#000",border:"none",borderRadius:4,padding:"9px 24px",cursor:saving?"wait":"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600,letterSpacing:".12em"}}>{saving?L.saving:L.saveCall}</button>
         <button onClick={onClose} style={{background:"none",border:"1px solid #1e1e28",color:"#555",borderRadius:4,padding:"9px 16px",cursor:"pointer",fontFamily:"inherit",fontSize:10}}>{L.cancel}</button>
       </div>
     </Modal>
@@ -5891,7 +5891,7 @@ function DocTemplatePanel({ contacts, businesses, user, showToast }) {
       </div>
 
       {showNew&&(
-        <div style={{background:"#07070e",border:"1px solid #1e1e28",borderRadius:4,padding:12,marginBottom:10}}>
+        <div style={{background:"#0a0010",border:"1px solid #1e1e28",borderRadius:4,padding:12,marginBottom:10}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}>
             <Fld label="TEMPLATE NAME"><Inp value={form.name} onChange={v=>setForm(p=>({...p,name:v}))} placeholder="e.g. Listing Agreement" /></Fld>
             <Fld label="CATEGORY"><Sel value={form.category} onChange={v=>setForm(p=>({...p,category:v}))}>{categories.map(c=><option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}</Sel></Fld>
@@ -5975,12 +5975,12 @@ function ReferralTracker({ user, contacts, deals, businesses, showToast }) {
   return (
     <div style={{flex:1,overflow:"auto",padding:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".2em",color:"#d4af37"}}>REFERRAL NETWORK</span>
+        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".2em",color:"#ff2e88"}}>REFERRAL NETWORK</span>
         <Btn onClick={()=>setShowNew(true)} variant="gold" style={{fontSize:9}}>+ ADD REFERRAL</Btn>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
-        {[{l:"Total Referrals",v:refs.length,c:"#d4af37"},{l:"Pending Fees",v:`$${pendingFees.toLocaleString()}`,c:"#f59e0b"},{l:"Paid Fees",v:`$${paidFees.toLocaleString()}`,c:"#10b981"}].map((s,i)=>(
+        {[{l:"Total Referrals",v:refs.length,c:"#ff2e88"},{l:"Pending Fees",v:`$${pendingFees.toLocaleString()}`,c:"#f59e0b"},{l:"Paid Fees",v:`$${paidFees.toLocaleString()}`,c:"#10b981"}].map((s,i)=>(
           <div key={i} style={{background:"#0d0d18",border:`1px solid ${s.c}22`,borderRadius:5,padding:"12px 14px",textAlign:"center"}}>
             <div style={{fontSize:20,color:s.c,fontWeight:700}}>{s.v}</div>
             <div style={{fontSize:8,color:"#444",letterSpacing:".08em",marginTop:2}}>{s.l}</div>
@@ -6013,7 +6013,7 @@ function ReferralTracker({ user, contacts, deals, businesses, showToast }) {
             <div style={{fontSize:8,color:"#444"}}>{bizName(r.business_id)}{r.notes?` · ${r.notes}`:""}</div>
           </div>
           <div style={{textAlign:"right"}}>
-            <div style={{fontSize:11,color:"#d4af37",fontWeight:600}}>${Number(r.fee_amount||0).toLocaleString()}</div>
+            <div style={{fontSize:11,color:"#ff2e88",fontWeight:600}}>${Number(r.fee_amount||0).toLocaleString()}</div>
             <div style={{display:"flex",gap:4,alignItems:"center"}}>
               <span style={{fontSize:7,color:r.fee_status==="paid"?"#10b981":"#f59e0b",background:r.fee_status==="paid"?"rgba(16,185,129,.08)":"rgba(245,158,11,.08)",padding:"1px 5px",borderRadius:2,textTransform:"uppercase"}}>{r.fee_status||"pending"}</span>
               {r.fee_status!=="paid"&&<button onClick={()=>markPaid(r)} style={{fontSize:7,background:"rgba(16,185,129,.1)",border:"1px solid rgba(16,185,129,.2)",color:"#10b981",borderRadius:2,padding:"1px 5px",cursor:"pointer",fontFamily:"inherit"}}>MARK PAID</button>}
@@ -6064,16 +6064,16 @@ function ReviewCollector({ user, contacts, deals, businesses, showToast }) {
   },[deals,contacts,reviews]);
 
   const stats = {total:reviews.length, pending:reviews.filter(r=>r.status==="pending").length, completed:reviews.filter(r=>r.status==="completed").length, avgRating:reviews.filter(r=>r.rating).length?Math.round(reviews.filter(r=>r.rating).reduce((s,r)=>s+r.rating,0)/reviews.filter(r=>r.rating).length*10)/10:0};
-  const platformColors = {google:"#4285F4",zillow:"#006AFF",yelp:"#FF1A1A",internal:"#d4af37"};
+  const platformColors = {google:"#4285F4",zillow:"#006AFF",yelp:"#FF1A1A",internal:"#ff2e88"};
 
   return (
     <div style={{flex:1,overflow:"auto",padding:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".2em",color:"#d4af37"}}>REVIEWS & TESTIMONIALS</span>
+        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".2em",color:"#ff2e88"}}>REVIEWS & TESTIMONIALS</span>
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
-        {[{l:"Total Reviews",v:stats.total,c:"#d4af37"},{l:"Pending",v:stats.pending,c:"#f59e0b"},{l:"Completed",v:stats.completed,c:"#10b981"},{l:"Avg Rating",v:stats.avgRating?"⭐ "+stats.avgRating:"—",c:"#8b5cf6"}].map((s,i)=>(
+        {[{l:"Total Reviews",v:stats.total,c:"#ff2e88"},{l:"Pending",v:stats.pending,c:"#f59e0b"},{l:"Completed",v:stats.completed,c:"#10b981"},{l:"Avg Rating",v:stats.avgRating?"⭐ "+stats.avgRating:"—",c:"#8b5cf6"}].map((s,i)=>(
           <div key={i} style={{background:"#0d0d18",border:`1px solid ${s.c}22`,borderRadius:5,padding:"10px 12px",textAlign:"center"}}>
             <div style={{fontSize:18,color:s.c,fontWeight:700}}>{s.v}</div>
             <div style={{fontSize:7,color:"#444",letterSpacing:".06em",marginTop:2}}>{s.l}</div>
@@ -6091,7 +6091,7 @@ function ReviewCollector({ user, contacts, deals, businesses, showToast }) {
                 <span style={{fontSize:10,color:"#e0dcd0"}}>{c.full_name}</span>
                 <span style={{fontSize:8,color:"#444",marginLeft:8}}>Deal: {c.deal?.title||"—"}</span>
               </div>
-              <button onClick={()=>requestReview(c)} disabled={sending===c.id} style={{fontSize:8,background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.25)",color:"#d4af37",borderRadius:3,padding:"4px 10px",cursor:sending===c.id?"wait":"pointer",fontFamily:"inherit",letterSpacing:".06em"}}>{sending===c.id?"SENDING...":"REQUEST REVIEW"}</button>
+              <button onClick={()=>requestReview(c)} disabled={sending===c.id} style={{fontSize:8,background:"rgba(255,46,136,.08)",border:"1px solid rgba(255,46,136,.25)",color:"#ff2e88",borderRadius:3,padding:"4px 10px",cursor:sending===c.id?"wait":"pointer",fontFamily:"inherit",letterSpacing:".06em"}}>{sending===c.id?"SENDING...":"REQUEST REVIEW"}</button>
             </div>
           ))}
         </div>
@@ -6107,7 +6107,7 @@ function ReviewCollector({ user, contacts, deals, businesses, showToast }) {
             <div style={{fontSize:8,color:"#444"}}>{r.review_text?r.review_text.slice(0,80)+"...":r.status==="pending"?"Awaiting response":"—"}</div>
           </div>
           <div style={{textAlign:"right"}}>
-            {r.rating&&<div style={{fontSize:11,color:"#d4af37"}}>{"⭐".repeat(r.rating)}</div>}
+            {r.rating&&<div style={{fontSize:11,color:"#ff2e88"}}>{"⭐".repeat(r.rating)}</div>}
             <div style={{display:"flex",gap:4,alignItems:"center"}}>
               {r.platform&&<span style={{fontSize:7,color:platformColors[r.platform]||"#555",background:`${platformColors[r.platform]||"#555"}15`,padding:"1px 5px",borderRadius:2}}>{r.platform}</span>}
               <span style={{fontSize:7,color:r.status==="completed"?"#10b981":"#f59e0b"}}>{r.status}</span>
@@ -6169,7 +6169,7 @@ function TelegramConfig({ user, showToast }) {
   );
 
   return (
-    <div style={{background:"#07070e",border:"1px solid #1a1a28",borderRadius:5,padding:"12px 14px",marginBottom:12}}>
+    <div style={{background:"#0a0010",border:"1px solid #1a1a28",borderRadius:5,padding:"12px 14px",marginBottom:12}}>
       <Fld label="BOT TOKEN"><Inp type="password" value={cfg.bot_token} onChange={v=>setCfg(p=>({...p,bot_token:v}))} placeholder="123456:ABC-DEF..." /></Fld>
       <Fld label="CHAT ID"><Inp value={cfg.chat_id} onChange={v=>setCfg(p=>({...p,chat_id:v}))} placeholder="Your Telegram chat ID" /></Fld>
       <div style={{fontSize:8,color:"#444",letterSpacing:".06em",marginBottom:6,marginTop:8}}>NOTIFICATION TOGGLES</div>
@@ -6179,7 +6179,7 @@ function TelegramConfig({ user, showToast }) {
       <Toggle label="💬 Messages" val={cfg.notify_messages} onChange={v=>setCfg(p=>({...p,notify_messages:v}))} />
       <Toggle label="📅 Appointments" val={cfg.notify_appointments} onChange={v=>setCfg(p=>({...p,notify_appointments:v}))} />
       <div style={{display:"flex",gap:8,marginTop:10}}>
-        <button onClick={save} disabled={saving} style={{background:saving?"#333":"#d4af37",color:"#000",border:"none",borderRadius:3,padding:"8px 18px",cursor:saving?"wait":"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:".1em"}}>{saving?"SAVING...":"SAVE CONFIG"}</button>
+        <button onClick={save} disabled={saving} style={{background:saving?"#333":"#ff2e88",color:"#000",border:"none",borderRadius:3,padding:"8px 18px",cursor:saving?"wait":"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:".1em"}}>{saving?"SAVING...":"SAVE CONFIG"}</button>
         <button onClick={test} disabled={testing} style={{background:testing?"#333":"rgba(16,185,129,.12)",color:"#10b981",border:"1px solid rgba(16,185,129,.25)",borderRadius:3,padding:"8px 18px",cursor:testing?"wait":"pointer",fontFamily:"inherit",fontSize:10,letterSpacing:".1em"}}>{testing?"SENDING...":"TEST CONNECTION"}</button>
       </div>
     </div>
@@ -6201,15 +6201,15 @@ function AuditLogPanel({ user }) {
     });
   },[filter]);
 
-  const entityColors = {deal:"#d4af37",contact:"#3b82f6",call:"#10b981",task:"#8b5cf6",invoice:"#f59e0b",appointment:"#6366f1",automation:"#f43f5e",compliance:"#00A44B"};
+  const entityColors = {deal:"#ff2e88",contact:"#3b82f6",call:"#10b981",task:"#8b5cf6",invoice:"#f59e0b",appointment:"#15e0c8",automation:"#f43f5e",compliance:"#00A44B"};
   const filters = ["all","deal","contact","call","task","invoice","appointment","automation","compliance"];
 
   return (
-    <div style={{background:"#07070e",border:"1px solid #1a1a28",borderRadius:5,padding:"12px 14px",marginBottom:12}}>
+    <div style={{background:"#0a0010",border:"1px solid #1a1a28",borderRadius:5,padding:"12px 14px",marginBottom:12}}>
       <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
         {filters.map(f=>(
           <button key={f} onClick={()=>setFilter(f)} style={{fontSize:7,padding:"3px 8px",borderRadius:2,cursor:"pointer",fontFamily:"inherit",letterSpacing:".06em",textTransform:"uppercase",
-            background:filter===f?"rgba(212,175,55,.15)":"transparent",color:filter===f?"#d4af37":"#555",border:`1px solid ${filter===f?"rgba(212,175,55,.3)":"#1e1e28"}`
+            background:filter===f?"rgba(255,46,136,.15)":"transparent",color:filter===f?"#ff2e88":"#555",border:`1px solid ${filter===f?"rgba(255,46,136,.3)":"#1e1e28"}`
           }}>{f}</button>
         ))}
       </div>
@@ -6269,14 +6269,14 @@ function AffiliatedBizManager({ showToast, isAdmin }) {
     <div style={{marginBottom:16}}>
       <div style={{borderBottom:"1px solid #1a1a28",margin:"8px 0 16px"}} />
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#d4af37"}}>AFFILIATED BUSINESSES</div>
-        {isAdmin&&<button onClick={()=>{setShowAdd(!showAdd);setEditing(null);setForm({entity_name:"",business_type:"general",license_info:"",location:"Naples, FL",owner_name:"Kenneth Wolf",ownership_pct:"100%",fee_structure:"",extra_info:""});}} style={{background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.25)",color:"#d4af37",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 10px",borderRadius:3,letterSpacing:".08em"}}>{showAdd?"CANCEL":"+ ADD BUSINESS"}</button>}
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#ff2e88"}}>AFFILIATED BUSINESSES</div>
+        {isAdmin&&<button onClick={()=>{setShowAdd(!showAdd);setEditing(null);setForm({entity_name:"",business_type:"general",license_info:"",location:"Naples, FL",owner_name:"Kenneth Wolf",ownership_pct:"100%",fee_structure:"",extra_info:""});}} style={{background:"rgba(255,46,136,.08)",border:"1px solid rgba(255,46,136,.25)",color:"#ff2e88",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 10px",borderRadius:3,letterSpacing:".08em"}}>{showAdd?"CANCEL":"+ ADD BUSINESS"}</button>}
       </div>
       <div style={{fontSize:8,color:"#444",marginBottom:10}}>These entities auto-populate the ABA Disclosure form. Add or remove businesses anytime — forms update automatically.</div>
 
       {showAdd&&(
-        <div style={{background:"#0a0a14",border:"1px solid rgba(212,175,55,.15)",borderRadius:6,padding:14,marginBottom:12}}>
-          <div style={{fontSize:9,color:"#d4af37",letterSpacing:".1em",marginBottom:8}}>{editing?"EDIT":"NEW"} AFFILIATED ENTITY</div>
+        <div style={{background:"#0a0a14",border:"1px solid rgba(255,46,136,.15)",borderRadius:6,padding:14,marginBottom:12}}>
+          <div style={{fontSize:9,color:"#ff2e88",letterSpacing:".1em",marginBottom:8}}>{editing?"EDIT":"NEW"} AFFILIATED ENTITY</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             <div><div style={{fontSize:7,color:"#555",marginBottom:2}}>ENTITY NAME *</div><input value={form.entity_name} onChange={e=>setForm(p=>({...p,entity_name:e.target.value}))} placeholder="Alda Group LLC dba Laenan" style={SS}/></div>
             <div><div style={{fontSize:7,color:"#555",marginBottom:2}}>BUSINESS TYPE</div><select value={form.business_type} onChange={e=>setForm(p=>({...p,business_type:e.target.value}))} style={SS}>{BIZ_TYPES.map(t=><option key={t.v} value={t.v}>{t.l}</option>)}</select></div>
@@ -6287,14 +6287,14 @@ function AffiliatedBizManager({ showToast, isAdmin }) {
             <div><div style={{fontSize:7,color:"#555",marginBottom:2}}>FEE STRUCTURE</div><input value={form.fee_structure} onChange={e=>setForm(p=>({...p,fee_structure:e.target.value}))} placeholder="Up to 3% of loan amount" style={SS}/></div>
             <div style={{gridColumn:"1/-1"}}><div style={{fontSize:7,color:"#555",marginBottom:2}}>EXTRA INFO (optional)</div><input value={form.extra_info} onChange={e=>setForm(p=>({...p,extra_info:e.target.value}))} placeholder="Third Party Processor Fee: Up to $2,000" style={SS}/></div>
           </div>
-          <button onClick={handleSave} disabled={saving} style={{marginTop:10,padding:"6px 20px",background:"linear-gradient(135deg,#d4af37,#8b6914)",border:"none",color:"#000",borderRadius:3,cursor:"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600}}>{saving?"SAVING...":(editing?"UPDATE":"ADD ENTITY")}</button>
+          <button onClick={handleSave} disabled={saving} style={{marginTop:10,padding:"6px 20px",background:"linear-gradient(135deg,#ff2e88,#8b6914)",border:"none",color:"#000",borderRadius:3,cursor:"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600}}>{saving?"SAVING...":(editing?"UPDATE":"ADD ENTITY")}</button>
         </div>
       )}
 
       {bizList.map((b,i)=>(
         <div key={b.id} style={{background:b.is_active?"#0d0d18":"#0a0a12",border:`1px solid ${b.is_active?"#1e1e28":"#151520"}`,borderRadius:4,padding:"8px 12px",marginBottom:4,opacity:b.is_active?1:.5,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div style={{flex:1}}>
-            <div style={{fontSize:11,color:b.is_active?"#e0dcd0":"#555"}}><span style={{color:"#d4af37",marginRight:6}}>{i+1}.</span>{b.entity_name}</div>
+            <div style={{fontSize:11,color:b.is_active?"#e0dcd0":"#555"}}><span style={{color:"#ff2e88",marginRight:6}}>{i+1}.</span>{b.entity_name}</div>
             <div style={{fontSize:8,color:"#444"}}>{b.license_info||b.business_type} · {b.location} · {b.ownership_pct} · {b.fee_structure}</div>
           </div>
           <div style={{display:"flex",gap:4}}>
@@ -6371,7 +6371,7 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
     setInvEmail(""); setInvName("");
   };
 
-  const roleColors = {super_admin:"#d4af37",admin:"#8b5cf6",moderator:"#6366f1",user:"#10b981",employee:"#3b82f6"};
+  const roleColors = {super_admin:"#ff2e88",admin:"#8b5cf6",moderator:"#15e0c8",user:"#10b981",employee:"#3b82f6"};
   const isOnline = m => m.last_seen_at && (Date.now()-new Date(m.last_seen_at).getTime()) < 120000;
 
   // Google Drive state
@@ -6391,9 +6391,9 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
     <div style={{flex:1,overflow:"auto",padding:24,maxWidth:620}}>
       {/* ── TEAM MANAGEMENT (admin only) ── */}
       {isAdmin&&(<>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#d4af37",marginBottom:4}}>TEAM</div>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#ff2e88",marginBottom:4}}>TEAM</div>
         <div style={{fontSize:8,color:"#333",letterSpacing:".1em",marginBottom:14}}>MANAGE EMPLOYEES & ACCESS</div>
-        <div style={{background:"#07070e",border:"1px solid #1a1a28",borderRadius:5,padding:"12px 14px",marginBottom:12}}>
+        <div style={{background:"#0a0010",border:"1px solid #1a1a28",borderRadius:5,padding:"12px 14px",marginBottom:12}}>
           {team.map(m=>{
             const online = isOnline(m);
             return (
@@ -6413,7 +6413,7 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
           })}
           {team.length===0&&<div style={{fontSize:9,color:"#2a2a3a",padding:8,textAlign:"center"}}>No team members yet</div>}
         </div>
-        <button onClick={()=>{setShowInvite(!showInvite);setInvResult(null);}} style={{background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.25)",color:"#d4af37",cursor:"pointer",fontFamily:"inherit",fontSize:10,padding:"6px 14px",borderRadius:3,letterSpacing:".1em",marginBottom:12}}>
+        <button onClick={()=>{setShowInvite(!showInvite);setInvResult(null);}} style={{background:"rgba(255,46,136,.08)",border:"1px solid rgba(255,46,136,.25)",color:"#ff2e88",cursor:"pointer",fontFamily:"inherit",fontSize:10,padding:"6px 14px",borderRadius:3,letterSpacing:".1em",marginBottom:12}}>
           {showInvite?"CANCEL":"+ INVITE MEMBER"}
         </button>
         {showInvite&&(
@@ -6423,20 +6423,20 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
               <Fld label="DISPLAY NAME"><Inp value={invName} onChange={v=>setInvName(v)} placeholder="Full Name" /></Fld>
             </div>
             <Fld label="ROLE">
-              <select value={invRole} onChange={e=>setInvRole(e.target.value)} style={{width:"100%",background:"#0d0d18",border:"1px solid #1e1e28",color:"#d4af37",fontFamily:"inherit",fontSize:11,padding:"8px 12px",borderRadius:3}}>
+              <select value={invRole} onChange={e=>setInvRole(e.target.value)} style={{width:"100%",background:"#0d0d18",border:"1px solid #1e1e28",color:"#ff2e88",fontFamily:"inherit",fontSize:11,padding:"8px 12px",borderRadius:3}}>
                 <option value="employee">Employee</option>
                 <option value="user">User</option>
                 <option value="moderator">Moderator</option>
                 <option value="admin">Admin</option>
               </select>
             </Fld>
-            <button onClick={handleInvite} disabled={inviting||!invEmail||!invName} style={{background:inviting?"#333":"#d4af37",color:"#000",border:"none",borderRadius:3,padding:"8px 18px",cursor:inviting?"wait":"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:".1em"}}>{inviting?"INVITING...":"SEND INVITE"}</button>
+            <button onClick={handleInvite} disabled={inviting||!invEmail||!invName} style={{background:inviting?"#333":"#ff2e88",color:"#000",border:"none",borderRadius:3,padding:"8px 18px",cursor:inviting?"wait":"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:".1em"}}>{inviting?"INVITING...":"SEND INVITE"}</button>
             {invResult?.error&&<div style={{marginTop:8,fontSize:10,color:"#ef4444",background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",padding:"6px 10px",borderRadius:3}}>{invResult.error}</div>}
             {invResult?.pass&&(
               <div style={{marginTop:8,background:"rgba(16,185,129,.06)",border:"1px solid rgba(16,185,129,.2)",borderRadius:4,padding:"10px 12px"}}>
                 <div style={{fontSize:9,color:"#10b981",marginBottom:4}}>INVITE SUCCESSFUL</div>
                 <div style={{fontSize:10,color:"#e0dcd0",marginBottom:2}}>Temporary password:</div>
-                <div style={{fontFamily:"monospace",fontSize:13,color:"#d4af37",background:"#0a0a14",padding:"6px 10px",borderRadius:3,userSelect:"all",letterSpacing:".05em"}}>{invResult.pass}</div>
+                <div style={{fontFamily:"monospace",fontSize:13,color:"#ff2e88",background:"#0a0a14",padding:"6px 10px",borderRadius:3,userSelect:"all",letterSpacing:".05em"}}>{invResult.pass}</div>
                 <div style={{fontSize:8,color:"#444",marginTop:4}}>Share this with the employee. They should change it after first login.</div>
               </div>
             )}
@@ -6446,7 +6446,7 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
       </>)}
 
       {/* ── EMAIL CONFIG ── */}
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#d4af37",marginBottom:4}}>EMAIL CONFIG</div>
+      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#ff2e88",marginBottom:4}}>EMAIL CONFIG</div>
       <div style={{fontSize:8,color:"#333",letterSpacing:".1em",marginBottom:14}}>SMTP / IMAP · YOUR MAIL ACCOUNT</div>
       <Fld label="MAIL EMAIL"><Inp value={mailCfg.email} onChange={v=>setMailCfg(p=>({...p,email:v}))} placeholder="you@domain.com" /></Fld>
       <Fld label="MAIL PASSWORD"><Inp type="password" value={mailCfg.password} onChange={v=>setMailCfg(p=>({...p,password:v}))} placeholder="mail password" /></Fld>
@@ -6457,18 +6457,18 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
         <Fld label="SMTP HOST"><Inp value={mailCfg.smtp_host} onChange={v=>setMailCfg(p=>({...p,smtp_host:v}))} /></Fld>
         <Fld label="SMTP PORT"><Inp value={mailCfg.smtp_port} onChange={v=>setMailCfg(p=>({...p,smtp_port:v}))} /></Fld>
       </div>
-      <button onClick={handleSaveMail} disabled={saving} style={{background:saving?"#333":"#d4af37",color:"#000",border:"none",borderRadius:4,cursor:saving?"wait":"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600,letterSpacing:".15em",padding:"10px 20px",marginBottom:20}}>{saving?"SAVING...":"SAVE & CONNECT"}</button>
+      <button onClick={handleSaveMail} disabled={saving} style={{background:saving?"#333":"#ff2e88",color:"#000",border:"none",borderRadius:4,cursor:saving?"wait":"pointer",fontFamily:"inherit",fontSize:11,fontWeight:600,letterSpacing:".15em",padding:"10px 20px",marginBottom:20}}>{saving?"SAVING...":"SAVE & CONNECT"}</button>
 
       {/* ── STATUS PANELS ── */}
       <div style={{borderBottom:"1px solid #1a1a28",margin:"8px 0 16px"}} />
-      <div style={{background:"#07070e",border:"1px solid #1a1a28",borderRadius:5,padding:"13px 15px",marginBottom:16}}>
+      <div style={{background:"#0a0010",border:"1px solid #1a1a28",borderRadius:5,padding:"13px 15px",marginBottom:16}}>
         <div style={{fontSize:8,color:"#10b981",letterSpacing:".1em",marginBottom:8}}>SUPABASE CONNECTED</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:4,fontSize:9,color:"#444",lineHeight:2}}>
           <span>Project</span><span style={{color:"#666"}}>sfelhasepvaoianyuvxe</span>
           <span>Tables</span><span style={{color:"#555",fontSize:8}}>businesses · contacts · crm_deals · crm_pipelines · crm_tasks · crm_activities · documents · email_intelligence · marketing_campaigns · vault_emails · vault_team</span>
         </div>
       </div>
-      <div style={{background:"#07070e",border:"1px solid rgba(139,92,246,.2)",borderRadius:5,padding:"13px 15px",marginBottom:16}}>
+      <div style={{background:"#0a0010",border:"1px solid rgba(139,92,246,.2)",borderRadius:5,padding:"13px 15px",marginBottom:16}}>
         <div style={{fontSize:8,color:"#8b5cf6",letterSpacing:".1em",marginBottom:6}}>CLAUDE AI</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:4,fontSize:9,color:"#444",lineHeight:2}}>
           <span>Model</span><span style={{color:"#666"}}>claude-sonnet-4-20250514</span>
@@ -6481,10 +6481,10 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
       {/* ── API MANAGEMENT ── */}
       <div style={{borderBottom:"1px solid #1a1a28",margin:"8px 0 16px"}} />
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#d4af37"}}>API INTEGRATIONS</div>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#ff2e88"}}>API INTEGRATIONS</div>
         <div style={{display:"flex",gap:6}}>
-          <button onClick={()=>{setShowSuggestions(!showSuggestions);setShowAddApi(false);}} style={{background:"rgba(99,102,241,.08)",border:"1px solid rgba(99,102,241,.25)",color:"#6366f1",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 10px",borderRadius:3,letterSpacing:".08em"}}>{showSuggestions?"HIDE":"MARKETPLACE"}</button>
-          {isAdmin&&<button onClick={()=>{setShowAddApi(!showAddApi);setShowSuggestions(false);}} style={{background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.25)",color:"#d4af37",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 10px",borderRadius:3,letterSpacing:".08em"}}>{showAddApi?"CANCEL":"+ CUSTOM API"}</button>}
+          <button onClick={()=>{setShowSuggestions(!showSuggestions);setShowAddApi(false);}} style={{background:"rgba(99,102,241,.08)",border:"1px solid rgba(99,102,241,.25)",color:"#15e0c8",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 10px",borderRadius:3,letterSpacing:".08em"}}>{showSuggestions?"HIDE":"MARKETPLACE"}</button>
+          {isAdmin&&<button onClick={()=>{setShowAddApi(!showAddApi);setShowSuggestions(false);}} style={{background:"rgba(255,46,136,.08)",border:"1px solid rgba(255,46,136,.25)",color:"#ff2e88",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 10px",borderRadius:3,letterSpacing:".08em"}}>{showAddApi?"CANCEL":"+ CUSTOM API"}</button>}
         </div>
       </div>
       <div style={{fontSize:8,color:"#333",letterSpacing:".1em",marginBottom:12}}>CONNECTED SERVICES & DATA SOURCES</div>
@@ -6492,7 +6492,7 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
       {/* Active APIs */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
         {apis.map(api=>{
-          const catColors = {"ai":"#8b5cf6","finance":"#d4af37","news":"#6366f1","real-estate":"#3b82f6","marketing":"#f43f5e","accounting":"#10b981","operations":"#f59e0b","credit":"#00A44B","construction":"#FF8C00","general":"#555"};
+          const catColors = {"ai":"#8b5cf6","finance":"#ff2e88","news":"#15e0c8","real-estate":"#3b82f6","marketing":"#f43f5e","accounting":"#10b981","operations":"#f59e0b","credit":"#00A44B","construction":"#FF8C00","general":"#555"};
           const c = catColors[api.category]||"#555";
           return (
             <div key={api.id} style={{background:"#0a0a14",border:`1px solid ${c}22`,borderRadius:4,padding:"9px 11px",opacity:api.enabled?1:.5}}>
@@ -6517,7 +6517,7 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
       {/* Add Custom API Form */}
       {showAddApi&&(
         <div style={{background:"#0a0a16",border:"1px solid #1e1e28",borderRadius:5,padding:14,marginBottom:16}}>
-          <div style={{fontSize:9,color:"#d4af37",letterSpacing:".1em",marginBottom:10}}>ADD CUSTOM API</div>
+          <div style={{fontSize:9,color:"#ff2e88",letterSpacing:".1em",marginBottom:10}}>ADD CUSTOM API</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}>
             <Fld label="NAME"><Inp value={newApi.name} onChange={v=>setNewApi(p=>({...p,name:v}))} placeholder="API Name" /></Fld>
             <Fld label="SLUG (unique ID)"><Inp value={newApi.slug} onChange={v=>setNewApi(p=>({...p,slug:v.toLowerCase().replace(/[^a-z0-9-]/g,"")}))} placeholder="my-api" /></Fld>
@@ -6526,7 +6526,7 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 12px"}}>
             <Fld label="BASE URL"><Inp value={newApi.base_url} onChange={v=>setNewApi(p=>({...p,base_url:v}))} placeholder="https://api.example.com/v1" /></Fld>
             <Fld label="CATEGORY">
-              <select value={newApi.category} onChange={e=>setNewApi(p=>({...p,category:e.target.value}))} style={{width:"100%",background:"#0d0d18",border:"1px solid #1e1e28",color:"#d4af37",fontFamily:"inherit",fontSize:11,padding:"8px 12px",borderRadius:3}}>
+              <select value={newApi.category} onChange={e=>setNewApi(p=>({...p,category:e.target.value}))} style={{width:"100%",background:"#0d0d18",border:"1px solid #1e1e28",color:"#ff2e88",fontFamily:"inherit",fontSize:11,padding:"8px 12px",borderRadius:3}}>
                 {["general","real-estate","finance","mortgage","credit","marketing","accounting","construction","operations","ai"].map(c=><option key={c} value={c}>{c}</option>)}
               </select>
             </Fld>
@@ -6543,18 +6543,18 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
             loadApis();
             showToast("API added");
             setShowAddApi(false);
-          }} disabled={addingApi} style={{background:addingApi?"#333":"#d4af37",color:"#000",border:"none",borderRadius:3,padding:"8px 18px",cursor:addingApi?"wait":"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:".1em"}}>{addingApi?"ADDING...":"ADD API"}</button>
+          }} disabled={addingApi} style={{background:addingApi?"#333":"#ff2e88",color:"#000",border:"none",borderRadius:3,padding:"8px 18px",cursor:addingApi?"wait":"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:".1em"}}>{addingApi?"ADDING...":"ADD API"}</button>
         </div>
       )}
 
       {/* API Marketplace / Suggestions */}
       {showSuggestions&&(
-        <div style={{background:"#07070e",border:"1px solid rgba(99,102,241,.15)",borderRadius:5,padding:14,marginBottom:16}}>
-          <div style={{fontSize:9,color:"#6366f1",letterSpacing:".1em",marginBottom:4}}>API MARKETPLACE</div>
+        <div style={{background:"#0a0010",border:"1px solid rgba(99,102,241,.15)",borderRadius:5,padding:14,marginBottom:16}}>
+          <div style={{fontSize:9,color:"#15e0c8",letterSpacing:".1em",marginBottom:4}}>API MARKETPLACE</div>
           <div style={{fontSize:8,color:"#333",marginBottom:10}}>Recommended integrations for your mortgage, real estate, credit & construction businesses</div>
           <div style={{display:"flex",gap:4,marginBottom:10,flexWrap:"wrap"}}>
             {["all","real-estate","finance","marketing","credit","accounting","construction","operations","ai"].map(c=>(
-              <button key={c} onClick={()=>setApiFilter(c)} style={{background:apiFilter===c?"rgba(99,102,241,.15)":"none",border:`1px solid ${apiFilter===c?"rgba(99,102,241,.3)":"#1a1a28"}`,color:apiFilter===c?"#6366f1":"#444",cursor:"pointer",fontFamily:"inherit",fontSize:7,padding:"2px 7px",borderRadius:2,letterSpacing:".06em",textTransform:"uppercase"}}>{c}</button>
+              <button key={c} onClick={()=>setApiFilter(c)} style={{background:apiFilter===c?"rgba(99,102,241,.15)":"none",border:`1px solid ${apiFilter===c?"rgba(99,102,241,.3)":"#1a1a28"}`,color:apiFilter===c?"#15e0c8":"#444",cursor:"pointer",fontFamily:"inherit",fontSize:7,padding:"2px 7px",borderRadius:2,letterSpacing:".06em",textTransform:"uppercase"}}>{c}</button>
             ))}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8,maxHeight:400,overflow:"auto"}}>
@@ -6567,13 +6567,13 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
                     <span style={{fontSize:7,color:"#333",textTransform:"uppercase",letterSpacing:".06em",background:"#0d0d18",padding:"1px 5px",borderRadius:2}}>{s.cat}</span>
                   </div>
                   <div style={{fontSize:8,color:"#555",lineHeight:1.5,marginBottom:3}}>{s.desc}</div>
-                  <div style={{fontSize:8,color:"#d4af37",lineHeight:1.4}}>Why: {s.why}</div>
+                  <div style={{fontSize:8,color:"#ff2e88",lineHeight:1.4}}>Why: {s.why}</div>
                 </div>
                 <button onClick={async()=>{
                   await sb("vault_apis","POST",{name:s.name,slug:s.slug,description:s.desc,category:s.cat,base_url:"",api_key:"",enabled:false,added_by:user.id});
                   loadApis();
                   showToast(`${s.name} added — configure API key to activate`);
-                }} style={{background:"rgba(99,102,241,.1)",border:"1px solid rgba(99,102,241,.25)",color:"#6366f1",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"5px 10px",borderRadius:3,letterSpacing:".06em",whiteSpace:"nowrap",flexShrink:0}}>+ ADD</button>
+                }} style={{background:"rgba(99,102,241,.1)",border:"1px solid rgba(99,102,241,.25)",color:"#15e0c8",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"5px 10px",borderRadius:3,letterSpacing:".06em",whiteSpace:"nowrap",flexShrink:0}}>+ ADD</button>
               </div>
             ))}
             {API_SUGGESTIONS.filter(s=>apiFilter==="all"||s.cat===apiFilter).filter(s=>!apis.find(a=>a.slug===s.slug)).length===0&&(
@@ -6587,7 +6587,7 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
       {isAdmin&&(<>
         <div style={{borderBottom:"1px solid #1a1a28",margin:"8px 0 16px"}} />
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#d4af37"}}>GOOGLE DRIVE</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#ff2e88"}}>GOOGLE DRIVE</div>
           <button onClick={()=>setShowAddDrive(!showAddDrive)} style={{background:"rgba(66,133,244,.08)",border:"1px solid rgba(66,133,244,.25)",color:"#4285F4",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 10px",borderRadius:3,letterSpacing:".08em"}}>{showAddDrive?"CANCEL":"+ ADD DRIVE"}</button>
         </div>
         <div style={{fontSize:8,color:"#333",letterSpacing:".1em",marginBottom:12}}>CONNECT MULTIPLE GOOGLE DRIVE ACCOUNTS · ASSIGN FOLDERS PER BUSINESS</div>
@@ -6662,14 +6662,14 @@ function SettingsView({ user, teamProfile, isAdmin, spend, showToast }) {
         {/* ── TELEGRAM BOT CONFIG ── */}
         <div style={{borderBottom:"1px solid #1a1a28",margin:"16px 0"}} />
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#d4af37"}}>TELEGRAM BOT</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#ff2e88"}}>TELEGRAM BOT</div>
         </div>
         <div style={{fontSize:8,color:"#333",letterSpacing:".1em",marginBottom:12}}>BIDIRECTIONAL NOTIFICATIONS · REPLY FROM TELEGRAM</div>
         <TelegramConfig user={user} showToast={showToast} />
 
         {/* ── AUDIT LOG ── */}
         <div style={{borderBottom:"1px solid #1a1a28",margin:"16px 0"}} />
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#d4af37",marginBottom:4}}>AUDIT LOG</div>
+        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#ff2e88",marginBottom:4}}>AUDIT LOG</div>
         <div style={{fontSize:8,color:"#333",letterSpacing:".1em",marginBottom:12}}>ALL ACTIONS ACROSS THE PLATFORM</div>
         <AuditLogPanel user={user} />
       </>)}
@@ -6740,7 +6740,7 @@ function MessagesView({ user, teamProfile, isAdmin, showToast }) {
       {/* Sidebar - conversations (admin sees all employees, employee sees only Ken) */}
       <div style={{width:240,borderRight:"1px solid #0e0e18",display:"flex",flexDirection:"column",flexShrink:0}}>
         <div style={{padding:"12px 14px",borderBottom:"1px solid #0e0e18"}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:".15em",color:"#d4af37"}}>MESSAGES</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:".15em",color:"#ff2e88"}}>MESSAGES</div>
           <div style={{fontSize:8,color:"#333",letterSpacing:".08em"}}>{isAdmin?"ALL TEAM CONVERSATIONS":"CONTACT ADMIN"}</div>
         </div>
         <div style={{flex:1,overflow:"auto"}}>
@@ -6748,7 +6748,7 @@ function MessagesView({ user, teamProfile, isAdmin, showToast }) {
             const m = team.find(t=>t.user_id===c.userId);
             const online = m && isOnline(m);
             return (
-              <div key={c.userId} onClick={()=>setChatWith(c.userId)} className="rh" style={{padding:"10px 14px",cursor:"pointer",borderBottom:"1px solid #0a0a14",background:chatWith===c.userId?"rgba(212,175,55,.06)":"none",borderLeft:chatWith===c.userId?"2px solid #d4af37":"2px solid transparent"}}>
+              <div key={c.userId} onClick={()=>setChatWith(c.userId)} className="rh" style={{padding:"10px 14px",cursor:"pointer",borderBottom:"1px solid #0a0a14",background:chatWith===c.userId?"rgba(255,46,136,.06)":"none",borderLeft:chatWith===c.userId?"2px solid #ff2e88":"2px solid transparent"}}>
                 <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
                   <span style={{width:6,height:6,borderRadius:"50%",background:online?"#10b981":"#333",flexShrink:0}} />
                   <span style={{fontSize:10,color:"#e0dcd0"}}>{memberName(c.userId)}</span>
@@ -6758,10 +6758,10 @@ function MessagesView({ user, teamProfile, isAdmin, showToast }) {
               </div>
             );
           }) : (
-            <div onClick={()=>setChatWith(KEN_ID)} className="rh" style={{padding:"10px 14px",cursor:"pointer",background:"rgba(212,175,55,.06)",borderLeft:"2px solid #d4af37"}}>
+            <div onClick={()=>setChatWith(KEN_ID)} className="rh" style={{padding:"10px 14px",cursor:"pointer",background:"rgba(255,46,136,.06)",borderLeft:"2px solid #ff2e88"}}>
               <div style={{display:"flex",alignItems:"center",gap:6}}>
                 <span style={{width:6,height:6,borderRadius:"50%",background:team.find(t=>t.user_id===KEN_ID&&isOnline(t))?"#10b981":"#333"}} />
-                <span style={{fontSize:10,color:"#d4af37"}}>Admin (Ken)</span>
+                <span style={{fontSize:10,color:"#ff2e88"}}>Admin (Ken)</span>
               </div>
             </div>
           )}
@@ -6777,7 +6777,7 @@ function MessagesView({ user, teamProfile, isAdmin, showToast }) {
           </div>
         ) : (<>
           <div style={{padding:"10px 16px",borderBottom:"1px solid #0e0e18",background:"#0b0b14",flexShrink:0}}>
-            <span style={{fontSize:11,color:"#d4af37"}}>{memberName(chatWith)}</span>
+            <span style={{fontSize:11,color:"#ff2e88"}}>{memberName(chatWith)}</span>
             <span style={{fontSize:8,color:team.find(t=>t.user_id===chatWith&&isOnline(t))?"#10b981":"#444",marginLeft:8}}>{team.find(t=>t.user_id===chatWith&&isOnline(t))?"online":"offline"}</span>
           </div>
           <div style={{flex:1,overflow:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:6}}>
@@ -6785,7 +6785,7 @@ function MessagesView({ user, teamProfile, isAdmin, showToast }) {
               const mine = m.from_id===user.id;
               return (
                 <div key={m.id} style={{alignSelf:mine?"flex-end":"flex-start",maxWidth:"70%"}}>
-                  <div style={{background:mine?"rgba(212,175,55,.12)":"rgba(255,255,255,.03)",border:`1px solid ${mine?"rgba(212,175,55,.2)":"#1a1a28"}`,borderRadius:8,padding:"8px 12px",fontSize:10,color:"#e0dcd0",lineHeight:1.5}}>{m.body}</div>
+                  <div style={{background:mine?"rgba(255,46,136,.12)":"rgba(255,255,255,.03)",border:`1px solid ${mine?"rgba(255,46,136,.2)":"#1a1a28"}`,borderRadius:8,padding:"8px 12px",fontSize:10,color:"#e0dcd0",lineHeight:1.5}}>{m.body}</div>
                   <div style={{fontSize:7,color:"#333",marginTop:2,textAlign:mine?"right":"left"}}>{new Date(m.created_at).toLocaleString()}</div>
                 </div>
               );
@@ -6794,7 +6794,7 @@ function MessagesView({ user, teamProfile, isAdmin, showToast }) {
           </div>
           <div style={{padding:"10px 16px",borderTop:"1px solid #0e0e18",display:"flex",gap:8,flexShrink:0}}>
             <input value={body} onChange={e=>setBody(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}} placeholder="Type a message..." style={{flex:1,background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:4,color:"#e0dcd0",fontFamily:"inherit",fontSize:10,padding:"8px 12px",outline:"none"}} />
-            <button onClick={send} disabled={sending||!body.trim()} style={{background:"linear-gradient(135deg,#d4af37,#8b6914)",border:"none",color:"#000",borderRadius:4,padding:"0 16px",cursor:sending?"wait":"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:".08em"}}>SEND</button>
+            <button onClick={send} disabled={sending||!body.trim()} style={{background:"linear-gradient(135deg,#ff2e88,#8b6914)",border:"none",color:"#000",borderRadius:4,padding:"0 16px",cursor:sending?"wait":"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:".08em"}}>SEND</button>
           </div>
         </>)}
       </div>
@@ -7019,8 +7019,8 @@ function SMSView({ user, contacts, showToast }) {
   // ─── RENDER ────────────────────────────────────────────────────────────────────
   const panelStyle = { background: "#0a0a12", border: "1px solid #1e1e2e", borderRadius: 8, display: "flex", flexDirection: "column" };
   const surfaceStyle = { background: "#12121e", borderRadius: 6, border: "1px solid #1e1e2e" };
-  const goldBtn = { background: "#d4af37", color: "#0a0a12", border: "none", borderRadius: 6, padding: "6px 16px", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 600, cursor: "pointer" };
-  const ghostBtn = { background: "transparent", color: "#d4af37", border: "1px solid #d4af37", borderRadius: 6, padding: "5px 12px", fontFamily: "'DM Mono',monospace", fontSize: 12, cursor: "pointer" };
+  const goldBtn = { background: "#ff2e88", color: "#0a0a12", border: "none", borderRadius: 6, padding: "6px 16px", fontFamily: "'DM Mono',monospace", fontSize: 13, fontWeight: 600, cursor: "pointer" };
+  const ghostBtn = { background: "transparent", color: "#ff2e88", border: "1px solid #ff2e88", borderRadius: 6, padding: "5px 12px", fontFamily: "'DM Mono',monospace", fontSize: 12, cursor: "pointer" };
   const inputStyle = { background: "#12121e", border: "1px solid #1e1e2e", borderRadius: 6, color: "#e0dcd0", padding: "8px 10px", fontFamily: "'DM Mono',monospace", fontSize: 13, width: "100%", outline: "none" };
 
   return (
@@ -7051,11 +7051,11 @@ function SMSView({ user, contacts, showToast }) {
             const line = getLine(c.line_id);
             const isSel = selConvo && selConvo.phone === c.phone && selConvo.line_id === c.line_id;
             return (
-              <div key={i} onClick={() => setSelConvo(c)} style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #1e1e2e", borderLeft: isSel ? "3px solid #d4af37" : "3px solid transparent", background: isSel ? "rgba(212,175,55,0.08)" : "transparent" }}>
+              <div key={i} onClick={() => setSelConvo(c)} style={{ padding: "8px 10px", cursor: "pointer", borderBottom: "1px solid #1e1e2e", borderLeft: isSel ? "3px solid #ff2e88" : "3px solid transparent", background: isSel ? "rgba(255,46,136,0.08)" : "transparent" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: isSel ? "#d4af37" : "#e0dcd0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>{c.contactName || c.phone}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: isSel ? "#ff2e88" : "#e0dcd0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 140 }}>{c.contactName || c.phone}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    {c.unread > 0 && <span style={{ background: "#d4af37", color: "#0a0a12", fontSize: 10, fontWeight: 700, borderRadius: 10, padding: "1px 6px", minWidth: 18, textAlign: "center" }}>{c.unread}</span>}
+                    {c.unread > 0 && <span style={{ background: "#ff2e88", color: "#0a0a12", fontSize: 10, fontWeight: 700, borderRadius: 10, padding: "1px 6px", minWidth: 18, textAlign: "center" }}>{c.unread}</span>}
                     <span style={{ fontSize: 10 }}>{line?.type === "twilio" ? "🔵" : "📱"}</span>
                   </div>
                 </div>
@@ -7085,7 +7085,7 @@ function SMSView({ user, contacts, showToast }) {
             {/* Thread header */}
             <div style={{ padding: "10px 14px", borderBottom: "1px solid #1e1e2e", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#d4af37" }}>{selConvo.contactName || selConvo.phone}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "#ff2e88" }}>{selConvo.contactName || selConvo.phone}</div>
                 <div style={{ fontSize: 11, color: "#888" }}>
                   {selConvo.phone}{convoLine ? ` · via ${convoLine.label}` : ""}
                   <span style={{ marginLeft: 6 }}>{convoLine?.type === "twilio" ? "🔵 Twilio" : "📱 Android"}</span>
@@ -7101,7 +7101,7 @@ function SMSView({ user, contacts, showToast }) {
                 const out = m.direction === "outbound";
                 return (
                   <div key={m.id} style={{ display: "flex", justifyContent: out ? "flex-end" : "flex-start" }}>
-                    <div style={{ maxWidth: "65%", padding: "8px 12px", borderRadius: 10, background: out ? "rgba(212,175,55,0.08)" : "#12121e", border: out ? "1px solid rgba(212,175,55,0.15)" : "1px solid #1e1e2e" }}>
+                    <div style={{ maxWidth: "65%", padding: "8px 12px", borderRadius: 10, background: out ? "rgba(255,46,136,0.08)" : "#12121e", border: out ? "1px solid rgba(255,46,136,0.15)" : "1px solid #1e1e2e" }}>
                       <div style={{ fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{m.body}</div>
                       {m.media_urls && (() => {
                         try {
@@ -7140,7 +7140,7 @@ function SMSView({ user, contacts, showToast }) {
           <div style={{ padding: 12, borderBottom: "1px solid #1e1e2e" }}>
             <div style={{ fontSize: 10, color: "#888", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Contact Info</div>
             <div style={{ fontSize: 16, textAlign: "center", marginBottom: 6 }}>
-              <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(212,175,55,0.12)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px", fontSize: 20, color: "#d4af37" }}>{(selConvo.contactName || selConvo.phone || "?")[0].toUpperCase()}</div>
+              <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(255,46,136,0.12)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px", fontSize: 20, color: "#ff2e88" }}>{(selConvo.contactName || selConvo.phone || "?")[0].toUpperCase()}</div>
               <div style={{ fontSize: 14, fontWeight: 600 }}>{selConvo.contactName || "Unknown"}</div>
               <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{selConvo.phone}</div>
             </div>
@@ -7202,7 +7202,7 @@ function SMSView({ user, contacts, showToast }) {
             {/* Tabs */}
             <div style={{ display: "flex", borderBottom: "1px solid #1e1e2e" }}>
               {["twilio", "android"].map(t => (
-                <button key={t} onClick={() => setAddLineTab(t)} style={{ flex: 1, padding: "10px 0", background: addLineTab === t ? "rgba(212,175,55,0.08)" : "transparent", border: "none", borderBottom: addLineTab === t ? "2px solid #d4af37" : "2px solid transparent", color: addLineTab === t ? "#d4af37" : "#888", fontFamily: "'DM Mono',monospace", fontSize: 12, cursor: "pointer" }}>
+                <button key={t} onClick={() => setAddLineTab(t)} style={{ flex: 1, padding: "10px 0", background: addLineTab === t ? "rgba(255,46,136,0.08)" : "transparent", border: "none", borderBottom: addLineTab === t ? "2px solid #ff2e88" : "2px solid transparent", color: addLineTab === t ? "#ff2e88" : "#888", fontFamily: "'DM Mono',monospace", fontSize: 12, cursor: "pointer" }}>
                   {t === "twilio" ? "🔵 Twilio" : "📱 Android Gateway"}
                 </button>
               ))}
@@ -7231,7 +7231,7 @@ function SMSView({ user, contacts, showToast }) {
 
                   <div style={{ marginTop: 12, fontSize: 11, color: "#555", background: "#0a0a12", padding: 10, borderRadius: 6, wordBreak: "break-all" }}>
                     <div style={{ marginBottom: 4 }}>Configure webhook URL in Twilio console:</div>
-                    <code style={{ color: "#d4af37" }}>{WEBHOOK_BASE}?source=twilio</code>
+                    <code style={{ color: "#ff2e88" }}>{WEBHOOK_BASE}?source=twilio</code>
                   </div>
                 </div>
               ) : (
@@ -7243,7 +7243,7 @@ function SMSView({ user, contacts, showToast }) {
                   {generatedToken && (
                     <div style={{ marginTop: 14 }}>
                       <div style={{ ...surfaceStyle, padding: 12, fontSize: 12 }}>
-                        <div style={{ color: "#d4af37", fontWeight: 600, marginBottom: 8 }}>Device Added Successfully!</div>
+                        <div style={{ color: "#ff2e88", fontWeight: 600, marginBottom: 8 }}>Device Added Successfully!</div>
                         <div style={{ marginBottom: 8 }}>
                           <div style={{ color: "#888", fontSize: 10, textTransform: "uppercase", marginBottom: 4 }}>API Token</div>
                           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -7287,7 +7287,7 @@ function SMSView({ user, contacts, showToast }) {
               {contactSuggestions.length > 0 && (
                 <div style={{ ...surfaceStyle, maxHeight: 160, overflowY: "auto", marginBottom: 8 }}>
                   {contactSuggestions.map(c => (
-                    <div key={c.id} onClick={() => setNewPhone(c.phone || c.mobile || "")} style={{ padding: "6px 10px", cursor: "pointer", fontSize: 12, borderBottom: "1px solid #1e1e2e" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(212,175,55,0.08)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <div key={c.id} onClick={() => setNewPhone(c.phone || c.mobile || "")} style={{ padding: "6px 10px", cursor: "pointer", fontSize: 12, borderBottom: "1px solid #1e1e2e" }} onMouseEnter={e => e.currentTarget.style.background = "rgba(255,46,136,0.08)"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       <span>{c.first_name} {c.last_name}</span>
                       <span style={{ color: "#888", marginLeft: 8 }}>{c.phone || c.mobile || ""}</span>
                     </div>
@@ -7587,10 +7587,10 @@ function WAPersonalView({ user, contacts, showToast }) {
   const sPanel = {width:220,borderRight:"1px solid #1e1e2e",display:"flex",flexDirection:"column",background:"#0a0a12",flexShrink:0};
   const sCenter = {flex:1,display:"flex",flexDirection:"column",background:"#0a0a12",minWidth:0};
   const sRight = {width:280,borderLeft:"1px solid #1e1e2e",display:"flex",flexDirection:"column",background:"#0a0a12",flexShrink:0,overflow:"auto"};
-  const sBubbleOut = {maxWidth:"65%",background:"rgba(212,175,55,0.10)",border:"1px solid rgba(212,175,55,0.15)",borderRadius:"8px 8px 2px 8px",padding:"8px 12px",marginLeft:"auto",marginBottom:4};
+  const sBubbleOut = {maxWidth:"65%",background:"rgba(255,46,136,0.10)",border:"1px solid rgba(255,46,136,0.15)",borderRadius:"8px 8px 2px 8px",padding:"8px 12px",marginLeft:"auto",marginBottom:4};
   const sBubbleIn = {maxWidth:"65%",background:"#12121e",border:"1px solid #1e1e2e",borderRadius:"8px 8px 8px 2px",padding:"8px 12px",marginRight:"auto",marginBottom:4};
   const sInput = {background:"#0d0d18",border:"1px solid #1e1e2e",borderRadius:6,color:"#e0dcd0",fontFamily:"inherit",fontSize:10,padding:"8px 12px",outline:"none",width:"100%"};
-  const sBtn = {background:"linear-gradient(135deg,#d4af37,#8b6914)",border:"none",color:"#000",borderRadius:4,padding:"6px 14px",cursor:"pointer",fontFamily:"inherit",fontSize:9,fontWeight:600,letterSpacing:".08em"};
+  const sBtn = {background:"linear-gradient(135deg,#ff2e88,#8b6914)",border:"none",color:"#000",borderRadius:4,padding:"6px 14px",cursor:"pointer",fontFamily:"inherit",fontSize:9,fontWeight:600,letterSpacing:".08em"};
   const sBtnGhost = {background:"none",border:"1px solid #1e1e2e",color:"#888",borderRadius:4,padding:"4px 10px",cursor:"pointer",fontFamily:"inherit",fontSize:9};
   const sModal = {position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999};
   const sModalBox = {background:"#12121e",border:"1px solid #1e1e2e",borderRadius:8,padding:24,minWidth:340,maxWidth:420};
@@ -7631,13 +7631,13 @@ function WAPersonalView({ user, contacts, showToast }) {
             const crm = getCrmContact(chat);
             return (
               <div key={jid} onClick={()=>setSelChat(chat)}
-                style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",cursor:"pointer",borderLeft:active?"2px solid #d4af37":"2px solid transparent",
-                  background:active?"rgba(212,175,55,0.08)":"transparent",transition:"background .15s"}}>
+                style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",cursor:"pointer",borderLeft:active?"2px solid #ff2e88":"2px solid transparent",
+                  background:active?"rgba(255,46,136,0.08)":"transparent",transition:"background .15s"}}>
                 {/* Avatar */}
                 {chat.profile_pic ? (
                   <img src={chat.profile_pic} alt="" style={{width:32,height:32,borderRadius:"50%",objectFit:"cover",flexShrink:0}} />
                 ) : (
-                  <div style={{width:32,height:32,borderRadius:"50%",background:"#1a1a2e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#d4af37",fontWeight:600,flexShrink:0}}>{chatInitials(chat.name)}</div>
+                  <div style={{width:32,height:32,borderRadius:"50%",background:"#1a1a2e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#ff2e88",fontWeight:600,flexShrink:0}}>{chatInitials(chat.name)}</div>
                 )}
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -7646,7 +7646,7 @@ function WAPersonalView({ user, contacts, showToast }) {
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:4}}>
                     <span style={{fontSize:8,color:"#555",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1}}>{chat.last_message||""}</span>
-                    {(chat.unread_count||0)>0 && <span style={{background:"#d4af37",color:"#000",fontSize:7,fontWeight:700,borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{chat.unread_count}</span>}
+                    {(chat.unread_count||0)>0 && <span style={{background:"#ff2e88",color:"#000",fontSize:7,fontWeight:700,borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{chat.unread_count}</span>}
                     {crm && <span style={{width:5,height:5,borderRadius:"50%",background:"#25d366",flexShrink:0}} title="Linked to CRM"/>}
                   </div>
                 </div>
@@ -7671,7 +7671,7 @@ function WAPersonalView({ user, contacts, showToast }) {
                 {selChat.profile_pic ? (
                   <img src={selChat.profile_pic} alt="" style={{width:28,height:28,borderRadius:"50%",objectFit:"cover"}} />
                 ) : (
-                  <div style={{width:28,height:28,borderRadius:"50%",background:"#1a1a2e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#d4af37",fontWeight:600}}>{chatInitials(selChat.name)}</div>
+                  <div style={{width:28,height:28,borderRadius:"50%",background:"#1a1a2e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#ff2e88",fontWeight:600}}>{chatInitials(selChat.name)}</div>
                 )}
                 <div>
                   <div style={{fontSize:11,fontWeight:600,color:"#e0dcd0"}}>{selChat.name||(selChat.jid||selChat.id).split("@")[0]}</div>
@@ -7693,10 +7693,10 @@ function WAPersonalView({ user, contacts, showToast }) {
                 return (
                   <div key={msg.id||i} style={{display:"flex",flexDirection:"column",alignItems:isOut?"flex-end":"flex-start"}}>
                     {/* Group sender */}
-                    {!isOut && msg.sender_name && <div style={{fontSize:7,color:"#d4af37",marginBottom:1,marginLeft:4}}>{msg.sender_name}</div>}
+                    {!isOut && msg.sender_name && <div style={{fontSize:7,color:"#ff2e88",marginBottom:1,marginLeft:4}}>{msg.sender_name}</div>}
                     {/* Quoted / reply */}
                     {msg.quoted_body && (
-                      <div style={{fontSize:7,color:"#666",background:"rgba(255,255,255,0.03)",borderLeft:"2px solid #d4af37",padding:"2px 8px",borderRadius:3,marginBottom:2,maxWidth:"60%"}}>
+                      <div style={{fontSize:7,color:"#666",background:"rgba(255,255,255,0.03)",borderLeft:"2px solid #ff2e88",padding:"2px 8px",borderRadius:3,marginBottom:2,maxWidth:"60%"}}>
                         {msg.quoted_body.slice(0,80)}{msg.quoted_body.length>80?"...":""}
                       </div>
                     )}
@@ -7707,7 +7707,7 @@ function WAPersonalView({ user, contacts, showToast }) {
                           style={{maxWidth:"100%",maxHeight:200,borderRadius:4,cursor:"pointer",marginBottom:msg.body?4:0}} />
                       )}
                       {msg.body && <div style={{fontSize:10,color:"#e0dcd0",lineHeight:1.5,wordBreak:"break-word"}}>{msg.body}</div>}
-                      <div style={{fontSize:7,color:isOut?"rgba(212,175,55,0.5)":"#444",textAlign:"right",marginTop:2}}>
+                      <div style={{fontSize:7,color:isOut?"rgba(255,46,136,0.5)":"#444",textAlign:"right",marginTop:2}}>
                         {formatTime(msg.timestamp||msg.created_at)}
                         {isOut && msg.status==="sending" && " ⏳"}
                         {isOut && msg.status==="sent" && " ✓"}
@@ -7752,7 +7752,7 @@ function WAPersonalView({ user, contacts, showToast }) {
             {selChat.profile_pic ? (
               <img src={selChat.profile_pic} alt="" style={{width:72,height:72,borderRadius:"50%",objectFit:"cover",margin:"0 auto 10px"}} />
             ) : (
-              <div style={{width:72,height:72,borderRadius:"50%",background:"#1a1a2e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,color:"#d4af37",fontWeight:600,margin:"0 auto 10px"}}>{chatInitials(selChat.name)}</div>
+              <div style={{width:72,height:72,borderRadius:"50%",background:"#1a1a2e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,color:"#ff2e88",fontWeight:600,margin:"0 auto 10px"}}>{chatInitials(selChat.name)}</div>
             )}
             <div style={{fontSize:12,fontWeight:600,color:"#e0dcd0"}}>{selChat.name||"Unknown"}</div>
             <div style={{fontSize:9,color:"#555",marginTop:2}}>{selChat.phone||(selChat.jid||selChat.id).split("@")[0]}</div>
@@ -7760,8 +7760,8 @@ function WAPersonalView({ user, contacts, showToast }) {
           {/* CRM link info */}
           <div style={{padding:16}}>
             {currentCrm ? (
-              <div style={{background:"rgba(212,175,55,0.05)",border:"1px solid rgba(212,175,55,0.12)",borderRadius:6,padding:12}}>
-                <div style={{fontSize:8,color:"#d4af37",letterSpacing:".08em",marginBottom:6}}>CRM CONTACT</div>
+              <div style={{background:"rgba(255,46,136,0.05)",border:"1px solid rgba(255,46,136,0.12)",borderRadius:6,padding:12}}>
+                <div style={{fontSize:8,color:"#ff2e88",letterSpacing:".08em",marginBottom:6}}>CRM CONTACT</div>
                 <div style={{fontSize:11,fontWeight:600,color:"#e0dcd0"}}>{currentCrm.full_name}</div>
                 {currentCrm.email && <div style={{fontSize:9,color:"#888",marginTop:2}}>{currentCrm.email}</div>}
                 {currentCrm.phone && <div style={{fontSize:9,color:"#888",marginTop:2}}>{currentCrm.phone}</div>}
@@ -7837,7 +7837,7 @@ function WAPersonalView({ user, contacts, showToast }) {
                 <div key={c.id} onClick={()=>linkContact(c.id)}
                   style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",cursor:"pointer",borderRadius:4,transition:"background .15s",
                     background:"transparent"}} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.03)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                  <div style={{width:28,height:28,borderRadius:"50%",background:"#1a1a2e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#d4af37",fontWeight:600}}>{chatInitials(c.full_name)}</div>
+                  <div style={{width:28,height:28,borderRadius:"50%",background:"#1a1a2e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:"#ff2e88",fontWeight:600}}>{chatInitials(c.full_name)}</div>
                   <div>
                     <div style={{fontSize:10,fontWeight:600,color:"#e0dcd0"}}>{c.full_name}</div>
                     <div style={{fontSize:8,color:"#555"}}>{c.email||""} {c.phone?"· "+c.phone:""}</div>
@@ -7875,7 +7875,7 @@ function UnifiedInboxView({ user, contacts, showToast }) {
   const endRef = useRef(null);
 
   const CHANNELS = [
-    {id:"all",label:"ALL",icon:"📨",color:"#d4af37"},
+    {id:"all",label:"ALL",icon:"📨",color:"#ff2e88"},
     {id:"telegram",label:"TELEGRAM",icon:"✈",color:"#0088cc"},
     {id:"whatsapp",label:"WHATSAPP",icon:"◉",color:"#25d366"},
     {id:"messenger",label:"MESSENGER",icon:"◎",color:"#0084ff"},
@@ -7957,7 +7957,7 @@ function UnifiedInboxView({ user, contacts, showToast }) {
       {/* Left: Conversation list */}
       <div style={{width:300,borderRight:"1px solid #0e0e18",display:"flex",flexDirection:"column",flexShrink:0,background:"#0b0b13"}}>
         <div style={{padding:"10px 12px",borderBottom:"1px solid #0e0e18"}}>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:".15em",color:"#d4af37",marginBottom:6}}>UNIFIED INBOX</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:16,letterSpacing:".15em",color:"#ff2e88",marginBottom:6}}>UNIFIED INBOX</div>
           <input value={convoSearch} onChange={e=>setConvoSearch(e.target.value)} placeholder="Search conversations..." style={{width:"100%",background:"#0e0e1a",border:"1px solid #1a1a28",color:"#e0dcd0",fontFamily:"inherit",fontSize:10,padding:"5px 10px",borderRadius:3,marginBottom:6}}/>
           <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
             {CHANNELS.map(ch=>(
@@ -7966,7 +7966,7 @@ function UnifiedInboxView({ user, contacts, showToast }) {
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto"}}>
-          {loading&&<div style={{padding:20,textAlign:"center"}}><div className="pulse" style={{fontSize:10,color:"#d4af37"}}>Loading conversations...</div></div>}
+          {loading&&<div style={{padding:20,textAlign:"center"}}><div className="pulse" style={{fontSize:10,color:"#ff2e88"}}>Loading conversations...</div></div>}
           {!loading&&filteredConvos.length===0&&<div style={{padding:30,textAlign:"center",color:"#1e1e2e",fontSize:10}}>No conversations found</div>}
           {filteredConvos.map(c=>(
             <div key={c.contact_id} onClick={()=>selectConvo(c)} className={`rh${selConvo?.contact_id===c.contact_id?" sel":""}`} style={{padding:"10px 12px",borderBottom:"1px solid #0a0a14",cursor:"pointer",borderLeft:"2px solid transparent"}}>
@@ -8013,7 +8013,7 @@ function UnifiedInboxView({ user, contacts, showToast }) {
           <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:6}}>
             {chatMessages.map(m=>(
               <div key={m.id} style={{display:"flex",justifyContent:m.direction==="outbound"?"flex-end":"flex-start"}}>
-                <div style={{maxWidth:"70%",padding:"8px 12px",borderRadius:m.direction==="outbound"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.direction==="outbound"?"rgba(212,175,55,.12)":"#0d0d18",border:`1px solid ${m.direction==="outbound"?"rgba(212,175,55,.25)":"#1e1e28"}`}}>
+                <div style={{maxWidth:"70%",padding:"8px 12px",borderRadius:m.direction==="outbound"?"12px 12px 2px 12px":"12px 12px 12px 2px",background:m.direction==="outbound"?"rgba(255,46,136,.12)":"#0d0d18",border:`1px solid ${m.direction==="outbound"?"rgba(255,46,136,.25)":"#1e1e28"}`}}>
                   <div style={{fontSize:10,color:"#d4d0c8",lineHeight:1.6,wordBreak:"break-word"}}>{m.content}</div>
                   <div style={{fontSize:7,color:"#333",marginTop:4,textAlign:m.direction==="outbound"?"right":"left"}}>
                     {channelIcon(m.channel||selConvo.channel)} {new Date(m.created_at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}
@@ -8027,7 +8027,7 @@ function UnifiedInboxView({ user, contacts, showToast }) {
           <div style={{padding:"10px 16px",borderTop:"1px solid #0e0e18",display:"flex",gap:8,flexShrink:0,alignItems:"center"}}>
             <span style={{fontSize:10,color:channelColor(selConvo.channel),flexShrink:0}}>{channelIcon(selConvo.channel)}</span>
             <input value={replyBody} onChange={e=>setReplyBody(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendReply();}}} placeholder={`Reply via ${selConvo.channel}...`} style={{flex:1,background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:4,color:"#e0dcd0",fontFamily:"inherit",fontSize:10,padding:"8px 12px",outline:"none"}}/>
-            <button onClick={sendReply} disabled={sending||!replyBody.trim()} style={{background:"linear-gradient(135deg,#d4af37,#8b6914)",border:"none",color:"#000",borderRadius:4,padding:"0 16px",height:32,cursor:sending?"wait":"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:".08em"}}>SEND</button>
+            <button onClick={sendReply} disabled={sending||!replyBody.trim()} style={{background:"linear-gradient(135deg,#ff2e88,#8b6914)",border:"none",color:"#000",borderRadius:4,padding:"0 16px",height:32,cursor:sending?"wait":"pointer",fontFamily:"inherit",fontSize:10,fontWeight:600,letterSpacing:".08em"}}>SEND</button>
           </div>
         </>)}
       </div>
@@ -8105,7 +8105,7 @@ function WhatsAppManagerView({ user, contacts, showToast }) {
   };
 
   const STAT_CARDS = [
-    {label:"SENT TODAY",value:stats.sent,icon:"📤",color:"#d4af37"},
+    {label:"SENT TODAY",value:stats.sent,icon:"📤",color:"#ff2e88"},
     {label:"DELIVERED",value:stats.delivered,icon:"✓",color:"#10b981"},
     {label:"READ",value:stats.read,icon:"👁",color:"#3b82f6"},
     {label:"FAILED",value:stats.failed,icon:"✕",color:"#ef4444"},
@@ -8354,14 +8354,14 @@ function AppointmentsView({ user, contacts, businesses, showToast }) {
       )}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#d4af37"}}>APPOINTMENTS</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#ff2e88"}}>APPOINTMENTS</div>
           <div style={{fontSize:9,color:"#444"}}>{appts.filter(a=>new Date(a.start_at).toDateString()===now.toDateString()).length} TODAY · {appts.filter(a=>new Date(a.start_at)>=now&&a.status==="scheduled").length} UPCOMING</div>
         </div>
         <Btn onClick={()=>setShowNew(true)} variant="gold">+ NEW APPOINTMENT</Btn>
       </div>
       <div style={{display:"flex",gap:6,marginBottom:14}}>
         {["all","upcoming","today","past","cancelled"].map(f=>(
-          <button key={f} onClick={()=>setFilter(f)} style={{background:filter===f?"rgba(212,175,55,.1)":"none",border:`1px solid ${filter===f?"rgba(212,175,55,.4)":"#1a1a28"}`,color:filter===f?"#d4af37":"#555",fontFamily:"inherit",fontSize:9,padding:"4px 12px",borderRadius:3,cursor:"pointer",textTransform:"uppercase"}}>{f}</button>
+          <button key={f} onClick={()=>setFilter(f)} style={{background:filter===f?"rgba(255,46,136,.1)":"none",border:`1px solid ${filter===f?"rgba(255,46,136,.4)":"#1a1a28"}`,color:filter===f?"#ff2e88":"#555",fontFamily:"inherit",fontSize:9,padding:"4px 12px",borderRadius:3,cursor:"pointer",textTransform:"uppercase"}}>{f}</button>
         ))}
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -8370,9 +8370,9 @@ function AppointmentsView({ user, contacts, businesses, showToast }) {
           const isPast = new Date(a.start_at)<now;
           const isToday = new Date(a.start_at).toDateString()===now.toDateString();
           return (
-            <div key={a.id} style={{background:"#0d0d18",border:`1px solid ${isToday?"rgba(212,175,55,.2)":"#1e1e28"}`,borderRadius:6,padding:"12px 16px",display:"flex",gap:14,alignItems:"center",opacity:a.status==="cancelled"?.4:1}}>
+            <div key={a.id} style={{background:"#0d0d18",border:`1px solid ${isToday?"rgba(255,46,136,.2)":"#1e1e28"}`,borderRadius:6,padding:"12px 16px",display:"flex",gap:14,alignItems:"center",opacity:a.status==="cancelled"?.4:1}}>
               <div style={{width:48,textAlign:"center",flexShrink:0}}>
-                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:isToday?"#d4af37":"#555"}}>{new Date(a.start_at).getDate()}</div>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:isToday?"#ff2e88":"#555"}}>{new Date(a.start_at).getDate()}</div>
                 <div style={{fontSize:7,color:"#444",textTransform:"uppercase"}}>{new Date(a.start_at).toLocaleDateString("en",{month:"short"})}</div>
               </div>
               <div style={{flex:1,minWidth:0}}>
@@ -8458,13 +8458,13 @@ function InvoicesView({ user, contacts, businesses, showToast }) {
       )}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#d4af37"}}>INVOICES</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#ff2e88"}}>INVOICES</div>
           <div style={{fontSize:9,color:"#444"}}>${totalRev.toLocaleString()} COLLECTED · ${totalPending.toLocaleString()} PENDING</div>
         </div>
         <Btn onClick={()=>setShowNew(true)} variant="gold">+ NEW INVOICE</Btn>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
-        {[{l:"TOTAL REVENUE",v:`$${totalRev.toLocaleString()}`,c:"#10b981"},{l:"PENDING",v:`$${totalPending.toLocaleString()}`,c:"#3b82f6"},{l:"INVOICES SENT",v:invoices.filter(i=>i.status!=="draft").length,c:"#d4af37"},{l:"OVERDUE",v:invoices.filter(i=>i.status==="overdue"||( i.status==="sent"&&i.due_at&&new Date(i.due_at)<new Date())).length,c:"#ef4444"}].map(s=>(
+        {[{l:"TOTAL REVENUE",v:`$${totalRev.toLocaleString()}`,c:"#10b981"},{l:"PENDING",v:`$${totalPending.toLocaleString()}`,c:"#3b82f6"},{l:"INVOICES SENT",v:invoices.filter(i=>i.status!=="draft").length,c:"#ff2e88"},{l:"OVERDUE",v:invoices.filter(i=>i.status==="overdue"||( i.status==="sent"&&i.due_at&&new Date(i.due_at)<new Date())).length,c:"#ef4444"}].map(s=>(
           <div key={s.l} style={{background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:6,padding:"10px 12px"}}>
             <div style={{fontSize:7,color:"#444",letterSpacing:".1em",marginBottom:3}}>{s.l}</div>
             <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,color:s.c}}>{s.v}</div>
@@ -8473,7 +8473,7 @@ function InvoicesView({ user, contacts, businesses, showToast }) {
       </div>
       <div style={{display:"flex",gap:6,marginBottom:14}}>
         {["all","draft","sent","paid","overdue"].map(f=>(
-          <button key={f} onClick={()=>setFilter(f)} style={{background:filter===f?"rgba(212,175,55,.1)":"none",border:`1px solid ${filter===f?"rgba(212,175,55,.4)":"#1a1a28"}`,color:filter===f?"#d4af37":"#555",fontFamily:"inherit",fontSize:9,padding:"4px 12px",borderRadius:3,cursor:"pointer",textTransform:"uppercase"}}>{f}</button>
+          <button key={f} onClick={()=>setFilter(f)} style={{background:filter===f?"rgba(255,46,136,.1)":"none",border:`1px solid ${filter===f?"rgba(255,46,136,.4)":"#1a1a28"}`,color:filter===f?"#ff2e88":"#555",fontFamily:"inherit",fontSize:9,padding:"4px 12px",borderRadius:3,cursor:"pointer",textTransform:"uppercase"}}>{f}</button>
         ))}
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
@@ -8482,7 +8482,7 @@ function InvoicesView({ user, contacts, businesses, showToast }) {
           <div key={inv.id} style={{background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:6,padding:"12px 16px",display:"flex",gap:14,alignItems:"center"}}>
             <div style={{flex:1}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                <span style={{fontSize:11,color:"#d4af37",fontFamily:"monospace"}}>{inv.invoice_number}</span>
+                <span style={{fontSize:11,color:"#ff2e88",fontFamily:"monospace"}}>{inv.invoice_number}</span>
                 <Bd label={inv.status} color={statusColors[inv.status]||"#555"} />
                 <span style={{fontSize:9,color:"#555"}}>{contactName(inv.contact_id)}</span>
               </div>
@@ -8513,7 +8513,7 @@ function InvoiceForm({ contacts, businesses, onSave, onClose }) {
       <Fld label="BUSINESS"><Sel value={f.business_id} onChange={v=>s("business_id",v)} options={[{value:"",label:"Select..."},...businesses.map(b=>({value:b.id,label:b.name}))]} /></Fld>
     </div>
     <Fld label="DUE DATE"><Inp type="date" value={f.due_at} onChange={v=>s("due_at",v)} /></Fld>
-    <div style={{fontSize:9,color:"#d4af37",letterSpacing:".1em",marginBottom:6}}>LINE ITEMS</div>
+    <div style={{fontSize:9,color:"#ff2e88",letterSpacing:".1em",marginBottom:6}}>LINE ITEMS</div>
     {items.map((item,i)=>(
       <div key={i} style={{display:"grid",gridTemplateColumns:"3fr 1fr 1fr auto",gap:8,marginBottom:6,alignItems:"end"}}>
         <Fld label={i===0?"DESCRIPTION":""}><Inp value={item.desc} onChange={v=>setItems(p=>p.map((x,j)=>j===i?{...x,desc:v}:x))} placeholder="Service description" /></Fld>
@@ -8525,7 +8525,7 @@ function InvoiceForm({ contacts, businesses, onSave, onClose }) {
     <button onClick={()=>setItems(p=>[...p,{desc:"",qty:1,rate:0}])} style={{background:"none",border:"1px dashed #1e1e28",color:"#555",cursor:"pointer",fontFamily:"inherit",fontSize:8,padding:"4px 12px",borderRadius:3,marginBottom:12}}>+ ADD ITEM</button>
     <div style={{display:"flex",justifyContent:"flex-end",gap:20,marginBottom:12,fontSize:11}}>
       <span style={{color:"#555"}}>Subtotal: <span style={{color:"#e0dcd0"}}>${subtotal.toLocaleString()}</span></span>
-      <span style={{color:"#d4af37",fontWeight:600}}>Total: ${total.toLocaleString()}</span>
+      <span style={{color:"#ff2e88",fontWeight:600}}>Total: ${total.toLocaleString()}</span>
     </div>
     <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
       <Btn onClick={onClose}>CANCEL</Btn>
@@ -8573,7 +8573,7 @@ function AutomationsView({ user, showToast }) {
       )}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#d4af37"}}>AUTOMATIONS</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#ff2e88"}}>AUTOMATIONS</div>
           <div style={{fontSize:9,color:"#444"}}>{autos.filter(a=>a.is_active).length} ACTIVE · {autos.length} TOTAL</div>
         </div>
         <Btn onClick={()=>setShowNew(true)} variant="gold">+ NEW AUTOMATION</Btn>
@@ -8670,7 +8670,7 @@ function ComplianceView({ user, businesses, showToast }) {
       )}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#d4af37"}}>COMPLIANCE</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#ff2e88"}}>COMPLIANCE</div>
           <div style={{fontSize:9,color:"#444"}}>{expiring.filter(i=>i.urgency==="expired"||i.urgency==="critical").length} URGENT · {items.length} TRACKED</div>
         </div>
         <Btn onClick={()=>setShowNew(true)} variant="gold">+ ADD ITEM</Btn>
@@ -8751,7 +8751,7 @@ function VendorsView({ user, businesses, showToast }) {
   };
 
   const bizName = id => businesses.find(b=>b.id===id)?.name||"—";
-  const projStatus = {planning:"#6366f1",in_progress:"#f59e0b",completed:"#10b981",on_hold:"#555"};
+  const projStatus = {planning:"#15e0c8",in_progress:"#f59e0b",completed:"#10b981",on_hold:"#555"};
 
   return (
     <div style={{flex:1,overflow:"auto",padding:"18px 20px"}}>
@@ -8763,7 +8763,7 @@ function VendorsView({ user, businesses, showToast }) {
       </Modal>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div>
-          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#d4af37"}}>VENDORS & PROJECTS</div>
+          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:24,letterSpacing:".2em",color:"#ff2e88"}}>VENDORS & PROJECTS</div>
           <div style={{fontSize:9,color:"#444"}}>{vendors.length} VENDORS · {projects.length} PROJECTS</div>
         </div>
         <div style={{display:"flex",gap:6}}>
@@ -8773,7 +8773,7 @@ function VendorsView({ user, businesses, showToast }) {
       </div>
       <div style={{display:"flex",gap:6,marginBottom:14}}>
         {["vendors","projects"].map(t=>(
-          <button key={t} onClick={()=>setTab(t)} style={{background:tab===t?"rgba(212,175,55,.1)":"none",border:`1px solid ${tab===t?"rgba(212,175,55,.4)":"#1a1a28"}`,color:tab===t?"#d4af37":"#555",fontFamily:"inherit",fontSize:10,padding:"5px 16px",borderRadius:3,cursor:"pointer",textTransform:"uppercase"}}>{t}</button>
+          <button key={t} onClick={()=>setTab(t)} style={{background:tab===t?"rgba(255,46,136,.1)":"none",border:`1px solid ${tab===t?"rgba(255,46,136,.4)":"#1a1a28"}`,color:tab===t?"#ff2e88":"#555",fontFamily:"inherit",fontSize:10,padding:"5px 16px",borderRadius:3,cursor:"pointer",textTransform:"uppercase"}}>{t}</button>
         ))}
       </div>
       {tab==="vendors"&&(
@@ -8801,7 +8801,7 @@ function VendorsView({ user, businesses, showToast }) {
                   <span style={{fontSize:8,color:"#444"}}>{bizName(p.business_id)}</span>
                 </div>
                 <div style={{display:"flex",gap:20,marginBottom:6,fontSize:9}}>
-                  <span style={{color:"#555"}}>Budget: <span style={{color:"#d4af37"}}>${Number(p.budget||0).toLocaleString()}</span></span>
+                  <span style={{color:"#555"}}>Budget: <span style={{color:"#ff2e88"}}>${Number(p.budget||0).toLocaleString()}</span></span>
                   <span style={{color:"#555"}}>Spent: <span style={{color:Number(p.spent)>Number(p.budget)?"#ef4444":"#10b981"}}>${Number(p.spent||0).toLocaleString()}</span></span>
                   <span style={{color:"#555"}}>{p.start_date||"?"} → {p.end_date||"?"}</span>
                 </div>
@@ -8895,11 +8895,11 @@ function PropIntelView({ showToast }) {
   let shown = leads;
   if(filter==="new") shown=shown.filter(l=>l.status==="new");
   else if(filter!=="all") shown=shown.filter(l=>l.entity===filter);
-  const pill = (k,label,active)=>(<button key={k} onClick={()=>setFilter(k)} style={{background:active?"rgba(212,175,55,.1)":"rgba(255,255,255,.03)",border:`1px solid ${active?"#d4af3766":"#1a1a28"}`,color:active?"#d4af37":"#666",fontFamily:"inherit",fontSize:10,padding:"4px 11px",borderRadius:3,cursor:"pointer",letterSpacing:".05em"}}>{label}</button>);
+  const pill = (k,label,active)=>(<button key={k} onClick={()=>setFilter(k)} style={{background:active?"rgba(255,46,136,.1)":"rgba(255,255,255,.03)",border:`1px solid ${active?"#ff2e8866":"#1a1a28"}`,color:active?"#ff2e88":"#666",fontFamily:"inherit",fontSize:10,padding:"4px 11px",borderRadius:3,cursor:"pointer",letterSpacing:".05em"}}>{label}</button>);
   return (
     <div className="fi" style={{padding:16,overflowY:"auto",height:"100%"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,flexWrap:"wrap"}}>
-        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:".15em",color:"#d4af37"}}>PROPERTY INTEL</span>
+        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:".15em",color:"#ff2e88"}}>PROPERTY INTEL</span>
         <span style={{color:"#555",fontSize:10}}>{leads.length} leads · {totalNew} new · {leads.filter(l=>l.status==="pushed").length} pushed</span>
         <div style={{flex:1}}/>
         {pill("all",`All (${leads.length})`,filter==="all")}
@@ -8914,7 +8914,7 @@ function PropIntelView({ showToast }) {
           <div>
             <div style={{fontWeight:600,fontSize:14,color:"#e0dcd0"}}>{l.full_address}</div>
             <div style={{display:"flex",gap:4,flexWrap:"wrap",margin:"5px 0"}}>
-              <span className="tag" style={{background:"#1a1a2c",color:"#d4af37"}}>{ZENT[l.entity]||l.entity}</span>
+              <span className="tag" style={{background:"#1a1a2c",color:"#ff2e88"}}>{ZENT[l.entity]||l.entity}</span>
               <span className="tag" style={{background:"#1a2c3a",color:"#7ab"}}>{(l.lead_type||"").replace(/_/g," ")}</span>
               {l.has_nod&&<span className="tag" style={{background:"#3a1a1a",color:"#ef4444"}}>NOD</span>}
               {l.tax_delinquent&&<span className="tag" style={{background:"#3a1a1a",color:"#ef4444"}}>tax delinquent</span>}
@@ -8926,7 +8926,7 @@ function PropIntelView({ showToast }) {
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
             {l.status==="new"?<>
-              <Btn onClick={()=>push(l)} style={{background:"#d4af37",color:"#000",fontWeight:600}}>Push → {ZENT[l.entity]||l.entity}</Btn>
+              <Btn onClick={()=>push(l)} style={{background:"#ff2e88",color:"#000",fontWeight:600}}>Push → {ZENT[l.entity]||l.entity}</Btn>
               <Btn onClick={()=>dismiss(l)}>Dismiss</Btn>
             </>:<div style={{color:"#555",fontSize:11,textAlign:"center"}}>{l.status==="pushed"?`Pushed → ${l.pushed_to||""}`:l.status}</div>}
           </div>
@@ -8966,11 +8966,11 @@ function CallListView({ showToast }) {
   return (
     <div className="fi" style={{padding:16,overflowY:"auto",height:"100%"}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:".15em",color:"#d4af37"}}>CALL LIST</span>
+        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:".15em",color:"#ff2e88"}}>CALL LIST</span>
         <span style={{color:"#555",fontSize:10}}>MMI refi queue · DNC-gated AI dialer</span>
         <div style={{flex:1}}/>
-        <button onClick={()=>setOnly("callable")} style={{background:only==="callable"?"rgba(212,175,55,.1)":"rgba(255,255,255,.03)",border:`1px solid ${only==="callable"?"#d4af3766":"#1a1a28"}`,color:only==="callable"?"#d4af37":"#666",fontFamily:"inherit",fontSize:10,padding:"4px 11px",borderRadius:3,cursor:"pointer"}}>Callable</button>
-        <button onClick={()=>setOnly("all")} style={{background:only==="all"?"rgba(212,175,55,.1)":"rgba(255,255,255,.03)",border:`1px solid ${only==="all"?"#d4af3766":"#1a1a28"}`,color:only==="all"?"#d4af37":"#666",fontFamily:"inherit",fontSize:10,padding:"4px 11px",borderRadius:3,cursor:"pointer"}}>All</button>
+        <button onClick={()=>setOnly("callable")} style={{background:only==="callable"?"rgba(255,46,136,.1)":"rgba(255,255,255,.03)",border:`1px solid ${only==="callable"?"#ff2e8866":"#1a1a28"}`,color:only==="callable"?"#ff2e88":"#666",fontFamily:"inherit",fontSize:10,padding:"4px 11px",borderRadius:3,cursor:"pointer"}}>Callable</button>
+        <button onClick={()=>setOnly("all")} style={{background:only==="all"?"rgba(255,46,136,.1)":"rgba(255,255,255,.03)",border:`1px solid ${only==="all"?"#ff2e8866":"#1a1a28"}`,color:only==="all"?"#ff2e88":"#666",fontFamily:"inherit",fontSize:10,padding:"4px 11px",borderRadius:3,cursor:"pointer"}}>All</button>
         <Btn onClick={refreshMMI}>↻ Refresh MMI</Btn>
       </div>
       {err&&<div style={{background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.25)",color:"#ef4444",padding:10,borderRadius:5,fontSize:11,marginBottom:10}}>Sign-in required for the call list (staff RLS). {err}</div>}
@@ -8980,7 +8980,7 @@ function CallListView({ showToast }) {
         <table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr>
           <th style={th}>Pri</th><th style={th}>Borrower</th><th style={th}>Phone</th><th style={th}>Property</th><th style={{...th,textAlign:"right"}}>Unpaid</th><th style={{...th,textAlign:"right"}}>Savings</th><th style={{...th,textAlign:"right"}}>Equity</th><th style={th}>Rate</th><th style={th}>Service</th><th style={th}>Status</th><th style={th}></th>
         </tr></thead><tbody>{rows.map(r=>(<tr key={r.id} className="erow">
-          <td style={{...td,fontWeight:700,color:"#d4af37"}}>{r.call_priority??"—"}</td>
+          <td style={{...td,fontWeight:700,color:"#ff2e88"}}>{r.call_priority??"—"}</td>
           <td style={td}>{r.borrower_full_name||"—"}{!r.callable&&<span className="tag" style={{background:"#3a1a1a",color:"#ef4444",marginLeft:4}}>blocked</span>}</td>
           <td style={{...td,fontFamily:"inherit"}}>{r.phone_primary||"—"}</td>
           <td style={td}>{r.property_full_address||""}<div style={{color:"#555",fontSize:10}}>{[r.property_city,r.county].filter(Boolean).join(", ")}</div></td>
@@ -8990,7 +8990,7 @@ function CallListView({ showToast }) {
           <td style={td}>{zRate(r.derived_interest_rate)}</td>
           <td style={td}><span className="tag" style={{background:"#2a1a3a",color:"#a78bfa"}}>{r.primary_service||"—"}</span></td>
           <td style={td}><select value={r.status||"new"} onChange={e=>setDispo(r.id,e.target.value)} style={{background:"#0c0c16",border:"1px solid #1a1a28",color:"#cfc9bd",fontFamily:"inherit",fontSize:10,padding:"3px 5px",borderRadius:3}}>{DISPO.map(d=>(<option key={d} value={d}>{d}</option>))}</select></td>
-          <td style={td}>{r.callable&&r.phone_primary&&<button onClick={()=>aiCall(r)} style={{background:"#d4af37",color:"#000",border:"none",fontFamily:"inherit",fontSize:10,fontWeight:600,padding:"4px 9px",borderRadius:3,cursor:"pointer"}}>AI Call</button>}</td>
+          <td style={td}>{r.callable&&r.phone_primary&&<button onClick={()=>aiCall(r)} style={{background:"#ff2e88",color:"#000",border:"none",fontFamily:"inherit",fontSize:10,fontWeight:600,padding:"4px 9px",borderRadius:3,cursor:"pointer"}}>AI Call</button>}</td>
         </tr>))}</tbody></table>
        </div>}
     </div>
@@ -9338,23 +9338,33 @@ function EmailVault({ user, teamProfile, onSignOut }) {
   const handleNav = (v,s) => { setView(v); if(s) setSub(s); else if(v==="crm") setSub("pipeline"); else if(v==="messages") setSub("internal"); };
 
   return (
-    <div style={{ fontFamily:"'DM Mono','Courier New',monospace",background:"#090910",color:"#e0dcd0",height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden" }}>
+    <div style={{ fontFamily:"'DM Mono','Courier New',monospace",background:"#0b0016",color:"#e0dcd0",height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
-        ::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:#09090f}::-webkit-scrollbar-thumb{background:#1e1e2e;border-radius:2px}
+        /* ── MIAMI BRUTALISM ─────────────────────────────────────────── */
+        *{border-radius:0 !important}                 /* brutalist: sharp corners everywhere */
+        ::selection{background:#ff2e88;color:#000}
+        .card{border-width:2px !important;border-color:#241433 !important}
+        .card:hover{border-color:#ff2e88 !important;box-shadow:0 0 0 1px #ff2e88}
+        .tag{border:1px solid rgba(255,255,255,.14);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+        .score{box-shadow:2px 2px 0 #000}             /* hard drop shadow = brutalist */
+        button{letter-spacing:.04em}
+        /* Miami neon accent line under sticky bars */
+        header,.topbar{box-shadow:0 2px 0 #ff2e88}
+        ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:#0a0012}::-webkit-scrollbar-thumb{background:#ff2e88}
         .rh:hover{background:rgba(255,255,255,0.03)!important}
-        .rh.sel{background:rgba(212,175,55,0.08)!important;border-left:2px solid #d4af37!important}
+        .rh.sel{background:rgba(255,46,136,0.08)!important;border-left:2px solid #ff2e88!important}
         .card:hover{border-color:#2a2a4a!important}
         .kanban-col{min-height:120px;transition:background .15s}
-        .kanban-col.drag-over{background:rgba(212,175,55,0.05)!important;border-color:#d4af3744!important}
+        .kanban-col.drag-over{background:rgba(255,46,136,0.05)!important;border-color:#ff2e8844!important}
         textarea,input,select{outline:none}
         .pulse{animation:pu 1.5s infinite}@keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
         .fi{animation:fi .2s ease}@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
         .sh{background:linear-gradient(90deg,#10101c 25%,#1a1a2c 50%,#10101c 75%);background-size:200% 100%;animation:sh 1.4s infinite}@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
         button{transition:opacity .15s}button:disabled{cursor:not-allowed!important;opacity:.5!important}
         .tag{display:inline-block;padding:1px 6px;border-radius:2px;font-size:9px;letter-spacing:.05em;text-transform:uppercase;margin-right:3px;margin-bottom:2px}
-        .erow:hover{background:rgba(212,175,55,0.04)!important}.erow.sel{background:rgba(212,175,55,0.08)!important;border-left:2px solid #d4af37!important}
+        .erow:hover{background:rgba(255,46,136,0.04)!important}.erow.sel{background:rgba(255,46,136,0.08)!important;border-left:2px solid #ff2e88!important}
         @keyframes dot{0%,80%,100%{transform:scale(0.6);opacity:.3}40%{transform:scale(1);opacity:1}}
       `}</style>
 
@@ -9374,18 +9384,18 @@ function EmailVault({ user, teamProfile, onSignOut }) {
       <button onClick={()=>setShowAI(p=>!p)} style={{ position:"fixed",bottom:20,right:20,width:46,height:46,borderRadius:"50%",background:"rgba(139,92,246,.15)",border:"1px solid rgba(139,92,246,.5)",color:"#a78bfa",cursor:"pointer",fontSize:20,zIndex:200,boxShadow:"0 0 30px rgba(139,92,246,.3)" }} title="Vault AI Advisor">⬡</button>
 
       {/* TOP BAR — slim */}
-      <div style={{ display:"flex",alignItems:"center",padding:"0 12px",height:40,borderBottom:"1px solid #111120",background:"#07070e",flexShrink:0,gap:8 }}>
+      <div style={{ display:"flex",alignItems:"center",padding:"0 12px",height:40,borderBottom:"1px solid #111120",background:"#0a0010",flexShrink:0,gap:8 }}>
         <button onClick={()=>setSidebarOpen(p=>!p)} style={{background:"none",border:"none",color:"#555",cursor:"pointer",fontSize:16,padding:"2px 4px",fontFamily:"inherit"}} title="Toggle sidebar">{sidebarOpen?"◁":"▷"}</button>
-        <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}><img src="/favicon.svg" alt="" style={{width:20,height:20}} /><span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".25em",color:"#d4af37"}}>VAULT</span></div>
+        <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}><img src="/favicon.svg" alt="" style={{width:20,height:20}} /><span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".25em",color:"#ff2e88"}}>VAULT</span></div>
         <RateTicker />
         <div style={{flex:1}} />
         {/* CRM sub-nav inline */}
         {view==="crm"&&CRM_SUBS.map(s=>(
-          <button key={s.id} onClick={()=>setSub(s.id)} style={{background:sub===s.id?"rgba(212,175,55,.08)":"none",border:`1px solid ${sub===s.id?"rgba(212,175,55,.25)":"transparent"}`,color:sub===s.id?"#d4af37":"#444",fontFamily:"inherit",fontSize:9,padding:"3px 10px",borderRadius:2,cursor:"pointer",letterSpacing:".06em"}}>{s.l}</button>
+          <button key={s.id} onClick={()=>setSub(s.id)} style={{background:sub===s.id?"rgba(255,46,136,.08)":"none",border:`1px solid ${sub===s.id?"rgba(255,46,136,.25)":"transparent"}`,color:sub===s.id?"#ff2e88":"#444",fontFamily:"inherit",fontSize:9,padding:"3px 10px",borderRadius:2,cursor:"pointer",letterSpacing:".06em"}}>{s.l}</button>
         ))}
         {/* Messages sub-nav inline */}
         {view==="messages"&&MSG_SUBS.map(s=>(
-          <button key={s.id} onClick={()=>setSub(s.id)} style={{background:sub===s.id?"rgba(212,175,55,.08)":"none",border:`1px solid ${sub===s.id?"rgba(212,175,55,.25)":"transparent"}`,color:sub===s.id?"#d4af37":"#444",fontFamily:"inherit",fontSize:9,padding:"3px 10px",borderRadius:2,cursor:"pointer",letterSpacing:".06em"}}>{s.l}</button>
+          <button key={s.id} onClick={()=>setSub(s.id)} style={{background:sub===s.id?"rgba(255,46,136,.08)":"none",border:`1px solid ${sub===s.id?"rgba(255,46,136,.25)":"transparent"}`,color:sub===s.id?"#ff2e88":"#444",fontFamily:"inherit",fontSize:9,padding:"3px 10px",borderRadius:2,cursor:"pointer",letterSpacing:".06em"}}>{s.l}</button>
         ))}
         <div style={{flex:1}} />
         <button onClick={()=>setShowSearch(true)} style={{ background:"rgba(255,255,255,.03)",border:"1px solid #1a1a28",color:"#444",cursor:"pointer",borderRadius:4,padding:"4px 12px",fontSize:9,fontFamily:"inherit",display:"flex",alignItems:"center",gap:6 }}>⌕ SEARCH <span style={{color:"#2a2a3a",fontSize:8}}>⌘K</span></button>
@@ -9399,7 +9409,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
           {showNotifPanel&&(
             <div style={{position:"absolute",top:"100%",right:0,marginTop:4,width:340,maxHeight:400,overflow:"auto",background:"#0b0b16",border:"1px solid #1e1e28",borderRadius:6,boxShadow:"0 8px 30px rgba(0,0,0,.6)",zIndex:200,padding:8}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"4px 6px",marginBottom:4}}>
-                <span style={{fontSize:9,color:"#d4af37",letterSpacing:".1em"}}>NOTIFICATIONS</span>
+                <span style={{fontSize:9,color:"#ff2e88",letterSpacing:".1em"}}>NOTIFICATIONS</span>
                 {unreadNotifs>0&&<button onClick={async()=>{
                   for(const n of callNotifs.filter(x=>!x.is_read)) await sb("vault_call_notifications","PATCH",{is_read:true},`?id=eq.${n.id}`);
                   setCallNotifs(p=>p.map(n=>({...n,is_read:true})));
@@ -9411,32 +9421,32 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                   if(n.call_id){const c=calls.find(x=>x.id===n.call_id);if(c){setSelCall(c);setView("callcenter");}}
                   if(!n.is_read){sb("vault_call_notifications","PATCH",{is_read:true},`?id=eq.${n.id}`);setCallNotifs(p=>p.map(x=>x.id===n.id?{...x,is_read:true}:x));}
                   setShowNotifPanel(false);
-                }} style={{padding:"6px 8px",borderRadius:3,cursor:"pointer",background:n.is_read?"none":"rgba(212,175,55,.04)",borderBottom:"1px solid #0e0e18",display:"flex",gap:8,alignItems:"flex-start"}}>
+                }} style={{padding:"6px 8px",borderRadius:3,cursor:"pointer",background:n.is_read?"none":"rgba(255,46,136,.04)",borderBottom:"1px solid #0e0e18",display:"flex",gap:8,alignItems:"flex-start"}}>
                   <span style={{fontSize:12,flexShrink:0,marginTop:1}}>{n.type==="referral"?"🔁":n.type==="callback_due"?"⏰":n.type==="recording_ready"?"🎙":"📞"}</span>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:9,color:n.is_read?"#555":"#e0dcd0",lineHeight:1.4}}>{n.message}</div>
                     <div style={{fontSize:7,color:"#333",marginTop:2}}>{new Date(n.created_at).toLocaleString()}</div>
                   </div>
-                  {!n.is_read&&<span style={{width:6,height:6,borderRadius:"50%",background:"#d4af37",flexShrink:0,marginTop:4}} />}
+                  {!n.is_read&&<span style={{width:6,height:6,borderRadius:"50%",background:"#ff2e88",flexShrink:0,marginTop:4}} />}
                 </div>
               ))}
             </div>
           )}
         </div>
-        <button onClick={()=>setShowCompose(true)} style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.3)",color:"#d4af37",cursor:"pointer",borderRadius:3,padding:"4px 10px",fontSize:10,fontFamily:"inherit"}}>✉</button>
+        <button onClick={()=>setShowCompose(true)} style={{background:"rgba(255,46,136,.1)",border:"1px solid rgba(255,46,136,.3)",color:"#ff2e88",cursor:"pointer",borderRadius:3,padding:"4px 10px",fontSize:10,fontFamily:"inherit"}}>✉</button>
         {user&&<span style={{fontSize:8,color:"#333",whiteSpace:"nowrap"}}>{teamProfile?.display_name||user.email}</span>}
         <button onClick={onSignOut} style={{background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.2)",color:"#ef4444",cursor:"pointer",borderRadius:3,padding:"4px 8px",fontSize:8,fontFamily:"inherit",letterSpacing:".06em",whiteSpace:"nowrap"}}>LOGOUT</button>
       </div>
 
       {loading&&(
-        <div style={{position:"absolute",top:40,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#d4af37,transparent)",animation:"sh 1.4s infinite",backgroundSize:"200% 100%",zIndex:100}} />
+        <div style={{position:"absolute",top:40,left:0,right:0,height:2,background:"linear-gradient(90deg,transparent,#ff2e88,transparent)",animation:"sh 1.4s infinite",backgroundSize:"200% 100%",zIndex:100}} />
       )}
 
       {/* SIDEBAR + MAIN CONTENT */}
       <div style={{flex:1,overflow:"hidden",display:"flex"}}>
 
         {/* SIDEBAR */}
-        <div style={{width:sidebarOpen?200:0,minWidth:sidebarOpen?200:0,background:"#07070e",borderRight:sidebarOpen?"1px solid #111120":"none",overflow:"hidden",transition:"width .2s ease, min-width .2s ease",display:"flex",flexDirection:"column",flexShrink:0}}>
+        <div style={{width:sidebarOpen?200:0,minWidth:sidebarOpen?200:0,background:"#0a0010",borderRight:sidebarOpen?"1px solid #111120":"none",overflow:"hidden",transition:"width .2s ease, min-width .2s ease",display:"flex",flexDirection:"column",flexShrink:0}}>
           <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:sidebarOpen?"8px 0":"0"}}>
             {filteredGroups.map(g=>(
               <div key={g.id} style={{marginBottom:4}}>
@@ -9445,7 +9455,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                   <span style={{fontSize:8,transform:sidebarSection===g.id||g.items.some(i=>i.id===view)?"rotate(90deg)":"none",transition:"transform .15s"}}>▸</span>
                 </button>
                 {(sidebarSection===g.id||g.items.some(i=>i.id===view))&&g.items.map(n=>(
-                  <button key={n.id} onClick={()=>{if(n.external){window.open(n.external,"_blank");}else{handleNav(n.id);}}} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"7px 14px 7px 20px",background:view===n.id?"rgba(212,175,55,.08)":"none",borderLeft:view===n.id?"2px solid #d4af37":"2px solid transparent",borderTop:"none",borderRight:"none",borderBottom:"none",color:view===n.id?"#d4af37":"#666",cursor:"pointer",fontFamily:"inherit",fontSize:10,textAlign:"left",position:"relative",transition:"all .1s"}}>
+                  <button key={n.id} onClick={()=>{if(n.external){window.open(n.external,"_blank");}else{handleNav(n.id);}}} style={{display:"flex",alignItems:"center",gap:8,width:"100%",padding:"7px 14px 7px 20px",background:view===n.id?"rgba(255,46,136,.08)":"none",borderLeft:view===n.id?"2px solid #ff2e88":"2px solid transparent",borderTop:"none",borderRight:"none",borderBottom:"none",color:view===n.id?"#ff2e88":"#666",cursor:"pointer",fontFamily:"inherit",fontSize:10,textAlign:"left",position:"relative",transition:"all .1s"}}>
                     <span style={{fontSize:13,width:18,textAlign:"center",flexShrink:0}}>{n.icon}</span>
                     <span style={{flex:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{n.label}</span>
                     {n.badge>0&&<span style={{minWidth:16,height:16,background:"#ef4444",borderRadius:8,fontSize:8,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",padding:"0 4px",flexShrink:0}}>{n.badge}</span>}
@@ -9457,7 +9467,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
           </div>
           {/* Sidebar footer */}
           {sidebarOpen&&<div style={{borderTop:"1px solid #111120",padding:"8px 14px",display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:24,height:24,borderRadius:"50%",background:"rgba(212,175,55,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#d4af37",flexShrink:0}}>K</div>
+            <div style={{width:24,height:24,borderRadius:"50%",background:"rgba(255,46,136,.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#ff2e88",flexShrink:0}}>K</div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:9,color:"#888",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{teamProfile?.display_name||"Admin"}</div>
               <div style={{fontSize:7,color:"#333"}}>ADMIN</div>
@@ -9506,12 +9516,12 @@ function EmailVault({ user, teamProfile, onSignOut }) {
           <div style={{width:290,borderRight:"1px solid #161626",display:"flex",flexDirection:"column",background:"#0b0b13",flexShrink:0}}>
             <div style={{padding:"8px 10px",borderBottom:"1px solid #121220",display:"flex",gap:5}}>
               <input value={emailSearch} onChange={e=>setEmailSearch(e.target.value)} placeholder="⌕ search..." style={{flex:1,background:"#0e0e1a",border:"1px solid #1a1a28",color:"#e0dcd0",fontFamily:"inherit",fontSize:10,padding:"5px 10px",borderRadius:3}}/>
-              <button onClick={()=>setShowCompose(true)} style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.2)",color:"#d4af37",cursor:"pointer",borderRadius:3,padding:"0 9px",fontSize:11}}>✉</button>
+              <button onClick={()=>setShowCompose(true)} style={{background:"rgba(255,46,136,.1)",border:"1px solid rgba(255,46,136,.2)",color:"#ff2e88",cursor:"pointer",borderRadius:3,padding:"0 9px",fontSize:11}}>✉</button>
             </div>
             {/* Folder tabs */}
             <div style={{display:"flex",padding:"4px 8px",gap:4,borderBottom:"1px solid #0e0e18",flexShrink:0}}>
               {[{id:"all",l:"All"},{id:"unread",l:`Unread (${emails.filter(e=>!e.is_read).length})`},{id:"flagged",l:`⚑ Flagged (${emails.filter(e=>e.is_flagged).length})`}].map(f=>(
-                <button key={f.id} onClick={()=>setEmailFolder(f.id)} style={{background:emailFolder===f.id?"rgba(212,175,55,.08)":"none",border:`1px solid ${emailFolder===f.id?"rgba(212,175,55,.2)":"transparent"}`,color:emailFolder===f.id?"#d4af37":"#444",fontFamily:"inherit",fontSize:8,padding:"2px 7px",borderRadius:2,cursor:"pointer"}}>{f.l}</button>
+                <button key={f.id} onClick={()=>setEmailFolder(f.id)} style={{background:emailFolder===f.id?"rgba(255,46,136,.08)":"none",border:`1px solid ${emailFolder===f.id?"rgba(255,46,136,.2)":"transparent"}`,color:emailFolder===f.id?"#ff2e88":"#444",fontFamily:"inherit",fontSize:8,padding:"2px 7px",borderRadius:2,cursor:"pointer"}}>{f.l}</button>
               ))}
             </div>
             <div style={{overflowY:"auto",flex:1}}>
@@ -9521,14 +9531,14 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                 const date=em.received_at||em.date||"";
                 return (
                   <div key={em.id} onClick={()=>{setSelEmail(em);setEmailAiMode(null);setEmailAiResult("");if(!isRead)markRead(em.id);}} className={`erow${selEmail?.id===em.id?" sel":""}`} style={{padding:"9px 11px",borderBottom:"1px solid #0e0e18",cursor:"pointer",borderLeft:"2px solid transparent",position:"relative"}}>
-                    {!isRead&&<div style={{position:"absolute",left:3,top:"50%",transform:"translateY(-50%)",width:4,height:4,background:"#d4af37",borderRadius:"50%"}}/>}
+                    {!isRead&&<div style={{position:"absolute",left:3,top:"50%",transform:"translateY(-50%)",width:4,height:4,background:"#ff2e88",borderRadius:"50%"}}/>}
                     {em.is_flagged&&<div style={{position:"absolute",right:8,top:10,fontSize:8,color:"#ef4444"}}>⚑</div>}
                     <div style={{display:"flex",justifyContent:"space-between",marginBottom:2}}>
                       <span style={{fontSize:10,color:isRead?"#555":"#e0dcd0",fontWeight:isRead?"300":"500",maxWidth:180,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fromName}</span>
                       <span style={{fontSize:7,color:"#2a2a3a"}}>{ago(date)}</span>
                     </div>
                     <div style={{fontSize:9,color:"#444",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:3}}>{em.subject}</div>
-                    <div>{(em.tags||[]).map(t=><span key={t} className="tag" style={{background:"rgba(212,175,55,0.06)",color:"#666",border:"1px solid rgba(212,175,55,0.12)"}}>{t}</span>)}</div>
+                    <div>{(em.tags||[]).map(t=><span key={t} className="tag" style={{background:"rgba(255,46,136,0.06)",color:"#666",border:"1px solid rgba(255,46,136,0.12)"}}>{t}</span>)}</div>
                   </div>
                 );
               })}
@@ -9547,7 +9557,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                 <div style={{padding:"12px 18px",borderBottom:"1px solid #161626",background:"#0b0b13",flexShrink:0}}>
                   <div style={{fontSize:13,color:"#e0dcd0",marginBottom:4}}>{selEmail.subject}</div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
-                    <span style={{fontSize:10,color:"#d4af37"}}>{selEmail.from_name||selEmail.fromName||selEmail.from}<span style={{fontSize:9,color:"#333",marginLeft:8}}>&lt;{selEmail.from||selEmail.email_from}&gt;</span></span>
+                    <span style={{fontSize:10,color:"#ff2e88"}}>{selEmail.from_name||selEmail.fromName||selEmail.from}<span style={{fontSize:9,color:"#333",marginLeft:8}}>&lt;{selEmail.from||selEmail.email_from}&gt;</span></span>
                     <div style={{display:"flex",gap:8,alignItems:"center"}}>
                       <span style={{fontSize:8,color:"#2a2a3a"}}>{new Date(selEmail.received_at||selEmail.date||"").toLocaleString()}</span>
                       <button onClick={()=>toggleFlag(selEmail.id,selEmail.is_flagged)} style={{background:"none",border:"none",color:selEmail.is_flagged?"#ef4444":"#333",cursor:"pointer",fontSize:13}} title="Flag">{selEmail.is_flagged?"⚑":"⚐"}</button>
@@ -9558,13 +9568,13 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                   <span style={{fontSize:8,color:"#222",marginRight:2}}>AI:</span>
                   {[{id:"summary",l:"⚡ Summary"},{id:"analyze",l:"🔬 Analyze"},{id:"reply",l:"✍ Reply"}].map(b=>{
                     const cached=aiCache.current[`${selEmail.id}_${b.id}`];
-                    return <button key={b.id} onClick={()=>runEmailAI(b.id)} style={{background:cached?"rgba(212,175,55,.05)":"none",border:`1px solid ${emailAiMode===b.id?"#d4af3755":cached?"#d4af3730":"#1a1a28"}`,color:emailAiMode===b.id?"#d4af37":cached?"#d4af3799":"#555",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 9px",borderRadius:3}}>{b.l}{cached?" ✓":""}</button>;
+                    return <button key={b.id} onClick={()=>runEmailAI(b.id)} style={{background:cached?"rgba(255,46,136,.05)":"none",border:`1px solid ${emailAiMode===b.id?"#ff2e8855":cached?"#ff2e8830":"#1a1a28"}`,color:emailAiMode===b.id?"#ff2e88":cached?"#ff2e8899":"#555",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 9px",borderRadius:3}}>{b.l}{cached?" ✓":""}</button>;
                   })}
                   {intelligence.some(i=>i.email_subject===selEmail.subject&&i.raw_body===selEmail.body)
                     ?<span style={{fontSize:8,color:"#8b5cf6",padding:"4px 10px",border:"1px solid rgba(139,92,246,.2)",borderRadius:3}}>🧠 SAVED</span>
                     :<button onClick={extractAndSave} disabled={extracting} style={{background:"rgba(139,92,246,.08)",border:"1px solid rgba(139,92,246,.3)",color:"#a78bfa",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 9px",borderRadius:3}}>{extracting?<span className="pulse">extracting...</span>:"🧠 EXTRACT"}</button>}
-                  <button onClick={()=>setShowCompose(true)} style={{background:"rgba(212,175,55,.07)",border:"1px solid rgba(212,175,55,.18)",color:"#d4af37",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 9px",borderRadius:3}}>✉ REPLY</button>
-                  {emailAiLoading&&<span className="pulse" style={{fontSize:8,color:"#d4af37"}}>thinking...</span>}
+                  <button onClick={()=>setShowCompose(true)} style={{background:"rgba(255,46,136,.07)",border:"1px solid rgba(255,46,136,.18)",color:"#ff2e88",cursor:"pointer",fontFamily:"inherit",fontSize:9,padding:"4px 9px",borderRadius:3}}>✉ REPLY</button>
+                  {emailAiLoading&&<span className="pulse" style={{fontSize:8,color:"#ff2e88"}}>thinking...</span>}
                 </div>
                 <div style={{flex:1,overflowY:"auto",padding:"14px 18px",display:"flex",flexDirection:"column",gap:10}}>
                   <div style={{background:"#0d0d18",border:"1px solid #161626",borderRadius:4,padding:"13px 14px"}}>
@@ -9581,8 +9591,8 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                     </div>
                   )}
                   {emailAiResult&&(
-                    <div style={{background:"rgba(212,175,55,.04)",border:"1px solid rgba(212,175,55,.15)",borderRadius:4,padding:"12px 14px"}} className="fi">
-                      <div style={{fontSize:8,color:"#d4af37",letterSpacing:".1em",marginBottom:8}}>{emailAiMode?.toUpperCase()}</div>
+                    <div style={{background:"rgba(255,46,136,.04)",border:"1px solid rgba(255,46,136,.15)",borderRadius:4,padding:"12px 14px"}} className="fi">
+                      <div style={{fontSize:8,color:"#ff2e88",letterSpacing:".1em",marginBottom:8}}>{emailAiMode?.toUpperCase()}</div>
                       <pre style={{fontSize:11,color:"#c4c0d8",lineHeight:1.8,whiteSpace:"pre-wrap",fontFamily:"inherit"}}>{emailAiResult}</pre>
                     </div>
                   )}
@@ -9646,7 +9656,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                 <div style={{width:280,borderRight:"1px solid #161626",display:"flex",flexDirection:"column",background:"#0b0b13"}}>
                   <div style={{padding:"8px 10px",borderBottom:"1px solid #121220",display:"flex",gap:5}}>
                     <input value={contactSearch} onChange={e=>setContactSearch(e.target.value)} placeholder="⌕ search..." style={{flex:1,background:"#0e0e1a",border:"1px solid #1a1a28",color:"#e0dcd0",fontFamily:"inherit",fontSize:10,padding:"5px 10px",borderRadius:3}}/>
-                    <button onClick={()=>{setEditContact(null);setShowContact(true);}} style={{background:"rgba(212,175,55,.1)",border:"1px solid rgba(212,175,55,.2)",color:"#d4af37",cursor:"pointer",borderRadius:3,padding:"0 9px",fontSize:12}}>+</button>
+                    <button onClick={()=>{setEditContact(null);setShowContact(true);}} style={{background:"rgba(255,46,136,.1)",border:"1px solid rgba(255,46,136,.2)",color:"#ff2e88",cursor:"pointer",borderRadius:3,padding:"0 9px",fontSize:12}}>+</button>
                   </div>
                   <div style={{overflowY:"auto",flex:1}}>
                     {filteredContacts.map(c=>{
@@ -9685,7 +9695,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                             <div style={{display:"flex",gap:6,marginTop:5,flexWrap:"wrap"}}>
                               <Bd label={statusCfg.l} color={statusCfg.c}/>
                               <ScorePill score={score}/>
-                              {bizFor(selContact.business_id)&&<Bd label={bizFor(selContact.business_id).name} color="#d4af37"/>}
+                              {bizFor(selContact.business_id)&&<Bd label={bizFor(selContact.business_id).name} color="#ff2e88"/>}
                             </div>
                           </div>
                           <div style={{display:"flex",gap:5}}>
@@ -9698,7 +9708,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                               const url = `${window.location.origin}/portal/${token}`;
                               navigator.clipboard.writeText(url);
                               showToast("Portal link copied!");
-                            }} style={{fontSize:8,background:"rgba(99,102,241,.08)",border:"1px solid rgba(99,102,241,.25)",color:"#6366f1"}}>🔗 PORTAL</Btn>
+                            }} style={{fontSize:8,background:"rgba(99,102,241,.08)",border:"1px solid rgba(99,102,241,.25)",color:"#15e0c8"}}>🔗 PORTAL</Btn>
                             <Btn onClick={()=>deleteContact(selContact.id)} variant="red" style={{fontSize:8}}>DEL</Btn>
                           </div>
                         </div>
@@ -9724,7 +9734,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
             {sub==="deals"&&(
               <div style={{flex:1,overflow:"auto",padding:16}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".2em",color:"#d4af37"}}>ALL DEALS</span>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".2em",color:"#ff2e88"}}>ALL DEALS</span>
                   <Btn onClick={()=>{setEditDeal(null);setShowDeal(true);}} variant="gold" style={{fontSize:9}}>+ NEW DEAL</Btn>
                 </div>
                 <div style={{display:"flex",flexDirection:"column",gap:6}}>
@@ -9758,7 +9768,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
             {sub==="tasks"&&(
               <div style={{flex:1,overflow:"auto",padding:16}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".2em",color:"#d4af37"}}>TASKS</span>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".2em",color:"#ff2e88"}}>TASKS</span>
                   <Btn onClick={()=>{setEditTask(null);setShowTask(true);}} variant="gold" style={{fontSize:9}}>+ NEW TASK</Btn>
                 </div>
                 {["urgent","high","medium","low"].map(prio=>{
@@ -9796,7 +9806,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
             {sub==="timeline"&&(
               <div style={{flex:1,overflow:"auto",padding:16}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".2em",color:"#d4af37"}}>ACTIVITY TIMELINE</span>
+                  <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,letterSpacing:".2em",color:"#ff2e88"}}>ACTIVITY TIMELINE</span>
                   <Btn onClick={()=>{setActContext({});setShowActivity(true);}} variant="gold" style={{fontSize:9}}>+ LOG</Btn>
                 </div>
                 {activities.map((a,i)=>{
@@ -9837,13 +9847,13 @@ function EmailVault({ user, teamProfile, onSignOut }) {
             <div style={{width:200,borderRight:"1px solid #161626",display:"flex",flexDirection:"column",background:"#0a0a12",padding:"10px 0"}}>
               <div style={{padding:"0 12px",marginBottom:10}}>
                 <div style={{fontSize:9,color:"#333",letterSpacing:".1em",marginBottom:6}}>BUSINESS</div>
-                <button onClick={()=>setDocFilterBiz("")} style={{background:!docFilterBiz?"rgba(212,175,55,.07)":"none",border:"none",color:!docFilterBiz?"#d4af37":"#555",fontFamily:"inherit",fontSize:9,padding:"3px 8px",borderRadius:2,cursor:"pointer",width:"100%",textAlign:"left"}}>All</button>
-                {businesses.map(b=><button key={b.id} onClick={()=>setDocFilterBiz(b.id)} style={{background:docFilterBiz===b.id?"rgba(212,175,55,.07)":"none",border:"none",color:docFilterBiz===b.id?"#d4af37":"#555",fontFamily:"inherit",fontSize:9,padding:"3px 8px",borderRadius:2,cursor:"pointer",width:"100%",textAlign:"left",display:"flex",gap:5,alignItems:"center"}}><span>{b.icon}</span>{b.name}</button>)}
+                <button onClick={()=>setDocFilterBiz("")} style={{background:!docFilterBiz?"rgba(255,46,136,.07)":"none",border:"none",color:!docFilterBiz?"#ff2e88":"#555",fontFamily:"inherit",fontSize:9,padding:"3px 8px",borderRadius:2,cursor:"pointer",width:"100%",textAlign:"left"}}>All</button>
+                {businesses.map(b=><button key={b.id} onClick={()=>setDocFilterBiz(b.id)} style={{background:docFilterBiz===b.id?"rgba(255,46,136,.07)":"none",border:"none",color:docFilterBiz===b.id?"#ff2e88":"#555",fontFamily:"inherit",fontSize:9,padding:"3px 8px",borderRadius:2,cursor:"pointer",width:"100%",textAlign:"left",display:"flex",gap:5,alignItems:"center"}}><span>{b.icon}</span>{b.name}</button>)}
               </div>
               <div style={{padding:"0 12px",borderTop:"1px solid #0e0e18",paddingTop:10}}>
                 <div style={{fontSize:9,color:"#333",letterSpacing:".1em",marginBottom:6}}>CATEGORY</div>
-                <button onClick={()=>setDocFilterCat("")} style={{background:!docFilterCat?"rgba(212,175,55,.07)":"none",border:"none",color:!docFilterCat?"#d4af37":"#555",fontFamily:"inherit",fontSize:9,padding:"3px 8px",borderRadius:2,cursor:"pointer",width:"100%",textAlign:"left"}}>All</button>
-                {Object.keys(CAT_COLORS).map(c=><button key={c} onClick={()=>setDocFilterCat(c)} style={{background:docFilterCat===c?"rgba(212,175,55,.07)":"none",border:"none",color:docFilterCat===c?"#d4af37":"#555",fontFamily:"inherit",fontSize:9,padding:"3px 8px",borderRadius:2,cursor:"pointer",width:"100%",textAlign:"left",textTransform:"capitalize"}}>{c.replace("_"," ")}</button>)}
+                <button onClick={()=>setDocFilterCat("")} style={{background:!docFilterCat?"rgba(255,46,136,.07)":"none",border:"none",color:!docFilterCat?"#ff2e88":"#555",fontFamily:"inherit",fontSize:9,padding:"3px 8px",borderRadius:2,cursor:"pointer",width:"100%",textAlign:"left"}}>All</button>
+                {Object.keys(CAT_COLORS).map(c=><button key={c} onClick={()=>setDocFilterCat(c)} style={{background:docFilterCat===c?"rgba(255,46,136,.07)":"none",border:"none",color:docFilterCat===c?"#ff2e88":"#555",fontFamily:"inherit",fontSize:9,padding:"3px 8px",borderRadius:2,cursor:"pointer",width:"100%",textAlign:"left",textTransform:"capitalize"}}>{c.replace("_"," ")}</button>)}
               </div>
             </div>
             <div style={{flex:1,overflow:"auto",padding:16}}>
@@ -9871,7 +9881,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"auto"}}>
                         <span style={{fontSize:8,color:"#333"}}>{doc.size||"—"} · {ago(doc.created_at)}</span>
                         <div style={{display:"flex",gap:4}}>
-                          {doc.url&&<a href={doc.url} target="_blank" rel="noreferrer" style={{background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.2)",color:"#d4af37",borderRadius:2,padding:"2px 7px",fontSize:9,textDecoration:"none"}}>↗</a>}
+                          {doc.url&&<a href={doc.url} target="_blank" rel="noreferrer" style={{background:"rgba(255,46,136,.08)",border:"1px solid rgba(255,46,136,.2)",color:"#ff2e88",borderRadius:2,padding:"2px 7px",fontSize:9,textDecoration:"none"}}>↗</a>}
                           <button onClick={()=>deleteDoc(doc.id)} style={{background:"none",border:"1px solid rgba(239,68,68,.25)",color:"#ef4444",cursor:"pointer",borderRadius:2,padding:"2px 7px",fontSize:9,fontFamily:"inherit"}}>✕</button>
                         </div>
                       </div>
@@ -9887,7 +9897,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
         {/* ── INTEL ── */}
         {view==="intel"&&(
           <div style={{flex:1,overflow:"auto",padding:18}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#d4af37",marginBottom:14}}>EMAIL INTELLIGENCE</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#ff2e88",marginBottom:14}}>EMAIL INTELLIGENCE</div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {intelligence.map(intel=>{
                 const biz=bizFor(intel.business_id); const kd=intel.key_data||{};
@@ -9902,7 +9912,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                     </div>
                     <div style={{fontSize:11,color:"#e0dcd0",marginBottom:4}}>{intel.email_subject}</div>
                     <div style={{fontSize:10,color:"#777",lineHeight:1.65}}>{intel.summary}</div>
-                    {kd.rates?.length>0&&<div style={{marginTop:8,display:"flex",gap:6,flexWrap:"wrap"}}>{kd.rates.map((r,i)=><div key={i} style={{background:"rgba(212,175,55,.08)",border:"1px solid rgba(212,175,55,.2)",borderRadius:3,padding:"4px 10px"}}><div style={{fontSize:9,color:"#888"}}>{r.product}</div><div style={{fontSize:13,color:"#d4af37",fontWeight:"500"}}>{r.rate}</div></div>)}</div>}
+                    {kd.rates?.length>0&&<div style={{marginTop:8,display:"flex",gap:6,flexWrap:"wrap"}}>{kd.rates.map((r,i)=><div key={i} style={{background:"rgba(255,46,136,.08)",border:"1px solid rgba(255,46,136,.2)",borderRadius:3,padding:"4px 10px"}}><div style={{fontSize:9,color:"#888"}}>{r.product}</div><div style={{fontSize:13,color:"#ff2e88",fontWeight:"500"}}>{r.rate}</div></div>)}</div>}
                     {intel.action_items?.length>0&&<div style={{marginTop:7}}>{intel.action_items.map((a,i)=><div key={i} style={{fontSize:9,color:"#666",padding:"2px 0",paddingLeft:10,borderLeft:"2px solid #1e1e2e"}}>→ {a}</div>)}</div>}
                   </div>
                 );
@@ -9916,7 +9926,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
         {view==="biz"&&(
           <div style={{flex:1,overflow:"auto",padding:18}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#d4af37"}}>BUSINESSES & PRODUCTS</div>
+              <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,letterSpacing:".2em",color:"#ff2e88"}}>BUSINESSES & PRODUCTS</div>
             </div>
 
             {/* P&L Dashboard */}
@@ -9930,8 +9940,8 @@ function EmailVault({ user, teamProfile, onSignOut }) {
               const totalExp = bizPL.reduce((s,b)=>s+b.exp,0);
               const totalProfit = totalRev-totalExp;
               return (
-                <div style={{background:"#0a0a14",border:"1px solid rgba(212,175,55,.12)",borderRadius:6,padding:16,marginBottom:20}}>
-                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:".15em",color:"#d4af37",marginBottom:12}}>PROFIT & LOSS OVERVIEW</div>
+                <div style={{background:"#0a0a14",border:"1px solid rgba(255,46,136,.12)",borderRadius:6,padding:16,marginBottom:20}}>
+                  <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:14,letterSpacing:".15em",color:"#ff2e88",marginBottom:12}}>PROFIT & LOSS OVERVIEW</div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:14}}>
                     <div style={{background:"#0d0d18",borderRadius:4,padding:"12px 14px",textAlign:"center",border:"1px solid rgba(16,185,129,.15)"}}>
                       <div style={{fontSize:22,color:"#10b981",fontWeight:700}}>${totalRev.toLocaleString()}</div>
@@ -9941,8 +9951,8 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                       <div style={{fontSize:22,color:"#ef4444",fontWeight:700}}>${totalExp.toLocaleString()}</div>
                       <div style={{fontSize:8,color:"#444",letterSpacing:".08em"}}>TOTAL EXPENSES</div>
                     </div>
-                    <div style={{background:"#0d0d18",borderRadius:4,padding:"12px 14px",textAlign:"center",border:`1px solid ${totalProfit>=0?"rgba(212,175,55,.15)":"rgba(239,68,68,.15)"}`}}>
-                      <div style={{fontSize:22,color:totalProfit>=0?"#d4af37":"#ef4444",fontWeight:700}}>${totalProfit.toLocaleString()}</div>
+                    <div style={{background:"#0d0d18",borderRadius:4,padding:"12px 14px",textAlign:"center",border:`1px solid ${totalProfit>=0?"rgba(255,46,136,.15)":"rgba(239,68,68,.15)"}`}}>
+                      <div style={{fontSize:22,color:totalProfit>=0?"#ff2e88":"#ef4444",fontWeight:700}}>${totalProfit.toLocaleString()}</div>
                       <div style={{fontSize:8,color:"#444",letterSpacing:".08em"}}>NET PROFIT</div>
                     </div>
                   </div>
@@ -9953,7 +9963,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                         <span style={{fontSize:10,color:"#e0dcd0",flex:1,minWidth:100}}>{biz.name}</span>
                         <span style={{fontSize:9,color:"#10b981",minWidth:70,textAlign:"right"}}>${rev.toLocaleString()}</span>
                         <span style={{fontSize:9,color:"#ef4444",minWidth:70,textAlign:"right"}}>${exp.toLocaleString()}</span>
-                        <span style={{fontSize:10,color:profit>=0?"#d4af37":"#ef4444",fontWeight:600,minWidth:70,textAlign:"right"}}>${profit.toLocaleString()}</span>
+                        <span style={{fontSize:10,color:profit>=0?"#ff2e88":"#ef4444",fontWeight:600,minWidth:70,textAlign:"right"}}>${profit.toLocaleString()}</span>
                         <div style={{minWidth:50,textAlign:"right"}}>
                           <span style={{fontSize:8,color:margin>=0?"#10b981":"#ef4444",background:margin>=0?"rgba(16,185,129,.08)":"rgba(239,68,68,.08)",padding:"2px 6px",borderRadius:2}}>{margin}%</span>
                         </div>
@@ -9976,15 +9986,15 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                 const bRevenue=deals.filter(d=>d.business_id===biz.id&&d.status==="won").reduce((s,d)=>s+Number(d.value||0),0);
                 return (
                   <div key={biz.id} style={{background:"#0d0d18",border:"1px solid #1e1e28",borderRadius:6,overflow:"hidden"}}>
-                    <div style={{padding:"14px 16px",borderBottom:"1px solid #131320",display:"flex",alignItems:"center",gap:12,background:`${biz.color||"#d4af37"}06`}}>
-                      <div style={{width:40,height:40,background:`${biz.color||"#d4af37"}20`,border:`1px solid ${biz.color||"#d4af37"}40`,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{biz.icon||"🏢"}</div>
+                    <div style={{padding:"14px 16px",borderBottom:"1px solid #131320",display:"flex",alignItems:"center",gap:12,background:`${biz.color||"#ff2e88"}06`}}>
+                      <div style={{width:40,height:40,background:`${biz.color||"#ff2e88"}20`,border:`1px solid ${biz.color||"#ff2e88"}40`,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{biz.icon||"🏢"}</div>
                       <div style={{flex:1}}><div style={{fontSize:14,color:"#e0dcd0"}}>{biz.name}</div><div style={{fontSize:9,color:"#555"}}>{biz.type}</div></div>
                       {bRevenue>0&&<div style={{textAlign:"right"}}><div style={{fontSize:8,color:"#444"}}>WON</div><div style={{fontSize:13,color:"#10b981",fontWeight:"500"}}>{usd(bRevenue)}</div></div>}
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",borderBottom:"1px solid #131320"}}>
                       {[{l:"PRODS",v:bProds.length},{l:"CONTACTS",v:bCons.length},{l:"DEALS",v:bDeals.length},{l:"INTEL",v:bIntel.length}].map(s=>(
                         <div key={s.l} style={{padding:"9px 0",textAlign:"center",borderRight:"1px solid #131320"}}>
-                          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:biz.color||"#d4af37"}}>{s.v}</div>
+                          <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:18,color:biz.color||"#ff2e88"}}>{s.v}</div>
                           <div style={{fontSize:7,color:"#333",letterSpacing:".06em"}}>{s.l}</div>
                         </div>
                       ))}
@@ -9993,7 +10003,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
                       {bProds.map(p=>(
                         <div key={p.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0",borderBottom:"1px solid #0f0f18"}}>
                           <span style={{fontSize:10,color:"#666"}}>{p.name} <span style={{fontSize:8,color:"#333"}}>{p.category}</span></span>
-                          <span style={{fontSize:11,color:biz.color||"#d4af37",fontWeight:"500"}}>{p.current_value||"—"}</span>
+                          <span style={{fontSize:11,color:biz.color||"#ff2e88",fontWeight:"500"}}>{p.current_value||"—"}</span>
                         </div>
                       ))}
                       {bProds.length===0&&<div style={{fontSize:9,color:"#1e1e2e",padding:"4px 0"}}>No products configured</div>}
