@@ -8997,6 +8997,60 @@ function CallListView({ showToast }) {
   );
 }
 
+function MMIView({ showToast }) {
+  const [los, setLos] = useState([]);
+  const [stats, setStats] = useState({});
+  const [loading, setLoading] = useState(true);
+  const headCount = async (path) => {
+    try { const r = await fetch(`${SB_URL}${path}`, { method: "HEAD", headers: { apikey: SB_KEY, Authorization: `Bearer ${zVT()}`, Prefer: "count=estimated", "Accept-Profile": "public" } }); return parseInt((r.headers.get("content-range") || "0/0").split("/")[1]) || 0; } catch { return 0; }
+  };
+  const load = useCallback(async () => {
+    setLoading(true);
+    const [refi, queued, pushed] = await Promise.all([
+      headCount("/rest/v1/mmi_chat_sfl_swfl_imports?select=id"),
+      headCount("/rest/v1/ziarem_call_list?status=eq.new&select=id"),
+      headCount("/rest/v1/mmi_pushed_contacts?select=id"),
+    ]);
+    setStats({ refi, queued, pushed });
+    try { setLos(await sbAuth("/rest/v1/mmi_pushed_contacts?select=*&order=vol_14mo.desc.nullslast&limit=100") || []); } catch (e) {}
+    setLoading(false);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  const pull = async () => { try { await sbAuth("/rest/v1/rpc/refresh_ziarem_call_list", { method: "POST", body: "{}" }); showToast("MMI refi → Call List refreshed"); load(); } catch (e) { showToast("refresh failed"); } };
+  const Stat = ({ n, l, c }) => (<div className="card" style={{ background: "#10101c", border: "2px solid #241433", padding: "12px 16px", flex: 1, minWidth: 150 }}><div style={{ fontSize: 24, fontWeight: 800, color: c }}>{n == null ? "…" : n.toLocaleString()}</div><div style={{ color: "#777", fontSize: 11, marginTop: 2 }}>{l}</div></div>);
+  const th = { textAlign: "left", padding: "7px 10px", color: "#777", fontSize: 9, textTransform: "uppercase", letterSpacing: ".06em", borderBottom: "1px solid #241433" };
+  const td = { padding: "6px 10px", fontSize: 12, borderBottom: "1px solid #160a22", color: "#cfc9bd" };
+  return (
+    <div className="fi" style={{ padding: 16, overflowY: "auto", height: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: ".15em", color: "#ff2e88", textShadow: "0 0 12px rgba(255,46,136,.5)" }}>MMI</span>
+        <span style={{ color: "#666", fontSize: 10 }}>Mortgage Market Intelligence · refi opps + LO intel</span>
+        <div style={{ flex: 1 }} />
+        <Btn onClick={pull}>↻ Pull refi → Call List</Btn>
+        <a href="https://new.mmi.run" target="_blank" rel="noopener"><Btn style={{ background: "#ff2e88", color: "#000", fontWeight: 700 }}>Open MMI ↗</Btn></a>
+      </div>
+      <div style={{ display: "flex", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
+        <Stat n={stats.refi} l="MMI refi opportunities (imported)" c="#ff2e88" />
+        <Stat n={stats.queued} l="Queued in Call List" c="#15e0c8" />
+        <Stat n={stats.pushed} l="LO / NMLS contacts captured" c="#ff9e1c" />
+      </div>
+      <div style={{ color: "#777", fontSize: 11, marginBottom: 8, textTransform: "uppercase", letterSpacing: ".06em" }}>Loan-officer contacts (webhook push from MMI)</div>
+      {loading ? <div style={{ color: "#666", padding: 30, textAlign: "center" }}>Loading MMI…</div> :
+        los.length ? <div style={{ background: "#10101c", border: "2px solid #241433" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>
+            <th style={th}>Name</th><th style={th}>Company</th><th style={th}>NMLS</th><th style={th}>Phone</th><th style={th}>State</th><th style={{ ...th, textAlign: "right" }}>14mo vol</th><th style={{ ...th, textAlign: "right" }}>14mo #</th><th style={th}>Links</th>
+          </tr></thead><tbody>{los.map(r => (<tr key={r.id} className="erow">
+            <td style={{ ...td, color: "#fff" }}>{[r.first_name, r.last_name].filter(Boolean).join(" ") || "—"}</td>
+            <td style={td}>{r.company || "—"}</td><td style={td}>{r.nmls_id || "—"}</td><td style={td}>{r.phone || "—"}</td><td style={td}>{r.state || "—"}</td>
+            <td style={{ ...td, textAlign: "right", color: "#15e0c8" }}>{r.vol_14mo ? "$" + Math.round(r.vol_14mo).toLocaleString() : "—"}</td>
+            <td style={{ ...td, textAlign: "right" }}>{r.count_14mo ?? "—"}</td>
+            <td style={td}>{r.profile_url ? <a href={r.profile_url} target="_blank" rel="noopener" style={{ color: "#ff2e88" }}>MMI</a> : ""} {r.linkedin ? <a href={r.linkedin} target="_blank" rel="noopener" style={{ color: "#15e0c8" }}>in</a> : ""}</td>
+          </tr>))}</tbody></table>
+        </div> : <div style={{ color: "#666", padding: 30, textAlign: "center" }}>No LO contacts pushed yet. The MMI webhook (mmi-webhook) feeds these from new.mmi.run → CRM Push URL. Refi opportunities already flow into the Call List.</div>}
+    </div>
+  );
+}
+
 function LeadsAllView({ showToast }) {
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState("");
@@ -9465,6 +9519,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
       {id:"leads",     icon:"🎯", label:"Leads",     badge:0, admin:true},
       {id:"allleads",  icon:"📇", label:"All Leads", badge:0, admin:true},
       {id:"clients",   icon:"🤝", label:"Clients",   badge:0, admin:true},
+      {id:"mmi",       icon:"📈", label:"MMI",       badge:0, admin:true},
       {id:"propintel", icon:"🏠", label:"Property Intel", badge:0, admin:true},
       {id:"appointments",icon:"📅", label:"Booking",  badge:todayAppts, admin:true},
       {id:"invoices",  icon:"💰", label:"Invoicing",  badge:overdueInvs, admin:true},
@@ -9678,6 +9733,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
         {view==="calllist"&&<CallListView showToast={showToast} />}
         {view==="allleads"&&<LeadsAllView showToast={showToast} />}
         {view==="clients"&&<ClientsAllView showToast={showToast} />}
+        {view==="mmi"&&<MMIView showToast={showToast} />}
         {view==="listmonk"&&<ListmonkView showToast={showToast} />}
 
         {/* ── INBOX ── */}
