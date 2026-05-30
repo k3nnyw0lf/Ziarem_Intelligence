@@ -1,6 +1,6 @@
-const CACHE_NAME = 'vault-crm-v1';
-const STATIC_CACHE = 'vault-static-v1';
-const DYNAMIC_CACHE = 'vault-dynamic-v1';
+const CACHE_NAME = 'vault-crm-v2';
+const STATIC_CACHE = 'vault-static-v2';
+const DYNAMIC_CACHE = 'vault-dynamic-v2';
 
 // App shell files to cache on install
 const APP_SHELL = [
@@ -59,6 +59,14 @@ self.addEventListener('fetch', (event) => {
 
   // Skip chrome-extension and other non-http(s) requests
   if (!request.url.startsWith('http')) return;
+
+  // HTML / navigation requests are ALWAYS network-first so a new deploy
+  // (new hashed bundle) reaches users immediately instead of being frozen
+  // on a cached index.html.
+  if (request.mode === 'navigate' || request.destination === 'document') {
+    event.respondWith(networkFirst(request));
+    return;
+  }
 
   // Check if this request should use network-first
   const isNetworkFirst = NETWORK_FIRST_PATTERNS.some((pattern) =>

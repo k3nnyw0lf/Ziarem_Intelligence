@@ -8997,6 +8997,105 @@ function CallListView({ showToast }) {
   );
 }
 
+function LeadsAllView({ showToast }) {
+  const [rows, setRows] = useState([]);
+  const [q, setQ] = useState("");
+  const [svc, setSvc] = useState("");
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const PAGE = 100;
+  const load = useCallback(async (reset) => {
+    setLoading(true);
+    const off = reset ? 0 : page * PAGE;
+    let url = `/rest/v1/leads_contacts?select=id,full_name,first_name,last_name,phone_primary,email,city,state,zip,primary_service,federal_dnc,dnc,score_insurance,score_mortgage,score_realestate,score_credit,cross_sell_score&order=cross_sell_score.desc.nullslast&limit=${PAGE}&offset=${off}`;
+    const s = q.trim();
+    if (s) { const e = encodeURIComponent(`%${s}%`); url += `&or=(full_name.ilike.${e},phone_primary.ilike.${e},email.ilike.${e},city.ilike.${e})`; }
+    if (svc) url += `&primary_service=eq.${svc}`;
+    try {
+      const r = await fetch(`${SB_URL}${url}`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${zVT()}`, "Accept-Profile": "public", Prefer: "count=estimated" } });
+      const cr = r.headers.get("content-range"); if (cr) setTotal(parseInt(cr.split("/")[1]) || null);
+      const data = await r.json();
+      setRows(reset ? data : rs => [...rs, ...data]);
+    } catch (e) { showToast("Load failed"); }
+    setLoading(false);
+  }, [q, svc, page]);
+  useEffect(() => { setPage(0); load(true); }, [q, svc]);
+  const th = { textAlign: "left", padding: "7px 10px", color: "#777", fontSize: 9, textTransform: "uppercase", letterSpacing: ".06em", borderBottom: "1px solid #241433", position: "sticky", top: 0, background: "#0c0c16" };
+  const td = { padding: "6px 10px", fontSize: 12, borderBottom: "1px solid #160a22", color: "#cfc9bd" };
+  const aiCallLead = async (r, name) => {
+    if (!r.phone_primary || r.federal_dnc || r.dnc) return showToast("Not callable");
+    if (!confirm(`AI call ${name} ${r.phone_primary}? Real Telnyx call.`)) return;
+    try { const d = await sbAuth(`/functions/v1/voice-dispatch`, { method: "POST", body: JSON.stringify({ to: r.phone_primary, service: r.primary_service || "insurance", first_name: name, force_area: true, force_hours: true, dry_run: false }) }); showToast(d?.placed ? "✓ placed" : "gated"); } catch (e) { showToast("fail: " + e.message); }
+  };
+  return (
+    <div className="fi" style={{ padding: 16, overflowY: "auto", height: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: ".15em", color: "#ff2e88", textShadow: "0 0 12px rgba(255,46,136,.5)" }}>ALL LEADS</span>
+        <span style={{ color: "#666", fontSize: 10 }}>shared layer · {total != null ? total.toLocaleString() : "…"} total</span>
+        <div style={{ flex: 1 }} />
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="search name / phone / email / city" style={{ background: "#0c0c16", border: "1px solid #241433", color: "#cfc9bd", fontFamily: "inherit", fontSize: 11, padding: "5px 9px", minWidth: 240 }} />
+        <select value={svc} onChange={e => setSvc(e.target.value)} style={{ background: "#0c0c16", border: "1px solid #241433", color: "#cfc9bd", fontFamily: "inherit", fontSize: 11, padding: "5px" }}>
+          <option value="">all services</option>{["insurance", "mortgage", "realestate", "credit", "reno", "title"].map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+      <div style={{ background: "#10101c", border: "2px solid #241433" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>
+          <th style={th}>Name</th><th style={th}>Phone</th><th style={th}>Email</th><th style={th}>Location</th><th style={th}>Service</th><th style={{ ...th, textAlign: "right" }}>X-sell</th><th style={th}>Flags</th><th style={th}></th>
+        </tr></thead><tbody>{rows.map(r => { const name = r.full_name || [r.first_name, r.last_name].filter(Boolean).join(" ") || "—"; const blocked = r.federal_dnc || r.dnc; return (<tr key={r.id} className="erow">
+          <td style={{ ...td, color: "#fff" }}>{name}</td><td style={td}>{r.phone_primary || "—"}</td><td style={td}>{r.email || "—"}</td>
+          <td style={td}>{[r.city, r.state].filter(Boolean).join(", ")} {r.zip || ""}</td>
+          <td style={td}>{r.primary_service ? <span className="tag" style={{ background: "#2a1a3a", color: "#15e0c8" }}>{r.primary_service}</span> : "—"}</td>
+          <td style={{ ...td, textAlign: "right", color: "#15e0c8" }}>{r.cross_sell_score ?? "—"}</td>
+          <td style={td}>{r.federal_dnc ? <span className="tag" style={{ background: "#3a1a1a", color: "#ef4444" }}>fed DNC</span> : ""}{r.dnc ? <span className="tag" style={{ background: "#3a1a1a", color: "#ef4444" }}>DNC</span> : ""}{!blocked ? <span className="tag" style={{ background: "#1a3a24", color: "#15e0c8" }}>callable</span> : ""}</td>
+          <td style={td}>{!blocked && r.phone_primary && <button onClick={() => aiCallLead(r, name)} style={{ background: "#ff2e88", color: "#000", border: "none", fontFamily: "inherit", fontSize: 10, fontWeight: 700, padding: "3px 8px", cursor: "pointer" }}>AI Call</button>}</td>
+        </tr>); })}</tbody></table>
+      </div>
+      <div style={{ textAlign: "center", padding: 14 }}>
+        {loading ? <span style={{ color: "#666" }}>loading…</span> : rows.length >= PAGE && !q ? <Btn onClick={() => { setPage(p => p + 1); load(false); }}>Load more ({rows.length} shown)</Btn> : <span style={{ color: "#555", fontSize: 11 }}>{rows.length} shown</span>}
+      </div>
+    </div>
+  );
+}
+
+function ClientsAllView({ showToast }) {
+  const [rows, setRows] = useState([]);
+  const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(true);
+  const load = useCallback(async () => {
+    setLoading(true);
+    let url = `/rest/v1/clients?select=id,full_name,email,phone,city,state,zip,source,ezlynx_id,arive_loan_id,referral_source,notes&order=created_at.desc&limit=700`;
+    const s = q.trim();
+    if (s) { const e = encodeURIComponent(`%${s}%`); url += `&or=(full_name.ilike.${e},email.ilike.${e},phone.ilike.${e},city.ilike.${e})`; }
+    try { setRows(await sbAuth(url) || []); } catch (e) { showToast("Load failed"); }
+    setLoading(false);
+  }, [q]);
+  useEffect(() => { load(); }, [load]);
+  const th = { textAlign: "left", padding: "7px 10px", color: "#777", fontSize: 9, textTransform: "uppercase", letterSpacing: ".06em", borderBottom: "1px solid #241433", position: "sticky", top: 0, background: "#0c0c16" };
+  const td = { padding: "6px 10px", fontSize: 12, borderBottom: "1px solid #160a22", color: "#cfc9bd" };
+  return (
+    <div className="fi" style={{ padding: 16, overflowY: "auto", height: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: ".15em", color: "#ff2e88", textShadow: "0 0 12px rgba(255,46,136,.5)" }}>CLIENTS</span>
+        <span style={{ color: "#666", fontSize: 10 }}>converted · shared layer · {rows.length} shown</span>
+        <div style={{ flex: 1 }} />
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="search name / email / phone / city" style={{ background: "#0c0c16", border: "1px solid #241433", color: "#cfc9bd", fontFamily: "inherit", fontSize: 11, padding: "5px 9px", minWidth: 260 }} />
+      </div>
+      {loading ? <div style={{ color: "#666", padding: 40, textAlign: "center" }}>Loading clients…</div> :
+        <div style={{ background: "#10101c", border: "2px solid #241433" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>
+            <th style={th}>Name</th><th style={th}>Email</th><th style={th}>Phone</th><th style={th}>Location</th><th style={th}>Source</th><th style={th}>Linked</th>
+          </tr></thead><tbody>{rows.map(c => (<tr key={c.id} className="erow">
+            <td style={{ ...td, color: "#fff", fontWeight: 600 }}>{c.full_name || "—"}</td><td style={td}>{c.email || "—"}</td><td style={td}>{c.phone || "—"}</td>
+            <td style={td}>{[c.city, c.state].filter(Boolean).join(", ")} {c.zip || ""}</td>
+            <td style={td}>{c.source ? <span className="tag" style={{ background: "#2a1a3a", color: "#15e0c8" }}>{c.source}</span> : "—"}{c.referral_source ? <span className="tag" style={{ background: "#241433", color: "#ff2e88" }}>{c.referral_source}</span> : ""}</td>
+            <td style={td}>{c.ezlynx_id ? <span className="tag" style={{ background: "#241433", color: "#15e0c8" }}>EZLynx</span> : ""}{c.arive_loan_id ? <span className="tag" style={{ background: "#241433", color: "#ff9e1c" }}>Arive</span> : ""}</td>
+          </tr>))}</tbody></table>
+        </div>}
+    </div>
+  );
+}
+
 function ListmonkView({ showToast }) {
   const [tab, setTab] = useState("campaigns");
   const [lists, setLists] = useState([]);
@@ -9364,6 +9463,8 @@ function EmailVault({ user, teamProfile, onSignOut }) {
     { id:"sales", label:"SALES & CRM", items:[
       {id:"crm",       icon:"💼", label:"CRM",       badge:overdueTasks.length, admin:true},
       {id:"leads",     icon:"🎯", label:"Leads",     badge:0, admin:true},
+      {id:"allleads",  icon:"📇", label:"All Leads", badge:0, admin:true},
+      {id:"clients",   icon:"🤝", label:"Clients",   badge:0, admin:true},
       {id:"propintel", icon:"🏠", label:"Property Intel", badge:0, admin:true},
       {id:"appointments",icon:"📅", label:"Booking",  badge:todayAppts, admin:true},
       {id:"invoices",  icon:"💰", label:"Invoicing",  badge:overdueInvs, admin:true},
@@ -9575,6 +9676,8 @@ function EmailVault({ user, teamProfile, onSignOut }) {
         {view==="market"&&<MarketIntelView showToast={showToast} />}
         {view==="propintel"&&<PropIntelView showToast={showToast} />}
         {view==="calllist"&&<CallListView showToast={showToast} />}
+        {view==="allleads"&&<LeadsAllView showToast={showToast} />}
+        {view==="clients"&&<ClientsAllView showToast={showToast} />}
         {view==="listmonk"&&<ListmonkView showToast={showToast} />}
 
         {/* ── INBOX ── */}
