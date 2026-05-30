@@ -9051,6 +9051,56 @@ function MMIView({ showToast }) {
   );
 }
 
+function LoanPipelineView({ showToast }) {
+  const [rows, setRows] = useState([]);
+  const [filter, setFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const load = useCallback(async () => {
+    setLoading(true); setErr("");
+    let q = "/rest/v1/v_loan_pipeline?select=*&order=closing_date.desc.nullslast&limit=400";
+    if (filter === "insurance") q += "&needs_insurance=eq.true";
+    else if (filter === "closing") q += "&closing_date=gte." + new Date().toISOString().slice(0, 10);
+    try { setRows(await sbAuth(q) || []); } catch (e) { setErr(String(e.message || e)); }
+    setLoading(false);
+  }, [filter]);
+  useEffect(() => { load(); }, [load]);
+  const money = n => n == null ? "—" : "$" + Math.round(n).toLocaleString();
+  const insCount = rows.filter(r => r.needs_insurance).length;
+  const mileColor = m => ({ Closed: "#15e0c8", Withdrawn: "#8a7da0", Denied: "#ef4444", Suspended: "#ff9e1c" }[m] || "#ff2e88");
+  const th = { textAlign: "left", padding: "7px 10px", color: "#777", fontSize: 9, textTransform: "uppercase", letterSpacing: ".06em", borderBottom: "1px solid #241433", position: "sticky", top: 0, background: "#0c0c16" };
+  const td = { padding: "6px 10px", fontSize: 12, borderBottom: "1px solid #160a22", color: "#cfc9bd" };
+  return (
+    <div className="fi" style={{ padding: 16, overflowY: "auto", height: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: ".15em", color: "#ff2e88", textShadow: "0 0 12px rgba(255,46,136,.5)" }}>PIPELINE</span>
+        <span style={{ color: "#666", fontSize: 10 }}>DOS Mortgage · Arive · {rows.length} loans · {insCount} need insurance</span>
+        <div style={{ flex: 1 }} />
+        {[["all", "All"], ["closing", "Closing soon"], ["insurance", "🛡️ Needs insurance"]].map(([k, l]) => (
+          <button key={k} onClick={() => setFilter(k)} style={{ background: filter === k ? "rgba(255,46,136,.12)" : "rgba(255,255,255,.03)", border: `1px solid ${filter === k ? "#ff2e88" : "#241433"}`, color: filter === k ? "#ff2e88" : "#777", fontFamily: "inherit", fontSize: 10, padding: "4px 11px", cursor: "pointer" }}>{l}</button>
+        ))}
+      </div>
+      {err && <div style={{ background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.3)", color: "#ef4444", padding: 10, fontSize: 11, marginBottom: 10 }}>Sign-in required (staff). {err}</div>}
+      {loading ? <div style={{ color: "#666", padding: 40, textAlign: "center" }}>Loading Arive pipeline…</div> :
+        <div style={{ background: "#10101c", border: "2px solid #241433" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>
+            <th style={th}>Borrower</th><th style={th}>Entity</th><th style={th}>LO</th><th style={th}>Lender</th><th style={th}>Type</th><th style={{ ...th, textAlign: "right" }}>Amount</th><th style={th}>Closing</th><th style={th}>Milestone</th><th style={th}>Insurance</th>
+          </tr></thead><tbody>{rows.map(r => (<tr key={r.id} className="erow">
+            <td style={{ ...td, color: "#fff" }}>{r.borrower_name || "—"}<div style={{ color: "#555", fontSize: 10 }}>{r.property_address || ""}</div></td>
+            <td style={td}><span className="tag" style={{ background: "#241433", color: "#15e0c8" }}>{r.entity || "—"}</span></td>
+            <td style={td}>{r.lo_name || "—"}{r.as_lo_name ? <div style={{ color: "#555", fontSize: 10 }}>as {r.as_lo_name}</div> : ""}</td>
+            <td style={td}>{r.lender || "—"}</td>
+            <td style={td}>{r.loan_type || "—"}</td>
+            <td style={{ ...td, textAlign: "right" }}>{money(r.loan_amount)}</td>
+            <td style={td}>{r.closing_date || "—"}</td>
+            <td style={td}><span style={{ color: mileColor(r.milestone), border: `1px solid ${mileColor(r.milestone)}`, padding: "1px 7px", fontSize: 9, textTransform: "uppercase" }}>{r.milestone || "—"}</span></td>
+            <td style={td}>{r.needs_insurance ? <span className="tag" style={{ background: "#3a2c1a", color: "#ff9e1c" }}>⚠ attach</span> : (r.doc_hoi ? <span className="tag" style={{ background: "#1a3a24", color: "#15e0c8" }}>HOI ✓</span> : "—")}</td>
+          </tr>))}</tbody></table>
+        </div>}
+    </div>
+  );
+}
+
 function LeadsAllView({ showToast }) {
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState("");
@@ -9520,6 +9570,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
       {id:"allleads",  icon:"📇", label:"All Leads", badge:0, admin:true},
       {id:"clients",   icon:"🤝", label:"Clients",   badge:0, admin:true},
       {id:"mmi",       icon:"📈", label:"MMI",       badge:0, admin:true},
+      {id:"loanpipeline", icon:"📑", label:"Pipeline", badge:0, admin:true},
       {id:"propintel", icon:"🏠", label:"Property Intel", badge:0, admin:true},
       {id:"appointments",icon:"📅", label:"Booking",  badge:todayAppts, admin:true},
       {id:"invoices",  icon:"💰", label:"Invoicing",  badge:overdueInvs, admin:true},
@@ -9734,6 +9785,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
         {view==="allleads"&&<LeadsAllView showToast={showToast} />}
         {view==="clients"&&<ClientsAllView showToast={showToast} />}
         {view==="mmi"&&<MMIView showToast={showToast} />}
+        {view==="loanpipeline"&&<LoanPipelineView showToast={showToast} />}
         {view==="listmonk"&&<ListmonkView showToast={showToast} />}
 
         {/* ── INBOX ── */}
