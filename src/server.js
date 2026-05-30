@@ -19,6 +19,10 @@ const PORT = process.env.PORT || 3000;
 
 const openapiSpec = require('../docs/openapi.json');
 
+// Serve the built SPA (CRM frontend) BEFORE the API auth gate so / and /assets bypass apiKeyAuth.
+// dist/ is committed so the Passenger deploy needs no build step.
+app.use(express.static(path.join(__dirname, '..', 'dist')));
+
 app.use(cors({ origin: true, credentials: true }));
 app.use(rateLimiter);
 app.use(express.json());
