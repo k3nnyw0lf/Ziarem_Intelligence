@@ -8997,6 +8997,70 @@ function CallListView({ showToast }) {
   );
 }
 
+function ListmonkView({ showToast }) {
+  const [tab, setTab] = useState("campaigns");
+  const [lists, setLists] = useState([]);
+  const [camps, setCamps] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const call = (path, method = "GET", payload) =>
+    sbAuth("/functions/v1/listmonk-proxy", { method: "POST", body: JSON.stringify({ path, method, payload }) });
+  const load = useCallback(async () => {
+    setLoading(true); setErr("");
+    try {
+      const [l, c] = await Promise.all([call("lists"), call("campaigns")]);
+      setLists(l?.data?.results || l?.results || []);
+      setCamps(c?.data?.results || c?.results || []);
+    } catch (e) { setErr(String(e.message || e)); }
+    setLoading(false);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  const th = { textAlign: "left", padding: "7px 10px", color: "#777", fontSize: 9, textTransform: "uppercase", letterSpacing: ".06em", borderBottom: "1px solid #241433" };
+  const td = { padding: "7px 10px", fontSize: 12, borderBottom: "1px solid #160a22", color: "#cfc9bd" };
+  const statusColor = s => ({ running: "#15e0c8", finished: "#1f6d3a", scheduled: "#ff9e1c", draft: "#777", cancelled: "#ef4444", paused: "#ff9e1c" }[s] || "#777");
+  return (
+    <div className="fi" style={{ padding: 16, overflowY: "auto", height: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: ".15em", color: "#ff2e88", textShadow: "0 0 12px rgba(255,46,136,.5)" }}>LISTMONK</span>
+        <span style={{ color: "#666", fontSize: 10 }}>email marketing · self-hosted</span>
+        <div style={{ flex: 1 }} />
+        {["campaigns", "lists"].map(t => (
+          <button key={t} onClick={() => setTab(t)} style={{ background: tab === t ? "rgba(255,46,136,.12)" : "rgba(255,255,255,.03)", border: `1px solid ${tab === t ? "#ff2e88" : "#241433"}`, color: tab === t ? "#ff2e88" : "#777", fontFamily: "inherit", fontSize: 10, padding: "4px 12px", cursor: "pointer", textTransform: "uppercase", letterSpacing: ".05em" }}>{t}</button>
+        ))}
+        <Btn onClick={load}>↻</Btn>
+        <a href="http://217.21.78.98:9000" target="_blank" rel="noopener"><Btn style={{ background: "#ff2e88", color: "#000", fontWeight: 700 }}>Open Listmonk ↗</Btn></a>
+      </div>
+      {err && <div style={{ background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.3)", color: "#ef4444", padding: 10, fontSize: 11, marginBottom: 10 }}>Listmonk error (staff sign-in required): {err}</div>}
+      {loading ? <div style={{ color: "#666", padding: 40, textAlign: "center" }}>Loading Listmonk…</div> :
+        tab === "campaigns" ? (
+          camps.length ? <div style={{ background: "#10101c", border: "2px solid #241433" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>
+              <th style={th}>Campaign</th><th style={th}>Status</th><th style={{ ...th, textAlign: "right" }}>Sent</th><th style={{ ...th, textAlign: "right" }}>To send</th><th style={th}>Type</th><th style={th}>Created</th>
+            </tr></thead><tbody>{camps.map(c => (<tr key={c.id} className="erow">
+              <td style={{ ...td, color: "#fff", fontWeight: 600 }}>{c.name}<div style={{ color: "#666", fontSize: 10 }}>{c.subject || ""}</div></td>
+              <td style={td}><span style={{ color: statusColor(c.status), border: `1px solid ${statusColor(c.status)}`, padding: "1px 7px", fontSize: 9, textTransform: "uppercase", letterSpacing: ".05em" }}>{c.status}</span></td>
+              <td style={{ ...td, textAlign: "right", color: "#15e0c8" }}>{(c.sent ?? 0).toLocaleString()}</td>
+              <td style={{ ...td, textAlign: "right" }}>{(c.to_send ?? 0).toLocaleString()}</td>
+              <td style={td}>{c.type}</td>
+              <td style={td}>{c.created_at ? new Date(c.created_at).toLocaleDateString("en-US") : "—"}</td>
+            </tr>))}</tbody></table>
+          </div> : <div style={{ color: "#666", padding: 40, textAlign: "center" }}>No campaigns yet. Open Listmonk to create one.</div>
+        ) : (
+          lists.length ? <div style={{ background: "#10101c", border: "2px solid #241433" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>
+              <th style={th}>List</th><th style={th}>Type</th><th style={th}>Optin</th><th style={{ ...th, textAlign: "right" }}>Subscribers</th><th style={th}>Tags</th>
+            </tr></thead><tbody>{lists.map(l => (<tr key={l.id} className="erow">
+              <td style={{ ...td, color: "#fff", fontWeight: 600 }}>{l.name}</td>
+              <td style={td}>{l.type}</td><td style={td}>{l.optin}</td>
+              <td style={{ ...td, textAlign: "right", color: "#15e0c8", fontWeight: 700 }}>{(l.subscriber_count ?? 0).toLocaleString()}</td>
+              <td style={td}>{(l.tags || []).map(t => <span key={t} className="tag" style={{ background: "#241433", color: "#ff2e88" }}>{t}</span>)}</td>
+            </tr>))}</tbody></table>
+          </div> : <div style={{ color: "#666", padding: 40, textAlign: "center" }}>No lists. Open Listmonk to create one.</div>
+        )}
+    </div>
+  );
+}
+
 function EmailVault({ user, teamProfile, onSignOut }) {
   const isAdmin = teamProfile?.role==="super_admin"||teamProfile?.role==="admin";
   const [view, setView] = useState(isAdmin ? "dashboard" : "callcenter");
@@ -9306,6 +9370,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
     ]},
     { id:"marketing", label:"MARKETING", items:[
       {id:"marketing", icon:"📣", label:"Campaigns",  badge:0, admin:true},
+      {id:"listmonk",  icon:"📧", label:"Listmonk",   badge:0, admin:true},
       {id:"social",    icon:"📱", label:"Social",     badge:0, admin:true},
       {id:"market",    icon:"📡", label:"Market Intel",badge:0, admin:true},
     ]},
@@ -9510,6 +9575,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
         {view==="market"&&<MarketIntelView showToast={showToast} />}
         {view==="propintel"&&<PropIntelView showToast={showToast} />}
         {view==="calllist"&&<CallListView showToast={showToast} />}
+        {view==="listmonk"&&<ListmonkView showToast={showToast} />}
 
         {/* ── INBOX ── */}
         {view==="inbox"&&(<>
