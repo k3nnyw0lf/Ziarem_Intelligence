@@ -8861,6 +8861,142 @@ function ProjectForm({ businesses, vendors, onSave, onClose }) {
 }
 
 // ─── MAIN APP ───────────────────────────────────────────────────────────────
+// ═══ ZIAREM PROPERTY INTEL + MMI CALL LIST (shared layer — added 2026-05-30) ═══
+const ZENT = { mansion_signature:"MansionSignature", re4lty:"Re4lty", dos_mortgage:"DOS Mortgage", laenan:"Laenan", wolf_insurance:"Wolf Insurance", wolf_surety:"Wolf Surety", reno:"RENO", cbw_title:"CBW Title" };
+const zVT = () => { try { return localStorage.getItem("vault_token") || SB_KEY; } catch { return SB_KEY; } };
+async function sbAuth(path, opts={}) {
+  const r = await fetch(`${SB_URL}${path}`, { ...opts, headers:{ apikey:SB_KEY, Authorization:`Bearer ${zVT()}`, "Content-Type":"application/json", Accept:"application/json", "Accept-Profile":"public", "Content-Profile":"public", ...(opts.headers||{}) } });
+  if (!r.ok) { const t=await r.text(); throw new Error(`${r.status} ${t.slice(0,160)}`); }
+  const t = await r.text(); return t ? JSON.parse(t) : null;
+}
+const zMoney = n => n==null?"—":"$"+Math.round(n).toLocaleString();
+const zRate  = r => r==null?"—":(r<=1?(r*100):r).toFixed(2)+"%";
+const zScoreColor = s => s>=90?"#ef4444":s>=75?"#f59e0b":s>=50?"#3b82f6":"#555";
+
+function PropIntelView({ showToast }) {
+  const [leads, setLeads] = useState([]);
+  const [filter, setFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [showIngest, setShowIngest] = useState(false);
+  const load = useCallback(async () => {
+    setLoading(true);
+    const r = await sb("ziarem_inbox","GET",null,"?select=*&order=score.desc.nullslast").catch(()=>null);
+    setLeads(r||[]); setLoading(false);
+  }, []);
+  useEffect(()=>{ load(); }, [load]);
+  const push = async (l) => {
+    if(!confirm(`Push lead to ${ZENT[l.entity]||l.entity}? Emails the summary + best-effort Listmonk sync.`)) return;
+    try { await fetch(`${SB_URL}/functions/v1/ziarem-push`,{method:"POST",headers:SBH,body:JSON.stringify({lead_id:l.lead_id})}); showToast("✓ Pushed → "+(ZENT[l.entity]||l.entity)); load(); }
+    catch(e){ showToast("Push failed"); }
+  };
+  const dismiss = async (l) => { if(!confirm("Dismiss this lead?"))return; await fetch(`${SB_URL}/rest/v1/rpc/ziarem_dismiss_lead`,{method:"POST",headers:SBH,body:JSON.stringify({p_lead_id:l.lead_id})}); load(); };
+  const counts = leads.reduce((a,l)=>{a[l.entity]=(a[l.entity]||0)+1;return a;},{});
+  const totalNew = leads.filter(l=>l.status==="new").length;
+  let shown = leads;
+  if(filter==="new") shown=shown.filter(l=>l.status==="new");
+  else if(filter!=="all") shown=shown.filter(l=>l.entity===filter);
+  const pill = (k,label,active)=>(<button key={k} onClick={()=>setFilter(k)} style={{background:active?"rgba(212,175,55,.1)":"rgba(255,255,255,.03)",border:`1px solid ${active?"#d4af3766":"#1a1a28"}`,color:active?"#d4af37":"#666",fontFamily:"inherit",fontSize:10,padding:"4px 11px",borderRadius:3,cursor:"pointer",letterSpacing:".05em"}}>{label}</button>);
+  return (
+    <div className="fi" style={{padding:16,overflowY:"auto",height:"100%"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,flexWrap:"wrap"}}>
+        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:".15em",color:"#d4af37"}}>PROPERTY INTEL</span>
+        <span style={{color:"#555",fontSize:10}}>{leads.length} leads · {totalNew} new · {leads.filter(l=>l.status==="pushed").length} pushed</span>
+        <div style={{flex:1}}/>
+        {pill("all",`All (${leads.length})`,filter==="all")}
+        {pill("new",`New (${totalNew})`,filter==="new")}
+        {Object.entries(ZENT).filter(([k])=>counts[k]).map(([k,lb])=>pill(k,`${lb} (${counts[k]})`,filter===k))}
+      </div>
+      {loading?<div style={{color:"#555",padding:40,textAlign:"center"}}>Loading property leads…</div>:
+       shown.length===0?<div style={{color:"#555",padding:40,textAlign:"center"}}>No leads in this view.</div>:
+       shown.map(l=>(
+        <div key={l.lead_id} className="card" style={{display:"grid",gridTemplateColumns:"50px 1fr 200px",gap:12,background:"#10101c",border:"1px solid #1a1a28",borderRadius:6,padding:"12px 14px",marginBottom:8,opacity:l.status==="dismissed"?.35:l.status==="pushed"?.6:1}}>
+          <div style={{textAlign:"center",fontWeight:700,fontSize:18,color:"#fff",background:zScoreColor(l.score),borderRadius:5,padding:"6px 0",height:"fit-content"}}>{l.score??"—"}</div>
+          <div>
+            <div style={{fontWeight:600,fontSize:14,color:"#e0dcd0"}}>{l.full_address}</div>
+            <div style={{display:"flex",gap:4,flexWrap:"wrap",margin:"5px 0"}}>
+              <span className="tag" style={{background:"#1a1a2c",color:"#d4af37"}}>{ZENT[l.entity]||l.entity}</span>
+              <span className="tag" style={{background:"#1a2c3a",color:"#7ab"}}>{(l.lead_type||"").replace(/_/g," ")}</span>
+              {l.has_nod&&<span className="tag" style={{background:"#3a1a1a",color:"#ef4444"}}>NOD</span>}
+              {l.tax_delinquent&&<span className="tag" style={{background:"#3a1a1a",color:"#ef4444"}}>tax delinquent</span>}
+              {l.current_loan_rate>=0.07&&<span className="tag" style={{background:"#3a2c1a",color:"#f59e0b"}}>refi {zRate(l.current_loan_rate)}</span>}
+              {l.lendable_equity>=200000&&<span className="tag" style={{background:"#1a3a24",color:"#10b981"}}>{zMoney(l.lendable_equity)} equity</span>}
+            </div>
+            <div style={{color:"#999",fontSize:12,marginTop:4}}>{l.reason||""}</div>
+            <div style={{color:"#555",fontSize:11,marginTop:5}}>{l.property_type||"—"} · {l.beds||"—"}bd/{l.baths||"—"}ba · {(l.sqft||0).toLocaleString()}sqft · AVM {zMoney(l.avm_consensus)} · owner {l.owner_name||"—"}</div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {l.status==="new"?<>
+              <Btn onClick={()=>push(l)} style={{background:"#d4af37",color:"#000",fontWeight:600}}>Push → {ZENT[l.entity]||l.entity}</Btn>
+              <Btn onClick={()=>dismiss(l)}>Dismiss</Btn>
+            </>:<div style={{color:"#555",fontSize:11,textAlign:"center"}}>{l.status==="pushed"?`Pushed → ${l.pushed_to||""}`:l.status}</div>}
+          </div>
+        </div>
+       ))}
+    </div>
+  );
+}
+
+function CallListView({ showToast }) {
+  const [rows, setRows] = useState([]);
+  const [only, setOnly] = useState("callable");
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState("");
+  const DISPO=["new","queued","called","no_answer","callback","not_interested","converted","dnc"];
+  const load = useCallback(async () => {
+    setLoading(true); setErr("");
+    let q="/rest/v1/ziarem_call_list?select=*&order=call_priority.desc.nullslast&limit=300";
+    if(only==="callable") q+="&callable=eq.true";
+    try { setRows(await sbAuth(q)||[]); } catch(e){ setErr(String(e.message||e)); setRows([]); }
+    setLoading(false);
+  }, [only]);
+  useEffect(()=>{ load(); }, [load]);
+  const setDispo = async (id,status) => {
+    try { await sbAuth(`/rest/v1/ziarem_call_list?id=eq.${id}`,{method:"PATCH",headers:{Prefer:"return=minimal"},body:JSON.stringify({status,last_attempt_at:new Date().toISOString()})});
+      setRows(rs=>rs.map(r=>r.id===id?{...r,status}:r)); showToast("✓ "+status); } catch(e){ showToast("Update failed"); }
+  };
+  const aiCall = async (r) => {
+    if(!r.phone_primary) return showToast("No phone on record");
+    if(!confirm(`Place AI call now?\nTo: ${r.borrower_full_name||""} ${r.phone_primary}\nAssistant: ${r.primary_service||"mortgage"}\n\nReal outbound Telnyx call.`)) return;
+    try { const d = await sbAuth(`/functions/v1/voice-dispatch`,{method:"POST",body:JSON.stringify({to:r.phone_primary,service:r.primary_service||"mortgage",first_name:r.borrower_full_name||"",force_area:true,force_hours:true,dry_run:false})});
+      showToast(d?.placed?"✓ AI call placed":"Not dialed: "+(d?.skipped?.[0]?.reason||d?.error||"gated")); } catch(e){ showToast("Call failed: "+e.message); }
+  };
+  const refreshMMI = async () => { try{ await sbAuth(`/rest/v1/rpc/refresh_ziarem_call_list`,{method:"POST",body:"{}"}); showToast("MMI queue refreshed"); load(); }catch(e){ showToast("Refresh failed"); } };
+  const th={textAlign:"left",padding:"7px 9px",color:"#666",fontSize:9,textTransform:"uppercase",letterSpacing:".05em",borderBottom:"1px solid #1a1a28",position:"sticky",top:0,background:"#0c0c16"};
+  const td={padding:"7px 9px",fontSize:12,borderBottom:"1px solid #14141f",color:"#cfc9bd"};
+  return (
+    <div className="fi" style={{padding:16,overflowY:"auto",height:"100%"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+        <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,letterSpacing:".15em",color:"#d4af37"}}>CALL LIST</span>
+        <span style={{color:"#555",fontSize:10}}>MMI refi queue · DNC-gated AI dialer</span>
+        <div style={{flex:1}}/>
+        <button onClick={()=>setOnly("callable")} style={{background:only==="callable"?"rgba(212,175,55,.1)":"rgba(255,255,255,.03)",border:`1px solid ${only==="callable"?"#d4af3766":"#1a1a28"}`,color:only==="callable"?"#d4af37":"#666",fontFamily:"inherit",fontSize:10,padding:"4px 11px",borderRadius:3,cursor:"pointer"}}>Callable</button>
+        <button onClick={()=>setOnly("all")} style={{background:only==="all"?"rgba(212,175,55,.1)":"rgba(255,255,255,.03)",border:`1px solid ${only==="all"?"#d4af3766":"#1a1a28"}`,color:only==="all"?"#d4af37":"#666",fontFamily:"inherit",fontSize:10,padding:"4px 11px",borderRadius:3,cursor:"pointer"}}>All</button>
+        <Btn onClick={refreshMMI}>↻ Refresh MMI</Btn>
+      </div>
+      {err&&<div style={{background:"rgba(239,68,68,.08)",border:"1px solid rgba(239,68,68,.25)",color:"#ef4444",padding:10,borderRadius:5,fontSize:11,marginBottom:10}}>Sign-in required for the call list (staff RLS). {err}</div>}
+      {loading?<div style={{color:"#555",padding:40,textAlign:"center"}}>Loading queue…</div>:
+       rows.length===0&&!err?<div style={{color:"#555",padding:40,textAlign:"center"}}>No rows. Try “All”, or ↻ Refresh MMI.</div>:
+       <div style={{background:"#10101c",border:"1px solid #1a1a28",borderRadius:6,overflow:"hidden"}}>
+        <table style={{width:"100%",borderCollapse:"collapse"}}><thead><tr>
+          <th style={th}>Pri</th><th style={th}>Borrower</th><th style={th}>Phone</th><th style={th}>Property</th><th style={{...th,textAlign:"right"}}>Unpaid</th><th style={{...th,textAlign:"right"}}>Savings</th><th style={{...th,textAlign:"right"}}>Equity</th><th style={th}>Rate</th><th style={th}>Service</th><th style={th}>Status</th><th style={th}></th>
+        </tr></thead><tbody>{rows.map(r=>(<tr key={r.id} className="erow">
+          <td style={{...td,fontWeight:700,color:"#d4af37"}}>{r.call_priority??"—"}</td>
+          <td style={td}>{r.borrower_full_name||"—"}{!r.callable&&<span className="tag" style={{background:"#3a1a1a",color:"#ef4444",marginLeft:4}}>blocked</span>}</td>
+          <td style={{...td,fontFamily:"inherit"}}>{r.phone_primary||"—"}</td>
+          <td style={td}>{r.property_full_address||""}<div style={{color:"#555",fontSize:10}}>{[r.property_city,r.county].filter(Boolean).join(", ")}</div></td>
+          <td style={{...td,textAlign:"right"}}>{zMoney(r.unpaid_balance)}</td>
+          <td style={{...td,textAlign:"right",color:"#10b981"}}>{zMoney(r.payment_savings)}</td>
+          <td style={{...td,textAlign:"right"}}>{zMoney(r.lendable_equity)}</td>
+          <td style={td}>{zRate(r.derived_interest_rate)}</td>
+          <td style={td}><span className="tag" style={{background:"#2a1a3a",color:"#a78bfa"}}>{r.primary_service||"—"}</span></td>
+          <td style={td}><select value={r.status||"new"} onChange={e=>setDispo(r.id,e.target.value)} style={{background:"#0c0c16",border:"1px solid #1a1a28",color:"#cfc9bd",fontFamily:"inherit",fontSize:10,padding:"3px 5px",borderRadius:3}}>{DISPO.map(d=>(<option key={d} value={d}>{d}</option>))}</select></td>
+          <td style={td}>{r.callable&&r.phone_primary&&<button onClick={()=>aiCall(r)} style={{background:"#d4af37",color:"#000",border:"none",fontFamily:"inherit",fontSize:10,fontWeight:600,padding:"4px 9px",borderRadius:3,cursor:"pointer"}}>AI Call</button>}</td>
+        </tr>))}</tbody></table>
+       </div>}
+    </div>
+  );
+}
+
 function EmailVault({ user, teamProfile, onSignOut }) {
   const isAdmin = teamProfile?.role==="super_admin"||teamProfile?.role==="admin";
   const [view, setView] = useState(isAdmin ? "dashboard" : "callcenter");
@@ -9158,11 +9294,13 @@ function EmailVault({ user, teamProfile, onSignOut }) {
       {id:"dashboard", icon:"⬡", label:"Dashboard", badge:0, admin:true},
       {id:"inbox",     icon:"✉", label:"Inbox",     badge:emails.filter(e=>!e.is_read).length, admin:true},
       {id:"callcenter",icon:"☎", label:"Calls",     badge:unreadNotifs, admin:false},
+      {id:"calllist",  icon:"📞", label:"Call List", badge:0, admin:false},
       {id:"messages",  icon:"💬", label:"Messages",  badge:unreadMsgs, admin:false},
     ]},
     { id:"sales", label:"SALES & CRM", items:[
       {id:"crm",       icon:"💼", label:"CRM",       badge:overdueTasks.length, admin:true},
       {id:"leads",     icon:"🎯", label:"Leads",     badge:0, admin:true},
+      {id:"propintel", icon:"🏠", label:"Property Intel", badge:0, admin:true},
       {id:"appointments",icon:"📅", label:"Booking",  badge:todayAppts, admin:true},
       {id:"invoices",  icon:"💰", label:"Invoicing",  badge:overdueInvs, admin:true},
     ]},
@@ -9360,6 +9498,8 @@ function EmailVault({ user, teamProfile, onSignOut }) {
 
         {/* ── MARKET INTEL ── */}
         {view==="market"&&<MarketIntelView showToast={showToast} />}
+        {view==="propintel"&&<PropIntelView showToast={showToast} />}
+        {view==="calllist"&&<CallListView showToast={showToast} />}
 
         {/* ── INBOX ── */}
         {view==="inbox"&&(<>
