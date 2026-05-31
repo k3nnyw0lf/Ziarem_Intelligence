@@ -9051,6 +9051,86 @@ function MMIView({ showToast }) {
   );
 }
 
+function RadarView({ showToast }) {
+  const [tab, setTab] = useState("radar");
+  const [ops, setOps] = useState([]); const [apis, setApis] = useState([]);
+  const [addr, setAddr] = useState(""); const [enr, setEnr] = useState(null); const [enrLoading, setEnrLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [o, a] = await Promise.all([
+        sbAuth("/rest/v1/v_opportunity_radar?select=*&order=opportunity_score.desc.nullslast&limit=120").catch(() => []),
+        fetch(`${SB_URL}/rest/v1/free_api_catalog?select=*&order=wired.desc,category`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Accept-Profile": "public" } }).then(r => r.json()).catch(() => []),
+      ]);
+      setOps(o || []); setApis(a || []);
+    } catch (e) {}
+    setLoading(false);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+  const enrich = async () => {
+    if (!addr.trim()) return;
+    setEnrLoading(true); setEnr(null);
+    try {
+      const zip = (addr.match(/\b(\d{5})\b/) || [])[1];
+      const r = await fetch(`${SB_URL}/functions/v1/free-enrich`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ address: addr, zip }) });
+      setEnr(await r.json());
+    } catch (e) { showToast("enrich failed"); }
+    setEnrLoading(false);
+  };
+  const money = n => n == null ? "—" : "$" + Math.round(n).toLocaleString();
+  const playColor = p => p?.includes("Reno") ? "#ff9e1c" : p?.includes("Insurance") ? "#15e0c8" : "#ff2e88";
+  const th = { textAlign: "left", padding: "7px 10px", color: "#777", fontSize: 9, textTransform: "uppercase", letterSpacing: ".06em", borderBottom: "1px solid #241433" };
+  const td = { padding: "6px 10px", fontSize: 12, borderBottom: "1px solid #160a22", color: "#cfc9bd" };
+  return (
+    <div className="fi" style={{ padding: 16, overflowY: "auto", height: "100%" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 20, letterSpacing: ".15em", color: "#ff2e88", textShadow: "0 0 12px rgba(255,46,136,.5)" }}>RADAR</span>
+        <span style={{ color: "#666", fontSize: 10 }}>opportunity scoring · {apis.filter(a => a.wired).length} live free APIs · cross-business routing</span>
+        <div style={{ flex: 1 }} />
+        {[["radar", "🎯 Opportunities"], ["apis", "🔌 Free APIs"], ["enrich", "🛰️ Enrich"]].map(([k, l]) => (
+          <button key={k} onClick={() => setTab(k)} style={{ background: tab === k ? "rgba(255,46,136,.12)" : "rgba(255,255,255,.03)", border: `1px solid ${tab === k ? "#ff2e88" : "#241433"}`, color: tab === k ? "#ff2e88" : "#777", fontFamily: "inherit", fontSize: 10, padding: "4px 11px", cursor: "pointer" }}>{l}</button>
+        ))}
+      </div>
+      {tab === "radar" && (loading ? <div style={{ color: "#666", padding: 40, textAlign: "center" }}>Loading radar…</div> :
+        <div style={{ background: "#10101c", border: "2px solid #241433" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr>
+            <th style={{ ...th, textAlign: "right" }}>Score</th><th style={th}>Borrower</th><th style={th}>City</th><th style={{ ...th, textAlign: "right" }}>Equity</th><th style={{ ...th, textAlign: "right" }}>Savings</th><th style={th}>Rate</th><th style={th}>Recommended play</th>
+          </tr></thead><tbody>{ops.map(r => (<tr key={r.id} className="erow">
+            <td style={{ ...td, textAlign: "right", fontWeight: 800, color: r.opportunity_score >= 80 ? "#ff2e88" : r.opportunity_score >= 50 ? "#ff9e1c" : "#777" }}>{r.opportunity_score ?? "—"}</td>
+            <td style={{ ...td, color: "#fff" }}>{r.borrower_full_name || "—"}{r.prop_absentee ? <span className="tag" style={{ background: "#3a2c1a", color: "#ff9e1c", marginLeft: 4 }}>absentee</span> : ""}</td>
+            <td style={td}>{r.property_city || "—"}</td>
+            <td style={{ ...td, textAlign: "right", color: "#15e0c8" }}>{money(r.lendable_equity)}</td>
+            <td style={{ ...td, textAlign: "right" }}>{money(r.payment_savings)}</td>
+            <td style={td}>{r.derived_interest_rate ? r.derived_interest_rate + "%" : "—"}</td>
+            <td style={td}><span style={{ color: playColor(r.recommended_play), border: `1px solid ${playColor(r.recommended_play)}`, padding: "1px 7px", fontSize: 10 }}>{r.recommended_play}</span></td>
+          </tr>))}</tbody></table>
+        </div>)}
+      {tab === "apis" && <div style={{ background: "#10101c", border: "2px solid #241433" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}><thead><tr><th style={th}>API</th><th style={th}>Category</th><th style={th}>Provider</th><th style={th}>Auth</th><th style={th}>Use</th><th style={th}>Status</th></tr></thead>
+        <tbody>{apis.map(a => (<tr key={a.id} className="erow">
+          <td style={{ ...td, color: "#fff" }}>{a.name}</td><td style={td}><span className="tag" style={{ background: "#241433", color: "#15e0c8" }}>{a.category}</span></td>
+          <td style={td}>{a.provider}</td><td style={td}>{a.auth}</td><td style={{ ...td, color: "#999" }}>{a.use_case}</td>
+          <td style={td}>{a.wired ? <span className="tag" style={{ background: "#1a3a24", color: "#15e0c8" }}>LIVE</span> : <span className="tag" style={{ background: "#241433", color: "#777" }}>available</span>}</td>
+        </tr>))}</tbody></table></div>}
+      {tab === "enrich" && <div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <input value={addr} onChange={e => setAddr(e.target.value)} onKeyDown={e => e.key === "Enter" && enrich()} placeholder="123 Main St, Naples, FL 34105" style={{ flex: 1, background: "#0c0c16", border: "1px solid #241433", color: "#cfc9bd", fontFamily: "inherit", fontSize: 13, padding: "8px 11px" }} />
+          <button onClick={enrich} style={{ background: "#ff2e88", color: "#000", border: "none", fontFamily: "inherit", fontWeight: 700, padding: "8px 18px", cursor: "pointer" }}>{enrLoading ? "…" : "Enrich (free)"}</button>
+        </div>
+        <div style={{ color: "#666", fontSize: 11, marginBottom: 10 }}>Chains Census geocoder → FL parcels (owner/value/year) → FEMA flood zone → Census ACS demographics. Zero API cost.</div>
+        {enr && <div style={{ background: "#10101c", border: "2px solid #241433", padding: 16, fontSize: 13, color: "#cfc9bd" }}>
+          <div style={{ color: "#ff2e88", fontWeight: 700, marginBottom: 8 }}>{enr.geo?.matched || enr.address}</div>
+          {enr.parcel && <div>🏠 Owner: <b style={{ color: "#fff" }}>{enr.parcel.owner}</b> · value {money(enr.parcel.just_value)} · built {enr.parcel.year_built || "—"} · {enr.parcel.living_sqft || "—"} sqft · last sale {money(enr.parcel.last_sale_price)} ({enr.parcel.last_sale_year || "—"}){enr.parcel.absentee ? <span className="tag" style={{ background: "#3a2c1a", color: "#ff9e1c", marginLeft: 5 }}>absentee owner</span> : ""}</div>}
+          {enr.flood && <div style={{ marginTop: 6 }}>🌊 Flood zone <b style={{ color: enr.flood.in_sfha === "T" ? "#ef4444" : "#15e0c8" }}>{enr.flood.flood_zone}</b> {enr.flood.in_sfha === "T" ? "(in SFHA — flood insurance required)" : "(low risk)"}</div>}
+          {enr.demographics && <div style={{ marginTop: 6 }}>📊 Tract: median income {money(enr.demographics.median_household_income)} · median home value {money(enr.demographics.median_home_value)} · rent {money(enr.demographics.median_gross_rent)}</div>}
+          {!enr.parcel && !enr.flood && <div style={{ color: "#777" }}>No match found for this address.</div>}
+        </div>}
+      </div>}
+    </div>
+  );
+}
+
 function LoanPipelineView({ showToast }) {
   const [rows, setRows] = useState([]);
   const [filter, setFilter] = useState("all");
@@ -9590,6 +9670,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
     ]},
     { id:"analytics", label:"ANALYTICS & AI", items:[
       {id:"analytics", icon:"📊", label:"Analytics",   badge:0, admin:true},
+      {id:"radar",     icon:"🎯", label:"Radar",       badge:0, admin:true},
       {id:"intel",     icon:"🧠", label:"Intelligence",badge:0, admin:true},
     ]},
     { id:"admin", label:"ADMIN", items:[
@@ -9786,6 +9867,7 @@ function EmailVault({ user, teamProfile, onSignOut }) {
         {view==="clients"&&<ClientsAllView showToast={showToast} />}
         {view==="mmi"&&<MMIView showToast={showToast} />}
         {view==="loanpipeline"&&<LoanPipelineView showToast={showToast} />}
+        {view==="radar"&&<RadarView showToast={showToast} />}
         {view==="listmonk"&&<ListmonkView showToast={showToast} />}
 
         {/* ── INBOX ── */}
