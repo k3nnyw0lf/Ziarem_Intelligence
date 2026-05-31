@@ -9073,8 +9073,12 @@ function RadarView({ showToast }) {
     setEnrLoading(true); setEnr(null);
     try {
       const zip = (addr.match(/\b(\d{5})\b/) || [])[1];
-      const r = await fetch(`${SB_URL}/functions/v1/free-enrich`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ address: addr, zip }) });
-      setEnr(await r.json());
+      const hdr = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" };
+      const [base, mls] = await Promise.all([
+        fetch(`${SB_URL}/functions/v1/free-enrich`, { method: "POST", headers: hdr, body: JSON.stringify({ address: addr, zip }) }).then(x => x.json()),
+        fetch(`${SB_URL}/functions/v1/mls-enrich`, { method: "POST", headers: hdr, body: JSON.stringify({ address: addr }) }).then(x => x.json()).catch(() => null),
+      ]);
+      setEnr({ ...base, mls });
     } catch (e) { showToast("enrich failed"); }
     setEnrLoading(false);
   };
@@ -9124,7 +9128,8 @@ function RadarView({ showToast }) {
           {enr.parcel && <div>🏠 Owner: <b style={{ color: "#fff" }}>{enr.parcel.owner}</b> · value {money(enr.parcel.just_value)} · built {enr.parcel.year_built || "—"} · {enr.parcel.living_sqft || "—"} sqft · last sale {money(enr.parcel.last_sale_price)} ({enr.parcel.last_sale_year || "—"}){enr.parcel.absentee ? <span className="tag" style={{ background: "#3a2c1a", color: "#ff9e1c", marginLeft: 5 }}>absentee owner</span> : ""}</div>}
           {enr.flood && <div style={{ marginTop: 6 }}>🌊 Flood zone <b style={{ color: enr.flood.in_sfha === "T" ? "#ef4444" : "#15e0c8" }}>{enr.flood.flood_zone}</b> {enr.flood.in_sfha === "T" ? "(in SFHA — flood insurance required)" : "(low risk)"}</div>}
           {enr.demographics && <div style={{ marginTop: 6 }}>📊 Tract: median income {money(enr.demographics.median_household_income)} · median home value {money(enr.demographics.median_home_value)} · rent {money(enr.demographics.median_gross_rent)}</div>}
-          {!enr.parcel && !enr.flood && <div style={{ color: "#777" }}>No match found for this address.</div>}
+          {enr.mls?.found && enr.mls.listing && <div style={{ marginTop: 6, color: "#15e0c8" }}>🏷️ MLS: <b>{enr.mls.listing.status}</b> · {money(enr.mls.listing.list_price)}{enr.mls.listing.close_price ? " → sold " + money(enr.mls.listing.close_price) : ""} · {enr.mls.listing.beds || "—"}bd/{enr.mls.listing.baths || "—"}ba · {(enr.mls.listing.sqft || 0).toLocaleString()} sqft · built {enr.mls.listing.year_built || "—"} · {enr.mls.listing.subtype || enr.mls.listing.property_type} · agent {enr.mls.listing.list_agent || "—"} ({enr.mls.listing.list_office || ""}){enr.mls.listing.dom != null ? " · " + enr.mls.listing.dom + " DOM" : ""}</div>}
+          {!enr.parcel && !enr.flood && !enr.mls?.found && <div style={{ color: "#777" }}>No match found for this address.</div>}
         </div>}
       </div>}
     </div>
